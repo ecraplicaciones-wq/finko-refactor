@@ -318,13 +318,6 @@ export function initTheme() {
   applyTheme(getPreferredTheme());
 }
 
-// ─── BADGE DE PERÍODO ────────────────────────────────────────────────────────
-export function updateBadge() {
-  const n   = new Date();
-  const txt = `${n.getDate() <= 15 ? '1ra' : '2da'} quincena · ${n.toLocaleString('es-CO', { month:'short' })} ${n.getFullYear()}`;
-  const el  = document.getElementById('hbadge'); if (el) el.textContent = txt;
-}
-
 // ─── CERRAR AL CLICK FUERA ───────────────────────────────────────────────────
 let _clickOutsideInstalled = false;
 export function initClickOutside() {
