@@ -1,8 +1,8 @@
-import { S }              from './core/state.js';
-import { save }           from './core/storage.js';
-import { f, he, setEl, setHtml, hoy, mesStr } from './infra/utils.js';
-import { CATS, TASA_USURA_EA } from './core/constants.js';
-import { totalCuentas, updSaldo } from './infra/render.js';
+import { S }              from '../core/state.js';
+import { save }           from '../core/storage.js';
+import { f, he, setEl, setHtml, hoy, mesStr } from '../infra/utils.js';
+import { CATS, TASA_USURA_EA } from '../core/constants.js';
+import { totalCuentas, updSaldo } from '../infra/render.js';
 
 // ─── RENDER DE CUENTAS ───────────────────────────────────────────────────────
 export function renderDashCuentas() {

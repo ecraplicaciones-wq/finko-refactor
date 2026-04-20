@@ -1,7 +1,7 @@
-import { S }    from './core/state.js';
-import { save } from './core/storage.js';
-import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo } from './infra/utils.js';
-import { renderSmart } from './infra/render.js';
+import { S }    from '../core/state.js';
+import { save } from '../core/storage.js';
+import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo } from '../infra/utils.js';
+import { renderSmart } from '../infra/render.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarObjetivo() {

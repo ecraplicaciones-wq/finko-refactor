@@ -8,9 +8,9 @@
 //
 // Sin cambios en index.html — todo el UI se inyecta dinámicamente.
 // ─────────────────────────────────────────────────────────────────────────────
-import { S }      from './core/state.js';
-import { f, hoy } from './infra/utils.js';
-import { CATS, CCOLORS } from './core/constants.js';
+import { S }      from '../core/state.js';
+import { f, hoy } from '../infra/utils.js';
+import { CATS, CCOLORS } from '../core/constants.js';
 
 // ─── 1. CALCULAR MÉTRICAS DEL PERÍODO ────────────────────────────────────────
 /**

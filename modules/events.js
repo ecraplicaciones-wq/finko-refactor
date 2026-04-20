@@ -11,49 +11,49 @@ import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from './i
 import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar } from './sections.js';
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
-import { updateDash, calcScore, renderDashCuentas } from './dashboard.js';
+import { updateDash, calcScore, renderDashCuentas } from './dominio/dashboard.js';
 
 // ─── GASTOS ──────────────────────────────────────────────────────────────────
-import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from './gastos.js';
+import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from './dominio/gastos.js';
 
 // ─── FIJOS ───────────────────────────────────────────────────────────────────
-import { guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo } from './fijos.js';
+import { guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo } from './dominio/fijos.js';
 
 // ─── DEUDAS ──────────────────────────────────────────────────────────────────
-import { guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit } from './deudas.js';
+import { guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit } from './dominio/deudas.js';
 
 // ─── OBJETIVOS ───────────────────────────────────────────────────────────────
-import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from './objetivos.js';
+import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from './dominio/objetivos.js';
 
 // ─── INVERSIONES ─────────────────────────────────────────────────────────────
-import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from './inversiones.js';
+import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from './dominio/inversiones.js';
 
 // ─── AGENDA ──────────────────────────────────────────────────────────────────
-import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from './agenda.js';
+import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from './dominio/agenda.js';
 
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
-import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from './cuentas.js';
+import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from './dominio/cuentas.js';
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
 // Solo funciones propias del historial — render, borrar, cerrar período.
-import { renderHistorial, delHistorial, cerrarQ } from './historial.js';
+import { renderHistorial, delHistorial, cerrarQ } from './dominio/historial.js';
 
 // ─── EXPORTACIÓN / IMPORTACIÓN ────────────────────────────────────────────────
 // Fuente canónica: exports.js tiene las versiones con versioning y validaciones.
 // historial.js tenía copias antiguas e inferiores — ya eliminadas.
-import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from './exports.js';
+import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from './dominio/exports.js';
 
 // ─── RESUMEN QUINCENAL ────────────────────────────────────────────────────────
-import { mostrarResumenQuincena, calcularResumen, generarConsejo } from './resumen.js';
+import { mostrarResumenQuincena, calcularResumen, generarConsejo } from './dominio/resumen.js';
 
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
-import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from './fondo.js';
+import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from './dominio/fondo.js';
 
 // ─── ESTADÍSTICAS ────────────────────────────────────────────────────────────
-import { renderStats } from './stats.js';
+import { renderStats } from './dominio/stats.js';
 
 // ─── GAMIFICACIÓN ─────────────────────────────────────────────────────────────
-import { evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from './logros.js';
+import { evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from './dominio/logros.js';
 
 // ─── UI COMPONENTS ───────────────────────────────────────────────────────────
 import { toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './ui-components.js';

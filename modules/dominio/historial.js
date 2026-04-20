@@ -1,8 +1,8 @@
-import { S }    from './core/state.js';
-import { save } from './core/storage.js';
-import { f, he, hoy, mesStr, setHtml } from './infra/utils.js';
-import { CATS } from './core/constants.js';
-import { renderSmart } from './infra/render.js';
+import { S }    from '../core/state.js';
+import { save } from '../core/storage.js';
+import { f, he, hoy, mesStr, setHtml } from '../infra/utils.js';
+import { CATS } from '../core/constants.js';
+import { renderSmart } from '../infra/render.js';
 import { mostrarResumenQuincena } from './resumen.js';
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────

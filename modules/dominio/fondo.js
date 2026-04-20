@@ -1,7 +1,7 @@
-import { S }    from './core/state.js';
-import { save } from './core/storage.js';
-import { f, hoy, setEl, openM, closeM, showAlert, descontarFondo } from './infra/utils.js';
-import { renderSmart } from './infra/render.js';
+import { S }    from '../core/state.js';
+import { save } from '../core/storage.js';
+import { f, hoy, setEl, openM, closeM, showAlert, descontarFondo } from '../infra/utils.js';
+import { renderSmart } from '../infra/render.js';
 
 // ─── CÁLCULO BASE ─────────────────────────────────────────────────────────────
 // La meta del fondo se basa en los gastos fijos mensuales reales del usuario.
