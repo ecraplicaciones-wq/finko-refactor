@@ -20,7 +20,8 @@ export function he(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ─── DOM HELPERS ─────────────────────────────────────────────────────────────
@@ -135,27 +136,29 @@ let _cdlgPromptMode = false;
 let _cdlgExpected = null;
 
 // Expuesto en window porque el HTML llama a _cdlgRes(true/false) inline
-window._cdlgRes = function (ok) {
-  if (_cdlgPromptMode && _cdlgExpected && ok) {
-    const v = document.getElementById('cdlg-input').value;
-    if (v !== _cdlgExpected) {
-      document.getElementById('cdlg-input').style.border = '1px solid var(--dan)';
-      return;
+if (typeof window !== 'undefined') {
+  window._cdlgRes = function (ok) {
+    if (_cdlgPromptMode && _cdlgExpected && ok) {
+      const v = document.getElementById('cdlg-input').value;
+      if (v !== _cdlgExpected) {
+        document.getElementById('cdlg-input').style.border = '1px solid var(--dan)';
+        return;
+      }
     }
-  }
-  document.getElementById('cdlg-ov').classList.remove('open');
-  document.getElementById('cdlg-cancel').style.display = '';
-  document.getElementById('cdlg-input').style.border = '';
-  // Libera el trap de foco al cerrar el diálogo asíncrono
-  _removeTrap();
-  if (_cdlgPromptMode) {
-    const v = document.getElementById('cdlg-input').value;
-    if (_cdlgResolve) _cdlgResolve(ok ? v : null);
-  } else {
-    if (_cdlgResolve) _cdlgResolve(ok);
-  }
-  _cdlgResolve = null;
-};
+    document.getElementById('cdlg-ov').classList.remove('open');
+    document.getElementById('cdlg-cancel').style.display = '';
+    document.getElementById('cdlg-input').style.border = '';
+    // Libera el trap de foco al cerrar el diálogo asíncrono
+    _removeTrap();
+    if (_cdlgPromptMode) {
+      const v = document.getElementById('cdlg-input').value;
+      if (_cdlgResolve) _cdlgResolve(ok ? v : null);
+    } else {
+      if (_cdlgResolve) _cdlgResolve(ok);
+    }
+    _cdlgResolve = null;
+  };
+}
 
 export function showConfirm(msg, title = 'Confirmar') {
   return new Promise(r => {
@@ -223,12 +226,14 @@ export function showPrompt(msg, title = 'Editar', valorInicial = '') {
 }
 
 // ─── EXPOSICIÓN GLOBAL (compatibilidad con onclick en HTML) ──────────────────
-window.openM  = openM;
-window.closeM = closeM;
-window.showConfirm       = showConfirm;
-window.showAlert         = showAlert;
-window.showPromptConfirm = showPromptConfirm;
-window.showPrompt        = showPrompt;
+if (typeof window !== 'undefined') {
+  window.openM  = openM;
+  window.closeM = closeM;
+  window.showConfirm       = showConfirm;
+  window.showAlert         = showAlert;
+  window.showPromptConfirm = showPromptConfirm;
+  window.showPrompt        = showPrompt;
+}
 
 /**
  * Descuenta `mo` del fondo `fo`. Llama a updSaldo() al final.
@@ -274,8 +279,10 @@ export function reintegrarFondo(fo, mo) {
   } else {
     S.saldos.banco += mo;
   }
-  window.updSaldo?.();
+  if (typeof window !== 'undefined') window.updSaldo?.();
 }
 
-window.descontarFondo  = descontarFondo;
-window.reintegrarFondo = reintegrarFondo;
+if (typeof window !== 'undefined') {
+  window.descontarFondo  = descontarFondo;
+  window.reintegrarFondo = reintegrarFondo;
+}
