@@ -1,7 +1,7 @@
-import { S }              from './state.js';
-import { save }           from './storage.js';
+import { S }              from './core/state.js';
+import { save }           from './core/storage.js';
 import { f, he, setEl, setHtml, hoy, mesStr } from './utils.js';
-import { CATS, TASA_USURA_EA } from './constants.js';
+import { CATS, TASA_USURA_EA } from './core/constants.js';
 import { totalCuentas, updSaldo } from './render.js';
 
 // ─── RENDER DE CUENTAS ───────────────────────────────────────────────────────

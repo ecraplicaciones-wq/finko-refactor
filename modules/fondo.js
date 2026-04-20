@@ -1,5 +1,5 @@
-import { S }    from './state.js';
-import { save } from './storage.js';
+import { S }    from './core/state.js';
+import { save } from './core/storage.js';
 import { f, hoy, setEl, openM, closeM, showAlert, descontarFondo } from './utils.js';
 import { renderSmart } from './render.js';
 

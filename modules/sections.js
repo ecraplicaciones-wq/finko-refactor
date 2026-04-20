@@ -1,4 +1,4 @@
-import { S } from './state.js';
+import { S } from './core/state.js';
 import { sr } from './utils.js';
 
 // ─── LAZY LOAD DE CALCULADORAS ────────────────────────────────────────────────
@@ -37,7 +37,7 @@ async function _cargarCalculadoras() {
     console.error('[Finko] Error cargando calculadoras:', e);
   }
 }
-import { NAVS } from './constants.js';
+import { NAVS } from './core/constants.js';
 
 // ─── ETIQUETAS LEGIBLES PARA LECTORES DE PANTALLA ─────────────────────────────
 const SEC_LABELS = {

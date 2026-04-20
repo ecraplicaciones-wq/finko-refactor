@@ -12,7 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ⚠️ Actualizar CACHE_NAME con cada release que cambie assets críticos.
-const CACHE_NAME = 'finko-pro-v4';
+const CACHE_NAME = 'finko-pro-v5';
 
 // ─── ASSETS QUE SE CACHEAN AL INSTALAR ───────────────────────────────────────
 const PRECACHE_ASSETS = [
@@ -24,9 +24,9 @@ const PRECACHE_ASSETS = [
 
   // ─── Módulos JS ────────────────────────────────────────────────────────────
   './modules/events.js',
-  './modules/state.js',
-  './modules/storage.js',
-  './modules/constants.js',
+  './modules/core/state.js',
+  './modules/core/storage.js',
+  './modules/core/constants.js',
   './modules/utils.js',
   './modules/render.js',
   './modules/sections.js',

@@ -1,7 +1,7 @@
-import { S }        from './state.js';
-import { save }     from './storage.js';
+import { S }        from './core/state.js';
+import { save }     from './core/storage.js';
 import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo } from './utils.js';
-import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026 } from './constants.js';
+import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026 } from './core/constants.js';
 import { renderSmart, updSaldo } from './render.js';
 
 let _filtroGasto = '';

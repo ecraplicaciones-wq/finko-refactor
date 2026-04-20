@@ -1,7 +1,7 @@
-import { S }    from './state.js';
-import { save, CURRENT_VERSION, medirUso } from './storage.js';
+import { S }    from './core/state.js';
+import { save, CURRENT_VERSION, medirUso } from './core/storage.js';
 import { f, hoy } from './utils.js';
-import { CATS, GMF_TASA } from './constants.js';
+import { CATS, GMF_TASA } from './core/constants.js';
 
 // ─── EXPORTAR JSON (RESPALDO COMPLETO) ───────────────────────────────────────
 export function exportarDatos() {

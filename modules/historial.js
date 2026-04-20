@@ -1,7 +1,7 @@
-import { S }    from './state.js';
-import { save } from './storage.js';
+import { S }    from './core/state.js';
+import { save } from './core/storage.js';
 import { f, he, hoy, mesStr, setHtml } from './utils.js';
-import { CATS } from './constants.js';
+import { CATS } from './core/constants.js';
 import { renderSmart } from './render.js';
 import { mostrarResumenQuincena } from './resumen.js';
 

@@ -1,4 +1,4 @@
-import { S } from './state.js';
+import { S } from './core/state.js';
 import { f, mesStr, setEl }       from './utils.js';
 import { renderBolsillos }        from './ahorrado.js';
 

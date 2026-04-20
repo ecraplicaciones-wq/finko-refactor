@@ -1,6 +1,6 @@
 // tests/unit/migrations.test.js
 import { describe, it, expect } from 'vitest';
-import { CURRENT_VERSION } from '../../modules/storage.js';
+import { CURRENT_VERSION } from '../../modules/core/storage.js';
 
 // Simulamos la función _migrar replicando la lógica de storage.js
 function _migrar(data, fromVersion) {

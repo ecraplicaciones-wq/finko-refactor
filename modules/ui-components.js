@@ -1,4 +1,4 @@
-import { S, resetAppState } from './state.js';
+import { S, resetAppState } from './core/state.js';
 import { f, he } from './utils.js';
 
 // ─── DAY PICKER ──────────────────────────────────────────────────────────────

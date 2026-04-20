@@ -1,6 +1,6 @@
 // tests/unit/state.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
-import { S, resetAppState } from '../../modules/state.js';
+import { S, resetAppState } from '../../modules/core/state.js';
 
 describe('resetAppState()', () => {
 

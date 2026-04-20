@@ -1,7 +1,7 @@
-import { S }    from './state.js';
-import { save } from './storage.js';
+import { S }    from './core/state.js';
+import { save } from './core/storage.js';
 import { f, he, hoy, mesStr, setEl, openM, closeM, showConfirm, descontarFondo, reintegrarFondo } from './utils.js';
-import { CATS, GMF_TASA } from './constants.js';
+import { CATS, GMF_TASA } from './core/constants.js';
 import { renderSmart } from './render.js';
 
 let _idFijoPendiente = null;

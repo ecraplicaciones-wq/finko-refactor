@@ -1,9 +1,9 @@
 // Orquestador principal: importa todos los módulos, expone globals, arranca la app.
 
 // ─── CIMIENTOS ───────────────────────────────────────────────────────────────
-import { S, resetAppState }   from './state.js';
-import { save, loadData }     from './storage.js';
-import { inyectarConstantes, verificarVigenciaConstantes } from './constants.js';
+import { S, resetAppState }   from './core/state.js';
+import { save, loadData }     from './core/storage.js';
+import { inyectarConstantes, verificarVigenciaConstantes } from './core/constants.js';
 import { f, hoy, mesStr, he, setEl, setHtml, sr, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from './utils.js';
 import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from './render.js';
 

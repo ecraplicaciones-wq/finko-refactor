@@ -6,8 +6,8 @@
 //   • Los toasts son una cola FIFO — nunca se pisan entre sí.
 //   • Los logros no desaparecen ni se reinician — son permanentes.
 // ─────────────────────────────────────────────────────────────────────────────
-import { S }    from './state.js';
-import { save } from './storage.js';
+import { S }    from './core/state.js';
+import { save } from './core/storage.js';
 import { f, hoy } from './utils.js';
 
 // ─── CATÁLOGO DE LOGROS ───────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
-import { S }    from './state.js';
+import { S }    from './core/state.js';
 import { f, setEl, setHtml } from './utils.js';
-import { CATS, CCOLORS } from './constants.js';
+import { CATS, CCOLORS } from './core/constants.js';
 
 // ─── RENDER COMPLETO ─────────────────────────────────────────────────────────
 export function renderStats() {

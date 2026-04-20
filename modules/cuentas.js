@@ -1,8 +1,8 @@
-import { S }    from './state.js';
-import { save } from './storage.js';
+import { S }    from './core/state.js';
+import { save } from './core/storage.js';
 import { f, he, setEl, openM, closeM, showConfirm, showPrompt } from './utils.js';
 import { renderSmart, updSaldo, totalCuentas } from './render.js';
-import { BANCOS_CO } from './constants.js';
+import { BANCOS_CO } from './core/constants.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export function guardarCuenta() {
