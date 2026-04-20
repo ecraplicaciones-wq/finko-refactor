@@ -1,0 +1,84 @@
+# ─── Dependencias ────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build / dist ────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.output/
+.next/
+.nuxt/
+.vite/
+
+# ─── Caché de herramientas ───────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# ─── Variables de entorno (NUNCA subir claves) ───────────────────────────────
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+
+# ─── Sistema operativo ───────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Editores ────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# ─── Backups de datos de usuario (generados por la app) ──────────────────────
+finko_backup_*.json
+finko_gastos_*.xlsx
+
+# ─── Temporales ──────────────────────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+
+# ─── Coverage / testing ──────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+
+# ─── Package managers ────────────────────────────────────────────────────────
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
