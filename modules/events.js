@@ -203,19 +203,6 @@ window.calcularFondoEmergencia = calcularFondoEmergencia;
 window.actualizarVistaFondo    = actualizarVistaFondo;
 window.registrarAbonoFondo     = registrarAbonoFondo;
 
-// calculadoras
-window.cCDT         = cCDT;
-window.cCre         = cCre;
-window.cIC          = cIC;
-window.cMeta        = cMeta;
-window.cMetaAporte  = cMetaAporte;
-window.cPila        = cPila;
-window.cInf         = cInf;
-window.cR72         = cR72;
-window.toggleCalc   = toggleCalc;
-window.calcPrima    = calcPrima;
-window.guardarPrima = guardarPrima;
-
 // stats
 window.renderStats = renderStats;
 

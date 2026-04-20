@@ -193,38 +193,6 @@ function _ocultarBannerEspacio() {
 }
 
 /**
- * Guarda el estado global en localStorage.
- * Siempre incluye _version para que las migraciones futuras sepan desde dónde.
- */
-// ESTA FUNCIÓN COMPLETA (líneas 185–209):
-export function save() {
-  try {
-    verificarEspacio();
-    S._version = CURRENT_VERSION;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
-  } catch (e) {
-    // QuotaExceededError — el único error esperado aquí
-    if (e?.name === 'QuotaExceededError' || e?.code === 22) {
-      console.error('[Finko] localStorage lleno. Intentando liberar espacio...');
-      archivarHistorialAntiguo();
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
-        window.sr?.('Espacio liberado. Se archivaron períodos viejos para poder guardar.');
-      } catch (e2) {
-        console.error('[Finko] No fue posible guardar ni tras liberar espacio:', e2);
-        window.showAlert?.(
-          '🚨 Tu almacenamiento está lleno y no se pudo guardar.\n\nExportá un backup inmediatamente para no perder tus datos.',
-          'Error crítico de almacenamiento'
-        );
-      }
-    } else {
-      console.error('[Finko] Error inesperado al guardar:', e);
-    }
-  }
-}
-
-// REEMPLAZAR POR:
-/**
  * Agenda una escritura en localStorage con debounce de 200ms.
  * Si se llama 10 veces seguidas, solo escribe 1 vez al final.
  * Flush inmediato garantizado al cerrar o minimizar el tab.
