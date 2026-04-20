@@ -3,9 +3,9 @@ import { save } from './core/storage.js';
 import {
   f, he, hoy, setEl, setHtml,
   openM, closeM, showAlert, showConfirm, sr
-} from './utils.js';
+} from './infra/utils.js';
 import { BANCOS_CO } from './core/constants.js';
-import { updSaldo }  from './render.js';
+import { updSaldo }  from './infra/render.js';
 
 // ─── CATÁLOGO DE EMOJIS PARA BOLSILLOS ───────────────────────────────────────
 const ICONOS_BOLS = [

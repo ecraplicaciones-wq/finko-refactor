@@ -4,8 +4,8 @@
 import { S, resetAppState }   from './core/state.js';
 import { save, loadData }     from './core/storage.js';
 import { inyectarConstantes, verificarVigenciaConstantes } from './core/constants.js';
-import { f, hoy, mesStr, he, setEl, setHtml, sr, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from './utils.js';
-import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from './render.js';
+import { f, hoy, mesStr, he, setEl, setHtml, sr, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from './infra/utils.js';
+import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from './infra/render.js';
 
 // ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
 import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar } from './sections.js';

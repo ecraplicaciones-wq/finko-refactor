@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { S }    from './core/state.js';
 import { save } from './core/storage.js';
-import { f, hoy } from './utils.js';
+import { f, hoy } from './infra/utils.js';
 
 // ─── CATÁLOGO DE LOGROS ───────────────────────────────────────────────────────
 // Cada logro tiene un id único, icono, nombre corto colombiano, descripción

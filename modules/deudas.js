@@ -1,8 +1,8 @@
 import { S }    from './core/state.js';
 import { save } from './core/storage.js';
-import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo } from './utils.js';
+import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo } from './infra/utils.js';
 import { TASA_USURA_EA } from './core/constants.js';
-import { renderSmart, updSaldo, totalCuentas } from './render.js';
+import { renderSmart, updSaldo, totalCuentas } from './infra/render.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarDeuda() {

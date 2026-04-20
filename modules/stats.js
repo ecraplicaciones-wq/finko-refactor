@@ -1,5 +1,5 @@
 import { S }    from './core/state.js';
-import { f, setEl, setHtml } from './utils.js';
+import { f, setEl, setHtml } from './infra/utils.js';
 import { CATS, CCOLORS } from './core/constants.js';
 
 // ─── RENDER COMPLETO ─────────────────────────────────────────────────────────

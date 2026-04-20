@@ -1,7 +1,7 @@
 import { S }    from './core/state.js';
 import { save } from './core/storage.js';
-import { f, he, setEl, openM, closeM, showConfirm, descontarFondo } from './utils.js';
-import { renderSmart } from './render.js';
+import { f, he, setEl, openM, closeM, showConfirm, descontarFondo } from './infra/utils.js';
+import { renderSmart } from './infra/render.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarInversion() {

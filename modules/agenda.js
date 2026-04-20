@@ -1,7 +1,7 @@
 import { S }    from './core/state.js';
 import { save } from './core/storage.js';
-import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo } from './utils.js';
-import { renderSmart } from './render.js';
+import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo } from './infra/utils.js';
+import { renderSmart } from './infra/render.js';
 
 let _calDate          = null;
 let _currentDaysEvents = {};

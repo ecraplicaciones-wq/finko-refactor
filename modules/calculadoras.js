@@ -1,5 +1,5 @@
 import { S } from './core/state.js';
-import { f, hoy, setHtml } from './utils.js';
+import { f, hoy, setHtml } from './infra/utils.js';
 import { RETEFUENTE_CDT, SALUD_INDEPEND, PENSION_INDEPEND, SMMLV_2026, TASA_USURA_EA } from './core/constants.js';
 
 // ─── CDT ─────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { S }    from './core/state.js';
 import { save } from './core/storage.js';
-import { f, he, setEl, openM, closeM, showConfirm, showPrompt } from './utils.js';
-import { renderSmart, updSaldo, totalCuentas } from './render.js';
+import { f, he, setEl, openM, closeM, showConfirm, showPrompt } from './infra/utils.js';
+import { renderSmart, updSaldo, totalCuentas } from './infra/render.js';
 import { BANCOS_CO } from './core/constants.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────

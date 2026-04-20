@@ -1,6 +1,6 @@
 // tests/unit/utils.test.js
 import { describe, it, expect, vi } from 'vitest';
-import { he, debounce } from '../../modules/utils.js';
+import { he, debounce } from '../../modules/infra/utils.js';
 
 // ─── he() — escape de HTML ────────────────────────────────────────────────────
 
