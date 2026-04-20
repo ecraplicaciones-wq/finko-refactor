@@ -1,5 +1,5 @@
-import { S } from './core/state.js';
-import { sr } from './infra/utils.js';
+import { S } from '../core/state.js';
+import { sr } from '../infra/utils.js';
 
 // ─── LAZY LOAD DE CALCULADORAS ────────────────────────────────────────────────
 // calculadoras.js solo se usa en la sección "Plan" (quin).
@@ -13,7 +13,7 @@ async function _cargarCalculadoras() {
     return;
   }
   try {
-    _calcModulo = await import('./calculadoras.js');
+    _calcModulo = await import('../calculadoras.js');
     // Exponer al window para los onclick del HTML
     window.cCDT         = _calcModulo.cCDT;
     window.cCre         = _calcModulo.cCre;
@@ -37,7 +37,7 @@ async function _cargarCalculadoras() {
     console.error('[Finko] Error cargando calculadoras:', e);
   }
 }
-import { NAVS } from './core/constants.js';
+import { NAVS } from '../core/constants.js';
 
 // ─── ETIQUETAS LEGIBLES PARA LECTORES DE PANTALLA ─────────────────────────────
 const SEC_LABELS = {

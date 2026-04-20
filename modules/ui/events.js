@@ -1,59 +1,59 @@
 // Orquestador principal: importa todos los módulos, expone globals, arranca la app.
 
 // ─── CIMIENTOS ───────────────────────────────────────────────────────────────
-import { S, resetAppState }   from './core/state.js';
-import { save, loadData }     from './core/storage.js';
-import { inyectarConstantes, verificarVigenciaConstantes } from './core/constants.js';
-import { f, hoy, mesStr, he, setEl, setHtml, sr, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from './infra/utils.js';
-import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from './infra/render.js';
+import { S, resetAppState }   from '../core/state.js';
+import { save, loadData }     from '../core/storage.js';
+import { inyectarConstantes, verificarVigenciaConstantes } from '../core/constants.js';
+import { f, hoy, mesStr, he, setEl, setHtml, sr, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from '../infra/utils.js';
+import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../infra/render.js';
 
 // ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
 import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar } from './sections.js';
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
-import { updateDash, calcScore, renderDashCuentas } from './dominio/dashboard.js';
+import { updateDash, calcScore, renderDashCuentas } from '../dominio/dashboard.js';
 
 // ─── GASTOS ──────────────────────────────────────────────────────────────────
-import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from './dominio/gastos.js';
+import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from '../dominio/gastos.js';
 
 // ─── FIJOS ───────────────────────────────────────────────────────────────────
-import { guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo } from './dominio/fijos.js';
+import { guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo } from '../dominio/fijos.js';
 
 // ─── DEUDAS ──────────────────────────────────────────────────────────────────
-import { guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit } from './dominio/deudas.js';
+import { guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit } from '../dominio/deudas.js';
 
 // ─── OBJETIVOS ───────────────────────────────────────────────────────────────
-import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from './dominio/objetivos.js';
+import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from '../dominio/objetivos.js';
 
 // ─── INVERSIONES ─────────────────────────────────────────────────────────────
-import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from './dominio/inversiones.js';
+import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from '../dominio/inversiones.js';
 
 // ─── AGENDA ──────────────────────────────────────────────────────────────────
-import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from './dominio/agenda.js';
+import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from '../dominio/agenda.js';
 
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
-import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from './dominio/cuentas.js';
+import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/cuentas.js';
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
 // Solo funciones propias del historial — render, borrar, cerrar período.
-import { renderHistorial, delHistorial, cerrarQ } from './dominio/historial.js';
+import { renderHistorial, delHistorial, cerrarQ } from '../dominio/historial.js';
 
 // ─── EXPORTACIÓN / IMPORTACIÓN ────────────────────────────────────────────────
 // Fuente canónica: exports.js tiene las versiones con versioning y validaciones.
 // historial.js tenía copias antiguas e inferiores — ya eliminadas.
-import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from './dominio/exports.js';
+import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from '../dominio/exports.js';
 
 // ─── RESUMEN QUINCENAL ────────────────────────────────────────────────────────
-import { mostrarResumenQuincena, calcularResumen, generarConsejo } from './dominio/resumen.js';
+import { mostrarResumenQuincena, calcularResumen, generarConsejo } from '../dominio/resumen.js';
 
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
-import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from './dominio/fondo.js';
+import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/fondo.js';
 
 // ─── ESTADÍSTICAS ────────────────────────────────────────────────────────────
-import { renderStats } from './dominio/stats.js';
+import { renderStats } from '../dominio/stats.js';
 
 // ─── GAMIFICACIÓN ─────────────────────────────────────────────────────────────
-import { evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from './dominio/logros.js';
+import { evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/logros.js';
 
 // ─── UI COMPONENTS ───────────────────────────────────────────────────────────
 import { toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './ui-components.js';

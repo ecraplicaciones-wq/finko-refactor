@@ -23,13 +23,13 @@ const PRECACHE_ASSETS = [
   './manifest.json',
 
   // ─── Módulos JS ────────────────────────────────────────────────────────────
-  './modules/events.js',
+  './modules/ui/events.js',
   './modules/core/state.js',
   './modules/core/storage.js',
   './modules/core/constants.js',
   './modules/infra/utils.js',
   './modules/infra/render.js',
-  './modules/sections.js',
+  './modules/ui/sections.js',
   './modules/dominio/dashboard.js',
   './modules/dominio/gastos.js',
   './modules/dominio/fijos.js',
@@ -42,7 +42,7 @@ const PRECACHE_ASSETS = [
   './modules/dominio/fondo.js',
   './modules/calculadoras.js',
   './modules/dominio/stats.js',
-  './modules/ui-components.js',
+  './modules/ui/ui-components.js',
   // ✅ Fix ①: faltaban — ahorrado.js lo importa render.js, exports.js lo
   // importa historial.js. Sin ellos la app truena offline con error de módulo.
   './modules/dominio/ahorrado.js',
