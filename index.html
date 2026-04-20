@@ -1421,14 +1421,14 @@
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button onclick="selTipoDeudaEdit('tarjeta',this)"   class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
-        <button onclick="selTipoDeudaEdit('credito',this)"   class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button onclick="selTipoDeudaEdit('hipoteca',this)"  class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button onclick="selTipoDeudaEdit('vehiculo',this)"  class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button onclick="selTipoDeudaEdit('educacion',this)" class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button onclick="selTipoDeudaEdit('persona',this)"   class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button onclick="selTipoDeudaEdit('salud',this)"     class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button onclick="selTipoDeudaEdit('otro',this)"      class="btn-tipo-deuda-edit" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        <button onclick="selTipoDeudaEdit('tarjeta',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
+        <button onclick="selTipoDeudaEdit('credito',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+        <button onclick="selTipoDeudaEdit('hipoteca',this)"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+        <button onclick="selTipoDeudaEdit('vehiculo',this)"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+        <button onclick="selTipoDeudaEdit('educacion',this)" class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+        <button onclick="selTipoDeudaEdit('persona',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+        <button onclick="selTipoDeudaEdit('salud',this)"     class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+        <button onclick="selTipoDeudaEdit('otro',this)"      class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
       </div>
       <input type="hidden" id="ed-ti">
     </div>
@@ -1479,14 +1479,14 @@
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button onclick="selTipoDeuda('tarjeta',this)"   class="btn-tipo-deuda activo" class="ui-btn-tipo activo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
-        <button onclick="selTipoDeuda('credito',this)"   class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button onclick="selTipoDeuda('hipoteca',this)"  class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button onclick="selTipoDeuda('vehiculo',this)"  class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button onclick="selTipoDeuda('educacion',this)" class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button onclick="selTipoDeuda('persona',this)"   class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button onclick="selTipoDeuda('salud',this)"     class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button onclick="selTipoDeuda('otro',this)"      class="btn-tipo-deuda" class="ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        <button onclick="selTipoDeuda('tarjeta',this)"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
+        <button onclick="selTipoDeuda('credito',this)"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+        <button onclick="selTipoDeuda('hipoteca',this)"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+        <button onclick="selTipoDeuda('vehiculo',this)"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+        <button onclick="selTipoDeuda('educacion',this)" class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+        <button onclick="selTipoDeuda('persona',this)"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+        <button onclick="selTipoDeuda('salud',this)"     class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+        <button onclick="selTipoDeuda('otro',this)"      class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
       </div>
       <input type="hidden" id="dn-ti" value="tarjeta">
     </div>
