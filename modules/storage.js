@@ -287,7 +287,11 @@ export function loadData() {
 // Si el usuario cierra el tab dentro del debounce de 200ms, el timer
 // nunca dispara y se pierden los últimos datos. Estos dos eventos garantizan
 // que siempre se escribe antes de salir.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') _flushSave();
-});
-window.addEventListener('beforeunload', () => _flushSave());
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') _flushSave();
+  });
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => _flushSave());
+}
