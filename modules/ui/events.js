@@ -21,11 +21,8 @@ import {
   guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit
 } from '../dominio/compromisos.js';
 
-// ─── OBJETIVOS ───────────────────────────────────────────────────────────────
-import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from '../dominio/objetivos.js';
-
-// ─── INVERSIONES ─────────────────────────────────────────────────────────────
-import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from '../dominio/inversiones.js';
+// ─── METAS (objetivos + inversiones) ─────────────────────────────────────────
+import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos, guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from '../dominio/metas.js';
 
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
 import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/tesoreria.js';
