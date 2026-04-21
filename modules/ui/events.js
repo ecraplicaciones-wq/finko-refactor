@@ -11,11 +11,8 @@ import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../
 // ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
 import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar } from './sections.js';
 
-// ─── DASHBOARD ───────────────────────────────────────────────────────────────
-import { updateDash, calcScore, renderDashCuentas } from '../dominio/dashboard.js';
-
-// ─── GASTOS ──────────────────────────────────────────────────────────────────
-import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from '../dominio/gastos.js';
+// ─── INGRESOS (gastos + dashboard + resumen + historial) ─────────────────────
+import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga, updateDash, calcScore, renderDashCuentas, calcularResumen, generarConsejo, mostrarResumenQuincena, renderHistorial, delHistorial, cerrarQ } from '../dominio/ingresos.js';
 
 // ─── COMPROMISOS (fijos + agenda + deudas) ───────────────────────────────────
 import {
@@ -33,17 +30,8 @@ import { guardarInversion, renderInversiones, openRendimiento, guardarRendimient
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
 import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/tesoreria.js';
 
-// ─── HISTORIAL ───────────────────────────────────────────────────────────────
-// Solo funciones propias del historial — render, borrar, cerrar período.
-import { renderHistorial, delHistorial, cerrarQ } from '../dominio/historial.js';
-
 // ─── EXPORTACIÓN / IMPORTACIÓN ────────────────────────────────────────────────
-// Fuente canónica: exports.js tiene las versiones con versioning y validaciones.
-// historial.js tenía copias antiguas e inferiores — ya eliminadas.
 import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from '../dominio/exports.js';
-
-// ─── RESUMEN QUINCENAL ────────────────────────────────────────────────────────
-import { mostrarResumenQuincena, calcularResumen, generarConsejo } from '../dominio/resumen.js';
 
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
 import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/tesoreria.js';
