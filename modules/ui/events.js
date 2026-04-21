@@ -17,20 +17,18 @@ import { updateDash, calcScore, renderDashCuentas } from '../dominio/dashboard.j
 // ─── GASTOS ──────────────────────────────────────────────────────────────────
 import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga } from '../dominio/gastos.js';
 
-// ─── FIJOS ───────────────────────────────────────────────────────────────────
-import { guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo } from '../dominio/fijos.js';
-
-// ─── DEUDAS ──────────────────────────────────────────────────────────────────
-import { guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit } from '../dominio/deudas.js';
+// ─── COMPROMISOS (fijos + agenda + deudas) ───────────────────────────────────
+import {
+  guardarFijo, renderFijos, abrirModalFijo, cerrarModalFijo, ejecutarPagoFijo, desmFijo, delFijo,
+  renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos,
+  guardarDeuda, renderDeudas, setModoDeuda, abrirPagarCuota, confPagarCuota, abrirEditarDeuda, guardarEditarDeuda, delDeu, selTipoDeuda, selTipoDeudaEdit, selFrecDeuda, selFrecDeudaEdit
+} from '../dominio/compromisos.js';
 
 // ─── OBJETIVOS ───────────────────────────────────────────────────────────────
 import { guardarObjetivo, toggleTipoObjetivo, openNuevoObjetivo, renderObjetivos, abrirAccionObj, evaluarGastoEvento, ejecutarAccionObjetivo, delObjetivo, calcSimObj, populateSelectObjetivos } from '../dominio/objetivos.js';
 
 // ─── INVERSIONES ─────────────────────────────────────────────────────────────
 import { guardarInversion, renderInversiones, openRendimiento, guardarRendimiento, delInversion } from '../dominio/inversiones.js';
-
-// ─── AGENDA ──────────────────────────────────────────────────────────────────
-import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from '../dominio/agenda.js';
 
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
 import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/tesoreria.js';
