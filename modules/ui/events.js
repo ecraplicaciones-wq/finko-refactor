@@ -33,11 +33,8 @@ import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from '.
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
 import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/tesoreria.js';
 
-// ─── ESTADÍSTICAS ────────────────────────────────────────────────────────────
-import { renderStats } from '../dominio/stats.js';
-
-// ─── GAMIFICACIÓN ─────────────────────────────────────────────────────────────
-import { evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/logros.js';
+// ─── ANÁLISIS (stats + logros) ────────────────────────────────────────────────
+import { renderStats, evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/analisis.js';
 
 // ─── UI COMPONENTS ───────────────────────────────────────────────────────────
 import { toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './ui-components.js';
