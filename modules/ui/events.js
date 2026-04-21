@@ -33,7 +33,7 @@ import { guardarInversion, renderInversiones, openRendimiento, guardarRendimient
 import { renderCal, prevMonth, nextMonth, showDayDetails, guardarPago, marcarPagado, ejecutarPagoAgendado, delPago, renderPagos } from '../dominio/agenda.js';
 
 // ─── CUENTAS ─────────────────────────────────────────────────────────────────
-import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/cuentas.js';
+import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderCuentas, actualizarListasFondos, toggleFundSelect, selFundOpt } from '../dominio/tesoreria.js';
 
 // ─── HISTORIAL ───────────────────────────────────────────────────────────────
 // Solo funciones propias del historial — render, borrar, cerrar período.
@@ -48,7 +48,7 @@ import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from '.
 import { mostrarResumenQuincena, calcularResumen, generarConsejo } from '../dominio/resumen.js';
 
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
-import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/fondo.js';
+import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/tesoreria.js';
 
 // ─── ESTADÍSTICAS ────────────────────────────────────────────────────────────
 import { renderStats } from '../dominio/stats.js';

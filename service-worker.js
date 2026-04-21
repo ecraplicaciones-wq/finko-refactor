@@ -38,15 +38,11 @@ const PRECACHE_ASSETS = [
   './modules/dominio/objetivos.js',
   './modules/dominio/inversiones.js',
   './modules/dominio/agenda.js',
-  './modules/dominio/cuentas.js',
+  './modules/dominio/tesoreria.js',
   './modules/dominio/historial.js',
-  './modules/dominio/fondo.js',
   './modules/calculadoras.js',
   './modules/dominio/stats.js',
   './modules/ui/ui-components.js',
-  // ✅ Fix ①: faltaban — ahorrado.js lo importa render.js, exports.js lo
-  // importa historial.js. Sin ellos la app truena offline con error de módulo.
-  './modules/dominio/ahorrado.js',
   './modules/dominio/exports.js',
 
   // ─── Iconos para instalación PWA ───────────────────────────────────────────

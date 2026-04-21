@@ -1,6 +1,6 @@
 import { S } from '../core/state.js';
 import { f, mesStr, setEl }       from './utils.js';
-import { renderBolsillos }        from '../dominio/ahorrado.js';
+import { renderBolsillos }        from '../dominio/tesoreria.js';
 
 // ─── SALDO TOTAL ─────────────────────────────────────────────────────────────
 export function totalCuentas() {

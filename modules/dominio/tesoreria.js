@@ -1,57 +1,328 @@
+// ─── TESORERÍA ───────────────────────────────────────────────────────────────
+// Fusión de: cuentas.js + fondo.js + ahorrado.js
+// Dominio: gestión de fondos propios — cuentas bancarias, fondo de emergencia,
+//          y bolsillos de ahorro con propósito.
+
+// ─── IMPORTS ─────────────────────────────────────────────────────────────────
 import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
 import {
   f, he, hoy, setEl, setHtml,
-  openM, closeM, showAlert, showConfirm
+  openM, closeM, showAlert, showConfirm, showPrompt,
+  descontarFondo
 } from '../infra/utils.js';
-import { sr } from '../infra/a11y.js';
-import { BANCOS_CO } from '../core/constants.js';
-import { updSaldo }  from '../infra/render.js';
+import { sr }         from '../infra/a11y.js';
+import { BANCOS_CO }  from '../core/constants.js';
+import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 
-// ─── CATÁLOGO DE EMOJIS PARA BOLSILLOS ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUENTAS BANCARIAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── GUARDAR ─────────────────────────────────────────────────────────────────
+export function guardarCuenta() {
+  const banco = document.getElementById('cu-banco').value;
+  const alias = document.getElementById('cu-alias').value.trim();
+  const saldo = +document.getElementById('cu-saldo').value || 0;
+  if (!banco) return;
+
+  const info = BANCOS_CO.find(b => b.id === banco) || { id: banco, nombre: alias || banco, icono: '🏦', color: '#888' };
+  S.cuentas.push({ id: Date.now(), banco, nombre: alias || info.nombre, icono: info.icono, color: info.color, saldo });
+
+  closeM('m-cuenta');
+  save();
+  _renderAllCuentas();
+}
+
+// ─── ELIMINAR ────────────────────────────────────────────────────────────────
+export async function delCuenta(id) {
+  const c  = S.cuentas.find(x => x.id === id); if (!c) return;
+  const ok = await showConfirm(`⚠️ ¿Eliminar la cuenta "${he(c.nombre)}"?\n\nEsto restará su saldo de tu Total Disponible.`, 'Eliminar Cuenta');
+  if (!ok) return;
+  S.cuentas = S.cuentas.filter(x => x.id !== id);
+  save();
+  _renderAllCuentas();
+}
+
+// ─── EDITAR SALDO (pantalla cuentas sidebar) ─────────────────────────────────
+export async function editSaldoCuenta(id) {
+  const c = S.cuentas.find(x => x.id === id); if (!c) return;
+  const val = await showPrompt(`Saldo actual: ${f(c.saldo)}\n\nIngresa el nuevo saldo:`, `Editar ${c.nombre}`, c.saldo);
+  if (val === null) return;
+  c.saldo = Math.max(0, +val || 0);
+  save();
+  _renderAllCuentas();
+}
+
+// ─── EDITAR SALDO DESDE DASHBOARD ────────────────────────────────────────────
+export async function editSaldoCuentaDash(id) {
+  const c = S.cuentas.find(x => x.id === id); if (!c) return;
+  const nuevoNombre = await showPrompt(`Nombre actual: "${c.nombre}"\n\nCambia el nombre (o déjalo igual):`, `Editar cuenta`, c.nombre);
+  if (nuevoNombre === null) return;
+  if (nuevoNombre.trim()) c.nombre = nuevoNombre.trim();
+  const val = await showPrompt(`Saldo actual: ${f(c.saldo)}\n\nIngresa el nuevo saldo:`, `Saldo de ${c.nombre}`, c.saldo);
+  if (val === null) return;
+  c.saldo = Math.max(0, +val || 0);
+  save();
+  window.renderDashCuentas?.();
+  updSaldo();
+  window.updateDash?.();
+}
+
+// ─── RENDER SIDEBAR ──────────────────────────────────────────────────────────
+export function renderCuentas() {
+  const el = document.getElementById('cu-lst'); if (!el) return;
+  if (!S.cuentas.length) {
+    el.innerHTML = '<div class="tm" style="padding:8px 0">Sin cuentas. Agrega tus bancos o entidades.</div>';
+  } else {
+    el.innerHTML = S.cuentas.map(c => `
+      <div style="display:flex; align-items:center; gap:10px; padding:10px; background:var(--s2); border:1px solid var(--b1); border-radius:var(--r1); margin-bottom:6px;">
+        <span style="font-size:18px;">${c.icono}</span>
+        <div style="flex:1;">
+          <div>${he(c.nombre)}</div>
+          <div class="mono" style="color:${c.color || 'var(--a1)'};">${f(c.saldo)}</div>
+        </div>
+        <button class="btn bg bsm" onclick="editSaldoCuenta(${c.id})" title="Editar">✏️</button>
+        <button class="btn bd bsm" onclick="delCuenta(${c.id})">×</button>
+      </div>`).join('');
+  }
+  window.actualizarListasFondos?.();
+}
+
+// ─── LISTAS DE FONDOS PARA SELECTS ───────────────────────────────────────────
+export function actualizarListasFondos() {
+  const selectores = ['gf-fo', 'oa-fo', 'ag-fo', 'inv-fo', 'prm-fo', 'fe-fo', 'mf-fo'];
+  selectores.forEach(id => {
+    const sel = document.getElementById(id); if (!sel) return;
+    const valorActual = sel.value;
+    let opciones = `<option value="efectivo">💵 Efectivo (Disponible: ${f(S.saldos.efectivo)})</option>`;
+    if (S.cuentas && S.cuentas.length) {
+      opciones += S.cuentas.map(c => `<option value="cuenta_${c.id}">${c.icono} ${he(c.nombre)} (Disponible: ${f(c.saldo)})</option>`).join('');
+    } else {
+      opciones += `<option value="banco">🏦 Banco (General) (Disponible: ${f(S.saldos.banco)})</option>`;
+    }
+    if (id === 'inv-fo') opciones = '<option value="">No descontar (solo registrar)</option>' + opciones;
+    sel.innerHTML = opciones;
+    if (valorActual && sel.querySelector(`option[value="${valorActual}"]`)) sel.value = valorActual;
+  });
+
+  const fondosDisponibles = () => {
+    const lista = [{ value: 'efectivo', icon: '💵', nombre: 'Efectivo', tipo: 'Bolsillo personal', saldo: S.saldos.efectivo }];
+    if (S.cuentas && S.cuentas.length) {
+      S.cuentas.forEach(c => lista.push({ value: `cuenta_${c.id}`, icon: c.icono, nombre: he(c.nombre), tipo: 'Entidad bancaria', saldo: c.saldo }));
+    } else {
+      lista.push({ value: 'banco', icon: '🏦', nombre: 'Banco (General)', tipo: 'Fondo predeterminado', saldo: S.saldos.banco });
+    }
+    return lista;
+  };
+
+  ['g-fo', 'eg-fo', 'pgc-fo', 'cp-fo'].forEach(id => {
+    const wrap   = document.getElementById(id + '-wrap');
+    const hidden = document.getElementById(id);
+    if (!wrap || !hidden) return;
+    const optsEl = wrap.querySelector('.fund-sel-opts'); if (!optsEl) return;
+
+    const fondos = fondosDisponibles();
+    optsEl.innerHTML = fondos.map(fo => `
+      <div class="fund-sel-opt" onclick="selFundOpt('${id}','${fo.value}','${fo.icon}','${fo.nombre}',${fo.saldo})">
+        <span class="fund-sel-opt-icon">${fo.icon}</span>
+        <div class="fund-sel-opt-info">
+          <div class="fund-sel-opt-name">${fo.nombre}</div>
+          <div class="fund-sel-opt-bal">${f(fo.saldo)}</div>
+        </div>
+      </div>`).join('');
+
+    const actual  = fondos.find(fo => fo.value === hidden.value) || fondos[0];
+    if (!hidden.value) hidden.value = actual.value;
+    const trigger = wrap.querySelector('.fund-sel-trigger');
+    if (trigger) {
+      trigger.querySelector('.fund-sel-icon').textContent = actual.icon;
+      trigger.querySelector('.fund-sel-name').textContent = actual.nombre;
+      trigger.querySelector('.fund-sel-bal').textContent  = `Disponible: ${f(actual.saldo)}`;
+    }
+  });
+}
+
+export function toggleFundSelect(id) {
+  const wrap = document.getElementById(id + '-wrap'); if (!wrap) return;
+  document.querySelectorAll('.fund-sel-opts.open').forEach(el => {
+    if (el !== wrap.querySelector('.fund-sel-opts')) { el.classList.remove('open'); el.closest('.fund-select')?.querySelector('.fund-sel-trigger')?.classList.remove('open'); el.style.cssText = ''; }
+  });
+  const trigger = wrap.querySelector('.fund-sel-trigger');
+  const opts    = wrap.querySelector('.fund-sel-opts');
+  if (!trigger || !opts) return;
+  const yaAbierto = opts.classList.contains('open');
+  trigger.classList.toggle('open');
+  opts.classList.toggle('open');
+  if (!yaAbierto && opts.classList.contains('open') && wrap.closest('.modal')) {
+    const rect        = trigger.getBoundingClientRect();
+    const alturaOpts  = 280;
+    const espacioAbajo = window.innerHeight - rect.bottom;
+    const abrirArriba  = espacioAbajo < alturaOpts && rect.top > alturaOpts;
+    opts.style.position = 'fixed';
+    opts.style.left     = rect.left + 'px';
+    opts.style.width    = rect.width + 'px';
+    opts.style.zIndex   = '600';
+    opts.style.top      = abrirArriba ? (rect.top - alturaOpts) + 'px' : rect.bottom + 'px';
+  } else if (yaAbierto) { opts.style.cssText = ''; }
+}
+
+export function selFundOpt(id, value, icon, nombre, saldo) {
+  const wrap   = document.getElementById(id + '-wrap'); if (!wrap) return;
+  const hidden = document.getElementById(id); if (hidden) hidden.value = value;
+  const trigger = wrap.querySelector('.fund-sel-trigger');
+  if (trigger) {
+    trigger.querySelector('.fund-sel-icon').textContent = icon;
+    trigger.querySelector('.fund-sel-name').textContent = nombre;
+    trigger.querySelector('.fund-sel-bal').textContent  = saldo !== null ? `Disponible: ${f(saldo)}` : 'Solo registro';
+    trigger.classList.remove('open');
+  }
+  wrap.querySelector('.fund-sel-opts')?.classList.remove('open');
+  wrap.querySelectorAll('.fund-sel-opt').forEach(opt => opt.classList.remove('fso-sel'));
+  wrap.querySelectorAll('.fund-sel-check').forEach(el => el.remove());
+  const optSel = [...wrap.querySelectorAll('.fund-sel-opt')].find(opt => opt.querySelector('.fund-sel-opt-name')?.textContent === nombre);
+  if (optSel) { optSel.classList.add('fso-sel'); optSel.insertAdjacentHTML('beforeend', '<span class="fund-sel-check">✓</span>'); }
+}
+
+function _renderAllCuentas() {
+  renderCuentas();
+  window.renderDashCuentas?.();
+  S.saldos.banco = totalCuentas();
+  updSaldo();
+  window.updateDash?.();
+  window.actualizarListasFondos?.();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FONDO DE EMERGENCIA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CÁLCULO BASE ─────────────────────────────────────────────────────────────
+export function calcularFondoEmergencia() {
+  const gastoFijoMensual = (S.gastosFijos || []).reduce((acc, g) => {
+    const monto        = Number(g.monto) || 0;
+    const montoMensual = g.periodicidad === 'quincenal' ? monto * 2 : monto;
+    return acc + montoMensual;
+  }, 0);
+
+  const baseCalculo = gastoFijoMensual > 0
+    ? gastoFijoMensual
+    : S.ingreso * 0.6;
+
+  const mesesMeta            = S.fondoEmergencia?.objetivoMeses || 6;
+  const montoObjetivoTotal   = baseCalculo * mesesMeta;
+  const dineroActual         = Number(S.fondoEmergencia?.actual) || 0;
+  const faltaPorAhorrar      = Math.max(0, montoObjetivoTotal - dineroActual);
+  const porcentajeCompletado = montoObjetivoTotal > 0
+    ? Math.min((dineroActual / montoObjetivoTotal) * 100, 100)
+    : 0;
+  const mesesCubiertos = baseCalculo > 0 ? dineroActual / baseCalculo : 0;
+
+  return {
+    gastoMensualFijo:    baseCalculo,
+    montoObjetivoTotal,
+    actual:              dineroActual,
+    faltaPorAhorrar,
+    porcentajeCompletado: porcentajeCompletado.toFixed(1),
+    mesesCubiertos:       mesesCubiertos.toFixed(1)
+  };
+}
+
+// ─── RENDER / VISTA ──────────────────────────────────────────────────────────
+export function actualizarVistaFondo() {
+  const stats   = calcularFondoEmergencia();
+  const elMeses = document.getElementById('fe-meses-cobertura');
+  const elBarra = document.getElementById('fe-barra-progreso');
+
+  if (elMeses) elMeses.innerHTML = `<strong>${stats.mesesCubiertos}</strong> de ${S.fondoEmergencia?.objetivoMeses || 6} meses cubiertos`;
+  if (elBarra) elBarra.style.width = `${stats.porcentajeCompletado}%`;
+
+  setEl('fe-dinero-actual',   f(stats.actual));
+  setEl('fe-dinero-objetivo', f(stats.faltaPorAhorrar));
+}
+
+// ─── ABONO AL FONDO ──────────────────────────────────────────────────────────
+export async function registrarAbonoFondo() {
+  const inputAbono  = document.getElementById('fe-monto-abono');
+  const monto       = +(inputAbono?.value || 0);
+  const fondoOrigen = document.getElementById('fe-fo')?.value;
+
+  if (monto <= 0) { await showAlert('Ingresa un monto válido.', 'Inválido'); return; }
+
+  if (fondoOrigen) descontarFondo(fondoOrigen, monto);
+
+  S.gastos.unshift({
+    id:          Date.now(),
+    desc:        '🛡️ Abono Fondo Emergencia',
+    monto,
+    montoTotal:  monto,
+    cat:         'ahorro',
+    tipo:        'ahorro',
+    fondo:       fondoOrigen || 'banco',
+    hormiga:     false,
+    cuatroXMil:  false,
+    fecha:       hoy(),
+    metaId:      '',
+    autoFijo:    false
+  });
+
+  if (!S.fondoEmergencia) S.fondoEmergencia = { objetivoMeses: 6, actual: 0 };
+  S.fondoEmergencia.actual += monto;
+
+  if (inputAbono) inputAbono.value = '';
+  closeM('m-fondo-emergencia');
+  save();
+  actualizarVistaFondo();
+  renderSmart(['gastos', 'stats']);
+  await showAlert('¡Dinero blindado con éxito en tu Fondo de Emergencia! 🛡️', 'Fondo Actualizado');
+}
+
+// ─── ABRIR MODAL ─────────────────────────────────────────────────────────────
+export function abrirFondoEmergencia() {
+  window.actualizarListasFondos?.();
+  openM('m-fondo-emergencia');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOLSILLOS DE AHORRO
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const ICONOS_BOLS = [
   '🏠','✈️','🚗','📱','🎓','👶','💊','🛒','🎉','🐾',
   '💻','👗','🍔','⛽','💈','🏋️','🎮','📦','🛡️','🌱',
   '🎁','📚','🔧','🏥','🎵','🐶','🚌','🍕','👟','🌎'
 ];
 
-// ─── INICIALIZACIÓN DEFENSIVA ─────────────────────────────────────────────────
-// Si el usuario viene de una versión anterior sin bolsillos, no truena.
-function _init() {
+function _initBolsillos() {
   if (!Array.isArray(S.bolsillos)) S.bolsillos = [];
 }
 
 // ─── CÁLCULOS BASE ────────────────────────────────────────────────────────────
 
-/** Suma de todo lo que hay apartado en bolsillos. */
 export function totalBolsillos() {
-  _init();
+  _initBolsillos();
   return S.bolsillos.reduce((s, b) => s + (Number(b.monto) || 0), 0);
 }
 
-/** Plata que puedes gastar sin sentirte mal: saldo real menos lo apartado. */
 export function platoLibre() {
   const saldoReal = (S.saldos?.efectivo || 0) + (S.saldos?.banco || 0);
   return Math.max(0, saldoReal - totalBolsillos());
 }
 
-// ─── RENDER PRINCIPAL DE LA SECCIÓN ──────────────────────────────────────────
+// ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
 export function renderBolsillos() {
-  _init();
+  _initBolsillos();
 
   const total     = totalBolsillos();
   const libre     = platoLibre();
   const saldoReal = (S.saldos?.efectivo || 0) + (S.saldos?.banco || 0);
 
-  // ── Actualizar resúmenes del header de la sección ──
   setEl('bols-total-ap',  f(total));
   setEl('bols-libre-txt', f(libre));
   setEl('bols-count-txt', `${S.bolsillos.length} bolsillo${S.bolsillos.length !== 1 ? 's' : ''} activo${S.bolsillos.length !== 1 ? 's' : ''}`);
 
-  // ── Actualizar también en el Dashboard ──
   setEl('d-bols-ap', f(total));
   setEl('d-libre',   f(libre));
-  // Barra del dashboard
   const dBolsBarra = document.getElementById('d-bols-barra');
   if (dBolsBarra) {
     const pctAp = saldoReal > 0 ? Math.min((total / saldoReal) * 100, 100) : 0;
@@ -61,7 +332,6 @@ export function renderBolsillos() {
   const cont = document.getElementById('bols-lista');
   if (!cont) return;
 
-  // ── Estado vacío ──
   if (!S.bolsillos.length) {
     cont.innerHTML = `
       <div class="emp" style="padding:40px 16px; text-align:center;">
@@ -82,7 +352,6 @@ export function renderBolsillos() {
     return;
   }
 
-  // ── Barra de distribución global ──
   const pctApartado = saldoReal > 0 ? Math.min((total / saldoReal) * 100, 100) : 0;
   const pctLibre    = Math.max(0, 100 - pctApartado);
 
@@ -122,22 +391,18 @@ export function renderBolsillos() {
       </div>
     </div>`;
 
-  // ── Tarjetas de cada bolsillo ──
   html += S.bolsillos.map(b => {
     const banco    = BANCOS_CO.find(x => x.id === b.banco) || { icono: '🏦', nombre: 'Otro banco', color: '#888888' };
     const color    = b.color || banco.color || 'var(--a2)';
     const pctReal  = saldoReal > 0 ? Math.min((b.monto / saldoReal) * 100, 100).toFixed(1) : '0.0';
     const pctDeBols = total > 0 ? Math.min((b.monto / total) * 100, 100).toFixed(0) : '0';
-    const ultimaMov = b.movimientos?.length
-      ? b.movimientos[0]
-      : null;
+    const ultimaMov = b.movimientos?.length ? b.movimientos[0] : null;
 
     return `
     <article class="card mb"
              style="border-left:4px solid ${color}; padding:16px 16px 12px;"
              aria-label="Bolsillo ${he(b.nombre)}: ${f(b.monto)} guardados en ${banco.nombre}">
 
-      <!-- Encabezado del bolsillo -->
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px;">
         <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
           <div style="font-size:32px; line-height:1; flex-shrink:0;"
@@ -169,7 +434,6 @@ export function renderBolsillos() {
         </div>
       </div>
 
-      <!-- Barra de progreso del bolsillo -->
       <div class="pw" style="height:6px; border-radius:999px; margin-bottom:12px;"
            role="progressbar" aria-valuenow="${pctReal}" aria-valuemin="0" aria-valuemax="100"
            aria-label="${pctReal}% de tu saldo total">
@@ -177,7 +441,6 @@ export function renderBolsillos() {
                                 transition:width .5s ease;"></div>
       </div>
 
-      <!-- Último movimiento -->
       ${ultimaMov ? `
       <div style="font-size:10px; color:var(--t3); margin-bottom:12px; padding:6px 10px;
                   background:var(--s2); border-radius:6px;">
@@ -186,7 +449,6 @@ export function renderBolsillos() {
         ${ultimaMov.nota ? `· "${he(ultimaMov.nota)}"` : ''}
       </div>` : ''}
 
-      <!-- Acciones -->
       <div style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
         <button class="btn bg bsm"
                 onclick="abrirAbonarBolsillo(${b.id})"
@@ -212,17 +474,13 @@ export function renderBolsillos() {
 
 // ─── ABRIR MODAL: NUEVO BOLSILLO ─────────────────────────────────────────────
 export function abrirNuevoBolsillo() {
-  // Limpiar campos
   ['bols-nombre', 'bols-monto-ini', 'bols-desc'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  // Ícono por defecto
   const iconVal = document.getElementById('bols-icono-val');
   if (iconVal) iconVal.value = '🪙';
-  // Renderizar grid de íconos
   renderIconosBolsillo();
-  // Poblar bancos
   _poblarSelectBancos('bols-banco');
   openM('m-nuevo-bolsillo');
   sr('Modal: Crear nuevo bolsillo');
@@ -230,7 +488,7 @@ export function abrirNuevoBolsillo() {
 
 // ─── GUARDAR NUEVO BOLSILLO ───────────────────────────────────────────────────
 export async function guardarNuevoBolsillo() {
-  _init();
+  _initBolsillos();
 
   const nombre = document.getElementById('bols-nombre')?.value.trim();
   const monto  = +(document.getElementById('bols-monto-ini')?.value || 0);
@@ -279,7 +537,7 @@ export async function guardarNuevoBolsillo() {
 
 // ─── ABRIR MODAL: ABONAR ─────────────────────────────────────────────────────
 export function abrirAbonarBolsillo(id) {
-  _init();
+  _initBolsillos();
   const b = S.bolsillos.find(x => x.id === id);
   if (!b) return;
   _prepModalMov(id, 'abono', `Guardar plata en "${b.nombre}"`, b);
@@ -289,7 +547,7 @@ export function abrirAbonarBolsillo(id) {
 
 // ─── ABRIR MODAL: RETIRAR ─────────────────────────────────────────────────────
 export function abrirRetirarBolsillo(id) {
-  _init();
+  _initBolsillos();
   const b = S.bolsillos.find(x => x.id === id);
   if (!b) return;
   _prepModalMov(id, 'retiro', `Sacar plata de "${b.nombre}"`, b);
@@ -297,7 +555,6 @@ export function abrirRetirarBolsillo(id) {
   sr(`Modal: retirar del bolsillo ${b.nombre}`);
 }
 
-// Prepara el modal de movimiento con contexto limpio
 function _prepModalMov(id, tipo, titulo, b) {
   setEl('bols-mov-titulo', titulo);
   const fields = { 'bols-mov-id': id, 'bols-mov-tipo': tipo, 'bols-mov-monto': '', 'bols-mov-nota': '' };
@@ -306,7 +563,6 @@ function _prepModalMov(id, tipo, titulo, b) {
     if (el) el.value = val;
   });
   _poblarSelectBancos('bols-mov-banco');
-  // Contexto: saldo actual del bolsillo
   setHtml('bols-mov-ctx', b ? `
     <div style="background:var(--s2); border-radius:8px; padding:10px 12px; margin-bottom:14px;
                 display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
@@ -317,7 +573,7 @@ function _prepModalMov(id, tipo, titulo, b) {
 
 // ─── CONFIRMAR MOVIMIENTO (abono o retiro) ────────────────────────────────────
 export async function confirmarMovBolsillo() {
-  _init();
+  _initBolsillos();
 
   const id    = +document.getElementById('bols-mov-id')?.value;
   const tipo  = document.getElementById('bols-mov-tipo')?.value;
@@ -347,8 +603,7 @@ export async function confirmarMovBolsillo() {
       `¡${f(monto)} guardados en el bolsillo "${b.nombre}"! 💪\n\nAhora tienes ${f(b.monto)} ahí apartados.`,
       'Abono exitoso ✅'
     );
-
-  } else { // retiro
+  } else {
     if (monto > b.monto) {
       await showAlert(
         `En el bolsillo "${b.nombre}" solo hay ${f(b.monto)}. No puedes retirar ${f(monto)}.\n\nBaja el monto o retira todo.`,
@@ -373,7 +628,7 @@ export async function confirmarMovBolsillo() {
 
 // ─── ELIMINAR BOLSILLO ────────────────────────────────────────────────────────
 export async function eliminarBolsillo(id) {
-  _init();
+  _initBolsillos();
   const b = S.bolsillos.find(x => x.id === id);
   if (!b) return;
 
@@ -426,7 +681,6 @@ export function selIconoBolsillo(icono, btn) {
   btn.setAttribute('aria-pressed', 'true');
 }
 
-// ─── HELPER PRIVADO: POBLAR <SELECT> DE BANCOS ───────────────────────────────
 function _poblarSelectBancos(selectId) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
@@ -436,7 +690,27 @@ function _poblarSelectBancos(selectId) {
   ].join('');
 }
 
-// ─── EXPOSICIÓN GLOBAL (onclick desde HTML) ───────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPOSICIÓN GLOBAL (onclick desde HTML)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// cuentas
+window.guardarCuenta          = guardarCuenta;
+window.delCuenta              = delCuenta;
+window.editSaldoCuenta        = editSaldoCuenta;
+window.editSaldoCuentaDash    = editSaldoCuentaDash;
+window.renderCuentas          = renderCuentas;
+window.actualizarListasFondos = actualizarListasFondos;
+window.toggleFundSelect       = toggleFundSelect;
+window.selFundOpt             = selFundOpt;
+
+// fondo de emergencia
+window.calcularFondoEmergencia = calcularFondoEmergencia;
+window.actualizarVistaFondo    = actualizarVistaFondo;
+window.registrarAbonoFondo     = registrarAbonoFondo;
+window.abrirFondoEmergencia    = abrirFondoEmergencia;
+
+// bolsillos
 window.totalBolsillos       = totalBolsillos;
 window.platoLibre           = platoLibre;
 window.renderBolsillos      = renderBolsillos;
