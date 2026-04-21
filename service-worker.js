@@ -28,6 +28,7 @@ const PRECACHE_ASSETS = [
   './modules/core/storage.js',
   './modules/core/constants.js',
   './modules/infra/utils.js',
+  './modules/infra/a11y.js',
   './modules/infra/render.js',
   './modules/ui/sections.js',
   './modules/dominio/dashboard.js',

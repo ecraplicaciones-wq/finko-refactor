@@ -1,3 +1,5 @@
+import { FOCUSABLE_SEL, getFocusable, installTrap, removeTrap } from './a11y.js';
+
 // ─── FORMATO Y FECHAS ─────────────────────────────────────────────────────────
 export function f(n) {
   return '$' + Math.round(n || 0).toLocaleString('es-CO');
@@ -35,71 +37,6 @@ export function setHtml(id, v) {
   if (e) e.innerHTML = v;
 }
 
-export function sr(msg) {
-  const el = document.getElementById('sr-announcer');
-  if (!el) return;
-  el.textContent = '';
-  requestAnimationFrame(() => { el.textContent = msg; });
-}
-
-// ─── FOCUS TRAP (WCAG 2.1 — criterio 2.1.2: Sin trampa del teclado) ─────────
-// Garantiza que Tab y Shift+Tab no salgan del modal activo, y que Escape lo
-// cierre. Aplica a todos los modales de openM() y a los diálogos asíncronos.
-
-const _FOCUSABLE_SEL = [
-  'button:not([disabled])', '[href]', 'input:not([disabled])',
-  'select:not([disabled])', 'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])'
-].join(',');
-
-function _getFocusable(container) {
-  // offsetWidth/Height filtran elementos con display:none o visibility:hidden
-  return Array.from(container.querySelectorAll(_FOCUSABLE_SEL))
-    .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0 && !el.hidden);
-}
-
-let _activeTrapFn = null;
-
-/**
- * Instala la trampa de foco sobre `container`.
- * @param {HTMLElement} container - El elemento modal activo.
- * @param {Function}    [onEscape] - Callback para la tecla Escape.
- *   Si se omite, se llama closeM(container.id).
- */
-function _installTrap(container, onEscape) {
-  _removeTrap();
-  _activeTrapFn = e => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      if (onEscape) onEscape();
-      else closeM(container.id);
-      return;
-    }
-    if (e.key !== 'Tab') return;
-    const els = _getFocusable(container);
-    if (!els.length) { e.preventDefault(); return; }
-    const first = els[0];
-    const last  = els[els.length - 1];
-    const active = document.activeElement;
-    // Si el foco escapó del modal (p.ej. click en overlay), lo reencuadramos
-    if (!container.contains(active)) {
-      e.preventDefault();
-      (e.shiftKey ? last : first).focus();
-      return;
-    }
-    if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
-  };
-  document.addEventListener('keydown', _activeTrapFn);
-}
-
-function _removeTrap() {
-  if (_activeTrapFn) {
-    document.removeEventListener('keydown', _activeTrapFn);
-    _activeTrapFn = null;
-  }
-}
-
 // ─── MODALES ─────────────────────────────────────────────────────────────────
 let _lastFocused = null;
 
@@ -109,11 +46,11 @@ export function openM(id) {
   if (!modal) return;
   modal.classList.add('open');
   requestAnimationFrame(() => {
-    const focusable = modal.querySelector(_FOCUSABLE_SEL);
+    const focusable = modal.querySelector(FOCUSABLE_SEL);
     if (focusable) focusable.focus();
     // Instala el trap DESPUÉS de mover el foco inicial para evitar
     // que el propio focus() dispare el handler prematuramente.
-    _installTrap(modal);
+    installTrap(modal, () => closeM(modal.id));
   });
 }
 
@@ -123,7 +60,7 @@ export function closeM(id) {
   modal.classList.remove('open');
   // Libera el trap antes de restaurar el foco para que el evento
   // de foco saliente no sea interceptado por el handler.
-  _removeTrap();
+  removeTrap();
   if (_lastFocused && typeof _lastFocused.focus === 'function') {
     _lastFocused.focus();
     _lastFocused = null;
@@ -149,7 +86,7 @@ if (typeof window !== 'undefined') {
     document.getElementById('cdlg-cancel').style.display = '';
     document.getElementById('cdlg-input').style.border = '';
     // Libera el trap de foco al cerrar el diálogo asíncrono
-    _removeTrap();
+    removeTrap();
     if (_cdlgPromptMode) {
       const v = document.getElementById('cdlg-input').value;
       if (_cdlgResolve) _cdlgResolve(ok ? v : null);
@@ -170,8 +107,8 @@ export function showConfirm(msg, title = 'Confirmar') {
     ov.classList.add('open');
     // Escape en Confirmar = cancelar (mismo que presionar "No")
     requestAnimationFrame(() => {
-      const first = _getFocusable(ov)[0]; if (first) first.focus();
-      _installTrap(ov, () => window._cdlgRes(false));
+      const first = getFocusable(ov)[0]; if (first) first.focus();
+      installTrap(ov, () => window._cdlgRes(false));
     });
   });
 }
@@ -186,8 +123,8 @@ export function showAlert(msg, title = 'Aviso') {
     ov.classList.add('open');
     // Escape en Aviso = confirmar (no hay botón cancelar, Escape cierra)
     requestAnimationFrame(() => {
-      const first = _getFocusable(ov)[0]; if (first) first.focus();
-      _installTrap(ov, () => window._cdlgRes(true));
+      const first = getFocusable(ov)[0]; if (first) first.focus();
+      installTrap(ov, () => window._cdlgRes(true));
     });
   });
 }
@@ -202,7 +139,7 @@ export function showPromptConfirm(msg, exp, title = 'Peligro') {
     ov.classList.add('open');
     requestAnimationFrame(() => {
       const inp = document.getElementById('cdlg-input'); if (inp) inp.focus();
-      _installTrap(ov, () => window._cdlgRes(false));
+      installTrap(ov, () => window._cdlgRes(false));
     });
   });
 }
@@ -220,7 +157,7 @@ export function showPrompt(msg, title = 'Editar', valorInicial = '') {
     // Foco en el input, luego instala el trap
     setTimeout(() => {
       inp.focus();
-      _installTrap(ov, () => window._cdlgRes(false));
+      installTrap(ov, () => window._cdlgRes(false));
     }, 80);
   });
 }

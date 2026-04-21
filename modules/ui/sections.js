@@ -1,5 +1,5 @@
 import { S } from '../core/state.js';
-import { sr } from '../infra/utils.js';
+import { sr } from '../infra/a11y.js';
 
 // ─── LAZY LOAD DE CALCULADORAS ────────────────────────────────────────────────
 // calculadoras.js solo se usa en la sección "Plan" (quin).
