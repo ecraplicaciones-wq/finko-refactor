@@ -3,6 +3,7 @@ import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
 import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo } from '../infra/utils.js';
 import { renderSmart } from '../infra/render.js';
+import { registerAction } from '../ui/events.js';
 
 // ═══ OBJETIVOS ════════════════════════════════════════════════════════════════
 
@@ -413,6 +414,23 @@ export async function delInversion(id) {
   S.inversiones = S.inversiones.filter(x => x.id !== id);
   save(); renderInversiones();
 }
+
+// ─── REGISTRO DE ACCIONES ─────────────────────────────────────────────────────
+registerAction('guardarObjetivo',         () => guardarObjetivo());
+registerAction('toggleTipoObjetivo',      ({ tipo }) => toggleTipoObjetivo(tipo));
+registerAction('openNuevoObjetivo',       () => openNuevoObjetivo());
+registerAction('renderObjetivos',         () => renderObjetivos());
+registerAction('abrirAccionObj',          ({ id }) => abrirAccionObj(id));
+registerAction('evaluarGastoEvento',      () => evaluarGastoEvento());
+registerAction('ejecutarAccionObjetivo',  ({ id }) => ejecutarAccionObjetivo(id));
+registerAction('delObjetivo',             ({ id }) => delObjetivo(id));
+registerAction('calcSimObj',              () => calcSimObj());
+registerAction('populateSelectObjetivos', () => populateSelectObjetivos());
+registerAction('guardarInversion',        () => guardarInversion());
+registerAction('renderInversiones',       () => renderInversiones());
+registerAction('openRendimiento',         ({ id }) => openRendimiento(id));
+registerAction('guardarRendimiento',      () => guardarRendimiento());
+registerAction('delInversion',            ({ id }) => delInversion(id));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 window.guardarObjetivo         = guardarObjetivo;

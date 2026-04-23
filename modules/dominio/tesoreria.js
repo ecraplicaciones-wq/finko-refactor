@@ -14,6 +14,7 @@ import {
 import { sr }         from '../infra/a11y.js';
 import { BANCOS_CO }  from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
+import { registerAction } from '../ui/events.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CUENTAS BANCARIAS
@@ -689,6 +690,37 @@ function _poblarSelectBancos(selectId) {
     ...BANCOS_CO.map(b => `<option value="${b.id}">${b.icono} ${b.nombre}</option>`)
   ].join('');
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGISTRO DE ACCIONES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// cuentas
+registerAction('guardarCuenta',          () => guardarCuenta());
+registerAction('delCuenta',              ({ id }) => delCuenta(id));
+registerAction('editSaldoCuenta',        ({ id }) => editSaldoCuenta(id));
+registerAction('editSaldoCuentaDash',    ({ id }) => editSaldoCuentaDash(id));
+registerAction('renderCuentas',          () => renderCuentas());
+registerAction('actualizarListasFondos', () => actualizarListasFondos());
+registerAction('toggleFundSelect',       ({ id }) => toggleFundSelect(id));
+registerAction('selFundOpt',             ({ id }) => selFundOpt(id));
+// fondo de emergencia
+registerAction('calcularFondoEmergencia', () => calcularFondoEmergencia());
+registerAction('actualizarVistaFondo',    () => actualizarVistaFondo());
+registerAction('registrarAbonoFondo',     () => registrarAbonoFondo());
+registerAction('abrirFondoEmergencia',    () => abrirFondoEmergencia());
+// bolsillos
+registerAction('totalBolsillos',       () => totalBolsillos());
+registerAction('platoLibre',           () => platoLibre());
+registerAction('renderBolsillos',      () => renderBolsillos());
+registerAction('abrirNuevoBolsillo',   () => abrirNuevoBolsillo());
+registerAction('guardarNuevoBolsillo', () => guardarNuevoBolsillo());
+registerAction('abrirAbonarBolsillo',  ({ id }) => abrirAbonarBolsillo(id));
+registerAction('abrirRetirarBolsillo', ({ id }) => abrirRetirarBolsillo(id));
+registerAction('confirmarMovBolsillo', () => confirmarMovBolsillo());
+registerAction('eliminarBolsillo',     ({ id }) => eliminarBolsillo(id));
+registerAction('renderIconosBolsillo', () => renderIconosBolsillo());
+registerAction('selIconoBolsillo',     ({ icon }) => selIconoBolsillo(icon));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)

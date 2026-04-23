@@ -4,6 +4,7 @@ import { save }     from '../core/storage.js';
 import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo } from '../infra/utils.js';
 import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
+import { registerAction } from '../ui/events.js';
 
 let _filtroGasto = '';
 
@@ -1103,6 +1104,34 @@ export function delHistorial(id) {
   save();
   renderHistorial();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGISTRO DE ACCIONES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// gastos
+registerAction('agregarGasto',           () => agregarGasto());
+registerAction('delGasto',               ({ id }) => delGasto(id));
+registerAction('abrirEditarGasto',       ({ id }) => abrirEditarGasto(id));
+registerAction('guardarEditarGasto',     () => guardarEditarGasto());
+registerAction('limpiarGastos',          () => limpiarGastos());
+registerAction('setFiltroGasto',         ({ tipo }) => setFiltroGasto(tipo));
+registerAction('renderGastos',           () => renderGastos());
+registerAction('prev4k',                 () => prev4k());
+registerAction('actualizarSemaforo',     () => actualizarSemaforo());
+registerAction('calcularImpactoHormiga', () => calcularImpactoHormiga());
+// dashboard
+registerAction('updateDash',             () => updateDash());
+registerAction('calcScore',              () => calcScore());
+registerAction('renderDashCuentas',      () => renderDashCuentas());
+// resumen
+registerAction('mostrarResumenQuincena', () => mostrarResumenQuincena());
+registerAction('calcularResumen',        () => calcularResumen());
+registerAction('generarConsejo',         () => generarConsejo());
+// historial
+registerAction('renderHistorial',        () => renderHistorial());
+registerAction('delHistorial',           ({ id }) => delHistorial(id));
+registerAction('cerrarQ',               () => cerrarQ());
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL

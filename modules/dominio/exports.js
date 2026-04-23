@@ -2,6 +2,7 @@ import { S }    from '../core/state.js';
 import { save, CURRENT_VERSION, medirUso } from '../core/storage.js';
 import { f, hoy } from '../infra/utils.js';
 import { CATS, GMF_TASA } from '../core/constants.js';
+import { registerAction } from '../ui/events.js';
 
 // ─── EXPORTAR JSON (RESPALDO COMPLETO) ───────────────────────────────────────
 export function exportarDatos() {
@@ -278,6 +279,13 @@ export function generarReporteHTML() {
       </table>
     </div>`;
 }
+
+// ─── REGISTRO DE ACCIONES ─────────────────────────────────────────────────────
+registerAction('exportarDatos',       () => exportarDatos());
+registerAction('importarDatos',       () => importarDatos());
+registerAction('exportarCSV',         () => exportarCSV());
+registerAction('descargarCSVDirecto', () => exportarCSV());
+registerAction('generarReporteHTML',  () => generarReporteHTML());
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 window.exportarDatos       = exportarDatos;

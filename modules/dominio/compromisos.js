@@ -13,6 +13,7 @@ import {
 } from '../infra/utils.js';
 import { CATS, GMF_TASA, TASA_USURA_EA } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
+import { registerAction } from '../ui/events.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS FIJOS RECURRENTES
@@ -1168,6 +1169,42 @@ function _renderAvisosDeudas(pct, totD) {
 
   avisosEl.innerHTML = avisos.join('');
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGISTRO DE ACCIONES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// fijos
+registerAction('guardarFijo',      () => guardarFijo());
+registerAction('renderFijos',      () => renderFijos());
+registerAction('abrirModalFijo',   () => abrirModalFijo());
+registerAction('cerrarModalFijo',  () => cerrarModalFijo());
+registerAction('ejecutarPagoFijo', ({ id }) => ejecutarPagoFijo(id));
+registerAction('desmFijo',         ({ id }) => desmFijo(id));
+registerAction('delFijo',          ({ id }) => delFijo(id));
+// agenda
+registerAction('renderCal',              () => renderCal());
+registerAction('prevMonth',              () => prevMonth());
+registerAction('nextMonth',              () => nextMonth());
+registerAction('showDayDetails',         ({ fecha }) => showDayDetails(fecha));
+registerAction('guardarPago',            () => guardarPago());
+registerAction('marcarPagado',           ({ id }) => marcarPagado(id));
+registerAction('ejecutarPagoAgendado',   ({ id }) => ejecutarPagoAgendado(id));
+registerAction('delPago',                ({ id }) => delPago(id));
+registerAction('renderPagos',            () => renderPagos());
+// deudas
+registerAction('guardarDeuda',       () => guardarDeuda());
+registerAction('renderDeudas',       () => renderDeudas());
+registerAction('setModoDeuda',       ({ modo }) => setModoDeuda(modo));
+registerAction('abrirPagarCuota',    ({ id }) => abrirPagarCuota(id));
+registerAction('confPagarCuota',     () => confPagarCuota());
+registerAction('abrirEditarDeuda',   ({ id }) => abrirEditarDeuda(id));
+registerAction('guardarEditarDeuda', () => guardarEditarDeuda());
+registerAction('delDeu',             ({ id }) => delDeu(id));
+registerAction('selTipoDeuda',       ({ tipo }) => selTipoDeuda(tipo));
+registerAction('selTipoDeudaEdit',   ({ tipo }) => selTipoDeudaEdit(tipo));
+registerAction('selFrecDeuda',       ({ frec }) => selFrecDeuda(frec));
+registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
