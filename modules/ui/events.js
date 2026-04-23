@@ -8,8 +8,8 @@ import { f, hoy, mesStr, he, setEl, setHtml, openM, closeM, showAlert, showConfi
 import { sr } from '../infra/a11y.js';
 import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../infra/render.js';
 
-// ─── NAVEGACIÓN ──────────────────────────────────────────────────────────────
-import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar } from './sections.js';
+// ─── NAVEGACIÓN + UI SHELL ───────────────────────────────────────────────────
+import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './shell.js';
 
 // ─── INGRESOS (gastos + dashboard + resumen + historial) ─────────────────────
 import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga, updateDash, calcScore, renderDashCuentas, calcularResumen, generarConsejo, mostrarResumenQuincena, renderHistorial, delHistorial, cerrarQ } from '../dominio/ingresos.js';
@@ -35,9 +35,6 @@ import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } fr
 
 // ─── ANÁLISIS (stats + logros) ────────────────────────────────────────────────
 import { renderStats, evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/analisis.js';
-
-// ─── UI COMPONENTS ───────────────────────────────────────────────────────────
-import { toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './ui-components.js';
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 
