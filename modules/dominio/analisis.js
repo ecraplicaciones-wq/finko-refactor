@@ -2,6 +2,7 @@ import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
 import { f, hoy, setEl, setHtml } from '../infra/utils.js';
 import { CATS, CCOLORS } from '../core/constants.js';
+import { registerAction } from '../ui/events.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ═══ ESTADÍSTICAS ═══
@@ -737,6 +738,14 @@ export function renderLogros() {
   // Marcar todos los logros actuales como vistos
   S.logros.vistos = [...desbloqueados];
 }
+
+// ─── REGISTRO DE ACCIONES ─────────────────────────────────────────────────────
+registerAction('renderStats',          () => renderStats());
+registerAction('calcDistribucionReal', () => calcDistribucionReal());
+registerAction('evaluarLogros',        () => evaluarLogros());
+registerAction('renderLogros',         () => renderLogros());
+registerAction('renderRachaWidget',    () => renderRachaWidget());
+registerAction('calcularRachas',       () => calcularRachas());
 
 // ─── EXPOSICIÓN GLOBAL ────────────────────────────────────────────────────────
 window.renderStats           = renderStats;
