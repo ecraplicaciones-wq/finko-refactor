@@ -36,6 +36,44 @@ import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } fr
 // ─── ANÁLISIS (stats + logros) ────────────────────────────────────────────────
 import { renderStats, evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/analisis.js';
 
+// ─── SISTEMA DE DELEGACIÓN CON data-action ───────────────────────────────────
+
+const ACTIONS = new Map();
+
+export function registerAction(name, fn) {
+  ACTIONS.set(name, fn);
+}
+
+// Delegación global de clicks
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+
+  const action = el.dataset.action;
+  const fn = ACTIONS.get(action);
+
+  if (!fn) {
+    console.warn('Acción no registrada:', action);
+    return;
+  }
+
+  // Extraer argumentos de data-arg-*
+  const args = {};
+  Array.from(el.attributes).forEach(attr => {
+    if (attr.name.startsWith('data-arg-')) {
+      const key = attr.name.replace('data-arg-', '');
+      args[key] = attr.value;
+    }
+  });
+
+  fn(args, el, e);
+});
+
+// === INIT: registrar acciones desde módulos ===
+export function initActions() {
+  // Los módulos llamarán registerAction() en su init
+}
+
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 
 // utils
