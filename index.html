@@ -296,7 +296,7 @@
     <div class="card mb">
       <button id="btn-dash-resumen"
               class="dash-card-toggle"
-              onclick="toggleDashCard('resumen')"
+              data-action="toggleDashCard" data-arg-key="resumen"
               aria-expanded="false"
               aria-controls="dash-resumen-body">
         <span class="ct" style="margin:0;">📊 Cómo va el período</span>
@@ -344,7 +344,7 @@
     <div class="card mb">
       <button id="btn-dash-patrimonio"
               class="dash-card-toggle"
-              onclick="toggleDashCard('patrimonio')"
+              data-action="toggleDashCard" data-arg-key="patrimonio"
               aria-expanded="false"
               aria-controls="dash-patrimonio-body">
         <span class="ct" style="margin:0;">💼 Patrimonio y metas</span>
@@ -381,7 +381,7 @@
     <div class="card mb">
       <button id="btn-dash-movimientos"
               class="dash-card-toggle"
-              onclick="toggleDashCard('movimientos')"
+              data-action="toggleDashCard" data-arg-key="movimientos"
               aria-expanded="false"
               aria-controls="dash-movimientos-body">
         <span class="ct" style="margin:0;">🕐 Últimos movimientos</span>

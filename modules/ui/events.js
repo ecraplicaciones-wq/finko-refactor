@@ -9,7 +9,7 @@ import { sr } from '../infra/a11y.js';
 import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../infra/render.js';
 
 // ─── NAVEGACIÓN + UI SHELL ───────────────────────────────────────────────────
-import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside } from './shell.js';
+import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside, toggleDashCard } from './shell.js';
 
 // ─── INGRESOS (gastos + dashboard + resumen + historial) ─────────────────────
 import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga, updateDash, calcScore, renderDashCuentas, calcularResumen, generarConsejo, mostrarResumenQuincena, renderHistorial, delHistorial, cerrarQ } from '../dominio/ingresos.js';
@@ -73,6 +73,9 @@ document.addEventListener('click', (e) => {
 export function initActions() {
   // Los módulos llamarán registerAction() en su init
 }
+
+// ─── ACCIONES DE SHELL (sin circular dependency) ──────────────────────────────
+registerAction('toggleDashCard', ({ key }) => toggleDashCard(key));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 

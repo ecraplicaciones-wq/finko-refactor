@@ -747,4 +747,3 @@ window.toggleTheme         = toggleTheme;
 window.applyTheme          = applyTheme;
 window.getPreferredTheme   = getPreferredTheme;
 window.initTheme           = initTheme;
-window.toggleDashCard      = toggleDashCard;
