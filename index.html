@@ -619,12 +619,12 @@
               <div class="srch"><span>🔍</span><input type="text" id="g-search" placeholder="Buscar..." aria-label="Buscar en tus gastos" onkeyup="renderGastos()"></div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" role="group" aria-label="Filtrar por tipo">
-              <button onclick="setFiltroGasto('',this)"          class="gfil active-fil pill pg" aria-pressed="true"  style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:800;border:none;">Todos</button>
-              <button onclick="setFiltroGasto('necesidad',this)" class="gfil pill pb"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Necesidad</button>
-              <button onclick="setFiltroGasto('deseo',this)"     class="gfil pill py"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Deseo</button>
-              <button onclick="setFiltroGasto('hormiga',this)"   class="gfil pill"               aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;background:rgba(121,85,72,.12);color:#a1887f;border:1px solid rgba(121,85,72,.2);">🐜 Hormiga</button>
-              <button onclick="setFiltroGasto('ahorro',this)"    class="gfil pill pg"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Ahorro</button>
-              <button onclick="setFiltroGasto('4x1000',this)"    class="gfil pill pt"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">4×1000</button>
+              <button data-action="setFiltroGasto" data-arg-tipo=""         class="gfil active-fil pill pg" aria-pressed="true"  style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:800;border:none;">Todos</button>
+              <button data-action="setFiltroGasto" data-arg-tipo="necesidad" class="gfil pill pb"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Necesidad</button>
+              <button data-action="setFiltroGasto" data-arg-tipo="deseo"     class="gfil pill py"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Deseo</button>
+              <button data-action="setFiltroGasto" data-arg-tipo="hormiga"   class="gfil pill"               aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;background:rgba(121,85,72,.12);color:#a1887f;border:1px solid rgba(121,85,72,.2);">🐜 Hormiga</button>
+              <button data-action="setFiltroGasto" data-arg-tipo="ahorro"    class="gfil pill pg"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">Ahorro</button>
+              <button data-action="setFiltroGasto" data-arg-tipo="4x1000"    class="gfil pill pt"            aria-pressed="false" style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:600;border:none;opacity:.65;">4×1000</button>
             </div>
             <div class="t-w">
               <table>
@@ -1093,8 +1093,8 @@
     </header>
 
     <div class="gast-tabs" role="tablist" aria-label="Vista del resumen">
-      <button class="gast-tab resumen-tab active" data-tab="analisis"  onclick="setResumenTab('analisis')"  role="tab" aria-selected="true" >📊 Análisis</button>
-      <button class="gast-tab resumen-tab"         data-tab="historial" onclick="setResumenTab('historial')" role="tab" aria-selected="false">📂 Historial</button>
+      <button class="gast-tab resumen-tab active" data-tab="analisis"  data-action="setResumenTab" data-arg-tab="analisis"  role="tab" aria-selected="true" >📊 Análisis</button>
+      <button class="gast-tab resumen-tab"         data-tab="historial" data-action="setResumenTab" data-arg-tab="historial" role="tab" aria-selected="false">📂 Historial</button>
     </div>
 
     <div id="resumen-tab-analisis" role="tabpanel">

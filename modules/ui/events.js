@@ -76,6 +76,8 @@ export function initActions() {
 
 // ─── ACCIONES DE SHELL (sin circular dependency) ──────────────────────────────
 registerAction('toggleDashCard', ({ key }) => toggleDashCard(key));
+registerAction('setResumenTab',  ({ tab }) => setResumenTab(tab));
+registerAction('setFiltroGasto', ({ tipo }, el) => setFiltroGasto(tipo, el));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 
@@ -107,7 +109,6 @@ window.go                  = go;
 window.toggleMas           = toggleMas;
 window.closeMas            = closeMas;
 window.setPer              = setPer;
-window.setResumenTab       = setResumenTab;
 window.toggleSidebar       = toggleSidebar;
 
 // dashboard
@@ -133,7 +134,6 @@ window.delGasto            = delGasto;
 window.abrirEditarGasto    = abrirEditarGasto;
 window.guardarEditarGasto  = guardarEditarGasto;
 window.limpiarGastos       = limpiarGastos;
-window.setFiltroGasto      = setFiltroGasto;
 window.renderGastos        = renderGastos;
 window.prev4k              = prev4k;
 window.actualizarSemaforo  = actualizarSemaforo;
