@@ -1137,26 +1137,22 @@ registerAction('cerrarQ',               () => cerrarQ());
 // EXPOSICIÓN GLOBAL
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// gastos
-window.agregarGasto           = agregarGasto;
+// gastos — delGasto/abrirEditarGasto en HTML dinámico; render* llamados desde JS
+// agregarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, cerrarQ → data-action
 window.delGasto               = delGasto;
 window.abrirEditarGasto       = abrirEditarGasto;
-window.guardarEditarGasto     = guardarEditarGasto;
-window.limpiarGastos          = limpiarGastos;
-window.setFiltroGasto         = setFiltroGasto;
 window.renderGastos           = renderGastos;
 window.prev4k                 = prev4k;
 window.actualizarSemaforo     = actualizarSemaforo;
 window.calcularImpactoHormiga = calcularImpactoHormiga;
-// dashboard
+// dashboard — llamados desde JS
 window.updateDash             = updateDash;
 window.calcScore              = calcScore;
 window.renderDashCuentas      = renderDashCuentas;
-// resumen
+// resumen — llamados desde JS
 window.mostrarResumenQuincena = mostrarResumenQuincena;
 window.calcularResumen        = calcularResumen;
 window.generarConsejo         = generarConsejo;
-// historial
+// historial — delHistorial en HTML dinámico; renderHistorial desde JS
 window.renderHistorial        = renderHistorial;
 window.delHistorial           = delHistorial;
-window.cerrarQ                = cerrarQ;

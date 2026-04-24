@@ -1210,36 +1210,21 @@ registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// fijos
-window.guardarFijo      = guardarFijo;
+// fijos — solo los usados en HTML dinámico (desmFijo, delFijo, abrirModalFijo)
 window.renderFijos      = renderFijos;
 window.abrirModalFijo   = abrirModalFijo;
-window.cerrarModalFijo  = cerrarModalFijo;
-window.ejecutarPagoFijo = ejecutarPagoFijo;
 window.desmFijo         = desmFijo;
 window.delFijo          = delFijo;
 
-// agenda
-window.renderCal              = renderCal;
-window.prevMonth              = prevMonth;
-window.nextMonth              = nextMonth;
-window.showDayDetails         = showDayDetails;
-window.guardarPago            = guardarPago;
-window.marcarPagado           = marcarPagado;
-window.ejecutarPagoAgendado   = ejecutarPagoAgendado;
-window.delPago                = delPago;
-window.renderPagos            = renderPagos;
+// agenda — solo los usados en HTML dinámico (marcarPagado, delPago, showDayDetails)
+window.renderCal       = renderCal;
+window.showDayDetails  = showDayDetails;
+window.marcarPagado    = marcarPagado;
+window.delPago         = delPago;
+window.renderPagos     = renderPagos;
 
-// deudas
-window.guardarDeuda       = guardarDeuda;
-window.renderDeudas       = renderDeudas;
-window.setModoDeuda       = setModoDeuda;
-window.abrirPagarCuota    = abrirPagarCuota;
-window.confPagarCuota     = confPagarCuota;
-window.abrirEditarDeuda   = abrirEditarDeuda;
-window.guardarEditarDeuda = guardarEditarDeuda;
-window.delDeu             = delDeu;
-window.selTipoDeuda       = selTipoDeuda;
-window.selTipoDeudaEdit   = selTipoDeudaEdit;
-window.selFrecDeuda       = selFrecDeuda;
-window.selFrecDeudaEdit   = selFrecDeudaEdit;
+// deudas — solo los usados en HTML dinámico (abrirPagarCuota, abrirEditarDeuda, delDeu)
+window.renderDeudas     = renderDeudas;
+window.abrirPagarCuota  = abrirPagarCuota;
+window.abrirEditarDeuda = abrirEditarDeuda;
+window.delDeu           = delDeu;

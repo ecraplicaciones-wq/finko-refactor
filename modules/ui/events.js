@@ -104,15 +104,37 @@ registerAction('switchSecTab',       ({ section, tab }, el) => switchSecTab(sect
 registerAction('toggleCalc',   ({ id }) => toggleCalc(id));
 registerAction('guardarPrima', ()       => guardarPrima());
 
-// ─── ACCIONES INLINE (definidas en events.js) ─────────────────────────────────
-registerAction('toggleDesgloseHero', () => window.toggleDesgloseHero?.());
-registerAction('editEfectivoDash',   () => window.editEfectivoDash?.());
+// ─── ACCIONES INLINE (funciones locales, sin window.*) ───────────────────────
+function _toggleDesgloseHero() {
+  const body  = document.getElementById('desglose-hero-body');
+  const btn   = document.getElementById('btn-desglose-hero');
+  const arrow = document.getElementById('desglose-hero-arrow');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  btn?.setAttribute('aria-expanded', String(!open));
+  if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+async function _editEfectivoDash() {
+  const val = await showPrompt(
+    `Efectivo registrado: ${f(S.saldos.efectivo)}\n\nIngresa el dinero físico exacto que tienes ahora en tu billetera:`,
+    '💵 Actualizar Efectivo',
+    S.saldos.efectivo
+  );
+  if (val === null) return;
+  S.saldos.efectivo = Math.max(0, +val || 0);
+  save(); updSaldo(); updateDash();
+}
+registerAction('toggleDesgloseHero', () => _toggleDesgloseHero());
+registerAction('editEfectivoDash',   () => _editEfectivoDash());
 registerAction('cdlgResOk',          () => window._cdlgRes?.(true));
 registerAction('cdlgResCancel',      () => window._cdlgRes?.(false));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
+// Solo se exponen funciones llamadas desde HTML dinámico (innerHTML) o desde JS externo.
+// Las llamadas desde HTML estático (index.html) usan data-action y NO necesitan window.*.
 
-// utils
+// utils — usados en HTML dinámico y desde JS externo
 window.f                   = f;
 window.hoy                 = hoy;
 window.mesStr              = mesStr;
@@ -126,136 +148,82 @@ window.showPrompt          = showPrompt;
 window.showPromptConfirm   = showPromptConfirm;
 window.save                = save;
 
-// render
+// render / infra — llamados desde otros módulos vía window (renderSmart, etc.)
 window.updSaldo            = updSaldo;
 window.updateBadge         = updateBadge;
 window.renderSmart         = renderSmart;
 window.renderAll           = renderAll;
 window.totalCuentas        = totalCuentas;
-
-// sections
-
-// dashboard
 window.updateDash          = updateDash;
 window.calcScore           = calcScore;
 window.renderDashCuentas   = renderDashCuentas;
 
-// hero: acordeón de desglose efectivo/banco
-window.toggleDesgloseHero  = function() {
-  const body  = document.getElementById('desglose-hero-body');
-  const btn   = document.getElementById('btn-desglose-hero');
-  const arrow = document.getElementById('desglose-hero-arrow');
-  if (!body) return;
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  btn?.setAttribute('aria-expanded', String(!open));
-  if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-};
-
-// gastos
-window.agregarGasto        = agregarGasto;
+// gastos — delGasto y abrir* en HTML dinámico; render* llamados desde JS
 window.delGasto            = delGasto;
 window.abrirEditarGasto    = abrirEditarGasto;
-window.guardarEditarGasto  = guardarEditarGasto;
-window.limpiarGastos       = limpiarGastos;
 window.renderGastos        = renderGastos;
-window.prev4k              = prev4k;
 window.actualizarSemaforo  = actualizarSemaforo;
 window.calcularImpactoHormiga = calcularImpactoHormiga;
 
-// fijos
-window.guardarFijo         = guardarFijo;
+// fijos — abrir*/desm*/del* en HTML dinámico; render* desde JS
 window.renderFijos         = renderFijos;
 window.abrirModalFijo      = abrirModalFijo;
-window.cerrarModalFijo     = cerrarModalFijo;
-window.ejecutarPagoFijo    = ejecutarPagoFijo;
 window.desmFijo            = desmFijo;
 window.delFijo             = delFijo;
 
-// deudas
-window.guardarDeuda        = guardarDeuda;
+// deudas — abrir*/del* en HTML dinámico; render* desde JS
 window.renderDeudas        = renderDeudas;
-window.setModoDeuda        = setModoDeuda;
 window.abrirPagarCuota     = abrirPagarCuota;
-window.confPagarCuota      = confPagarCuota;
 window.abrirEditarDeuda    = abrirEditarDeuda;
-window.guardarEditarDeuda  = guardarEditarDeuda;
 window.delDeu              = delDeu;
-window.selTipoDeuda        = selTipoDeuda;
-window.selTipoDeudaEdit    = selTipoDeudaEdit;
-window.selFrecDeuda        = selFrecDeuda;
-window.selFrecDeudaEdit    = selFrecDeudaEdit;
 
-// objetivos
-window.guardarObjetivo          = guardarObjetivo;
-window.toggleTipoObjetivo       = toggleTipoObjetivo;
-window.openNuevoObjetivo        = openNuevoObjetivo;
+// objetivos — abrir*/del*/calc* en HTML dinámico; render* desde JS
 window.renderObjetivos          = renderObjetivos;
 window.abrirAccionObj           = abrirAccionObj;
-window.evaluarGastoEvento       = evaluarGastoEvento;
-window.ejecutarAccionObjetivo   = ejecutarAccionObjetivo;
 window.delObjetivo              = delObjetivo;
 window.calcSimObj               = calcSimObj;
-window.populateSelectObjetivos  = populateSelectObjetivos;
 
-// inversiones
-window.guardarInversion    = guardarInversion;
+// inversiones — open*/del* en HTML dinámico; render* desde JS
 window.renderInversiones   = renderInversiones;
 window.openRendimiento     = openRendimiento;
-window.guardarRendimiento  = guardarRendimiento;
 window.delInversion        = delInversion;
 
-// agenda
+// agenda — marcar*/del*/showDay* en HTML dinámico; render* desde JS
 window.renderCal            = renderCal;
-window.prevMonth            = prevMonth;
-window.nextMonth            = nextMonth;
 window.showDayDetails       = showDayDetails;
-window.guardarPago          = guardarPago;
 window.marcarPagado         = marcarPagado;
-window.ejecutarPagoAgendado = ejecutarPagoAgendado;
 window.delPago              = delPago;
 window.renderPagos          = renderPagos;
 
-// cuentas
-window.guardarCuenta          = guardarCuenta;
+// cuentas — del*/edit* en HTML dinámico; render* y selFundOpt desde JS/dinámico
 window.delCuenta              = delCuenta;
 window.editSaldoCuenta        = editSaldoCuenta;
 window.editSaldoCuentaDash    = editSaldoCuentaDash;
 window.renderCuentas          = renderCuentas;
 window.actualizarListasFondos = actualizarListasFondos;
-window.toggleFundSelect       = toggleFundSelect;
 window.selFundOpt             = selFundOpt;
 
-// historial / export
+// historial — delHistorial en HTML dinámico; render* e importar desde JS
 window.renderHistorial     = renderHistorial;
 window.delHistorial        = delHistorial;
-window.cerrarQ             = cerrarQ;
-window.exportarDatos       = exportarDatos;
 window.importarDatos       = importarDatos;
-window.exportarCSV         = exportarCSV;
-window.descargarCSVDirecto = exportarCSV;
 window.generarReporteHTML  = generarReporteHTML;
 
-// resumen quincenal
-window.mostrarResumenQuincena = mostrarResumenQuincena;
-window.calcularResumen        = calcularResumen;
-window.generarConsejo         = generarConsejo;
-
-// fondo de emergencia
+// resumen / fondo — llamados desde JS
+window.mostrarResumenQuincena  = mostrarResumenQuincena;
+window.calcularResumen         = calcularResumen;
+window.generarConsejo          = generarConsejo;
 window.calcularFondoEmergencia = calcularFondoEmergencia;
 window.actualizarVistaFondo    = actualizarVistaFondo;
-window.registrarAbonoFondo     = registrarAbonoFondo;
 
-// stats
-window.renderStats = renderStats;
-
-// logros / gamificación
+// stats / logros — llamados desde JS
+window.renderStats       = renderStats;
 window.evaluarLogros     = evaluarLogros;
 window.renderLogros      = renderLogros;
 window.renderRachaWidget = renderRachaWidget;
 window.calcularRachas    = calcularRachas;
 
-// ui-components
+// ui-components — llamados desde JS
 window.selectDay           = selectDay;
 window.setDayPicker        = setDayPicker;
 window.updCustomFundButton = updCustomFundButton;
@@ -265,18 +233,6 @@ window.onMetCh             = onMetCh;
 window.applyTheme          = applyTheme;
 window.getPreferredTheme   = getPreferredTheme;
 window.initTheme           = initTheme;
-
-// efectivo — atajo directo del Dashboard
-window.editEfectivoDash = async function () {
-  const val = await showPrompt(
-    `Efectivo registrado: ${f(S.saldos.efectivo)}\n\nIngresa el dinero físico exacto que tienes ahora en tu billetera:`,
-    '💵 Actualizar Efectivo',
-    S.saldos.efectivo
-  );
-  if (val === null) return;
-  S.saldos.efectivo = Math.max(0, +val || 0);
-  save(); updSaldo(); updateDash();
-};
 
 // ─── BANNER OFFLINE ──────────────────────────────────────────────────────────
 // Muestra un aviso amable cuando el dispositivo pierde la conexión.

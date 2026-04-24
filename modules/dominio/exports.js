@@ -288,8 +288,6 @@ registerAction('descargarCSVDirecto', () => exportarCSV());
 registerAction('generarReporteHTML',  () => generarReporteHTML());
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
-window.exportarDatos       = exportarDatos;
-window.importarDatos       = importarDatos;
-window.exportarCSV         = exportarCSV;
-window.descargarCSVDirecto = exportarCSV;
-window.generarReporteHTML  = generarReporteHTML;
+// exportarDatos, exportarCSV, descargarCSVDirecto → migrados a data-action
+window.importarDatos      = importarDatos;    // input[type=file] handler
+window.generarReporteHTML = generarReporteHTML; // llamado desde JS

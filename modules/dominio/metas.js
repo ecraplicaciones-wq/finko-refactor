@@ -433,18 +433,15 @@ registerAction('guardarRendimiento',      () => guardarRendimiento());
 registerAction('delInversion',            ({ id }) => delInversion(id));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
-window.guardarObjetivo         = guardarObjetivo;
-window.toggleTipoObjetivo      = toggleTipoObjetivo;
-window.openNuevoObjetivo       = openNuevoObjetivo;
-window.renderObjetivos         = renderObjetivos;
-window.abrirAccionObj          = abrirAccionObj;
-window.evaluarGastoEvento      = evaluarGastoEvento;
-window.ejecutarAccionObjetivo  = ejecutarAccionObjetivo;
-window.delObjetivo             = delObjetivo;
-window.calcSimObj              = calcSimObj;
-window.populateSelectObjetivos = populateSelectObjetivos;
-window.guardarInversion        = guardarInversion;
-window.renderInversiones       = renderInversiones;
-window.openRendimiento         = openRendimiento;
-window.guardarRendimiento      = guardarRendimiento;
-window.delInversion            = delInversion;
+// guardarObjetivo, openNuevoObjetivo, ejecutarAccionObjetivo,
+// guardarInversion, guardarRendimiento → migrados a data-action
+window.toggleTipoObjetivo      = toggleTipoObjetivo;      // llamado desde JS
+window.renderObjetivos         = renderObjetivos;          // llamado desde JS
+window.abrirAccionObj          = abrirAccionObj;           // HTML dinámico
+window.evaluarGastoEvento      = evaluarGastoEvento;       // llamado desde JS
+window.delObjetivo             = delObjetivo;              // HTML dinámico
+window.calcSimObj              = calcSimObj;               // HTML dinámico
+window.populateSelectObjetivos = populateSelectObjetivos;  // llamado desde JS
+window.renderInversiones       = renderInversiones;        // llamado desde JS
+window.openRendimiento         = openRendimiento;          // HTML dinámico
+window.delInversion            = delInversion;             // HTML dinámico

@@ -726,8 +726,7 @@ registerAction('selIconoBolsillo',     ({ icon }) => selIconoBolsillo(icon));
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// cuentas
-window.guardarCuenta          = guardarCuenta;
+// cuentas — guardarCuenta → data-action; del*/edit* en HTML dinámico
 window.delCuenta              = delCuenta;
 window.editSaldoCuenta        = editSaldoCuenta;
 window.editSaldoCuentaDash    = editSaldoCuentaDash;
@@ -736,21 +735,18 @@ window.actualizarListasFondos = actualizarListasFondos;
 window.toggleFundSelect       = toggleFundSelect;
 window.selFundOpt             = selFundOpt;
 
-// fondo de emergencia
+// fondo de emergencia — registrarAbonoFondo → data-action; resto desde JS
 window.calcularFondoEmergencia = calcularFondoEmergencia;
 window.actualizarVistaFondo    = actualizarVistaFondo;
-window.registrarAbonoFondo     = registrarAbonoFondo;
 window.abrirFondoEmergencia    = abrirFondoEmergencia;
 
-// bolsillos
+// bolsillos — guardarNuevoBolsillo/confirmarMovBolsillo → data-action
+// abrirNuevoBolsillo → data-action; abrir*/eliminar* desde JS/dinámico
 window.totalBolsillos       = totalBolsillos;
 window.platoLibre           = platoLibre;
 window.renderBolsillos      = renderBolsillos;
-window.abrirNuevoBolsillo   = abrirNuevoBolsillo;
-window.guardarNuevoBolsillo = guardarNuevoBolsillo;
 window.abrirAbonarBolsillo  = abrirAbonarBolsillo;
 window.abrirRetirarBolsillo = abrirRetirarBolsillo;
-window.confirmarMovBolsillo = confirmarMovBolsillo;
 window.eliminarBolsillo     = eliminarBolsillo;
 window.renderIconosBolsillo = renderIconosBolsillo;
 window.selIconoBolsillo     = selIconoBolsillo;
