@@ -75,9 +75,26 @@ export function initActions() {
 }
 
 // ─── ACCIONES DE SHELL (sin circular dependency) ──────────────────────────────
-registerAction('toggleDashCard', ({ key }) => toggleDashCard(key));
-registerAction('setResumenTab',  ({ tab }) => setResumenTab(tab));
-registerAction('setFiltroGasto', ({ tipo }, el) => setFiltroGasto(tipo, el));
+registerAction('toggleDashCard',  ({ key })  => toggleDashCard(key));
+registerAction('setResumenTab',   ({ tab })  => setResumenTab(tab));
+registerAction('setFiltroGasto',  ({ tipo }, el) => setFiltroGasto(tipo, el));
+registerAction('go',              ({ sec })  => go(sec));
+registerAction('toggleSidebar',   ()         => toggleSidebar());
+registerAction('toggleMas',       ()         => toggleMas());
+registerAction('closeMas',        ()         => closeMas());
+registerAction('toggleTheme',     ()         => toggleTheme());
+registerAction('resetQuincena',   ()         => resetQuincena());
+registerAction('resetTodo',       ()         => resetTodo());
+registerAction('setPer',          ({ per }, el) => setPer(per, el));
+registerAction('selM',            ({ mod }, el) => selM(el, mod));
+registerAction('guardarQ',        ()         => guardarQ());
+registerAction('toggleFormGasto', ()         => toggleFormGasto());
+registerAction('toggleFijoInline',()         => toggleFijoInline());
+registerAction('toggleDayPicker', ({ id })   => toggleDayPicker(id));
+// utils (openM / closeM vienen de utils.js)
+registerAction('openM',              ({ id })   => openM(id));
+registerAction('closeM',             ({ id })   => closeM(id));
+registerAction('toggleThemeAndClose',()         => { toggleTheme(); closeMas(); });
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 
@@ -89,8 +106,6 @@ window.he                  = he;
 window.setEl               = setEl;
 window.setHtml             = setHtml;
 window.sr                  = sr;
-window.openM               = openM;
-window.closeM              = closeM;
 window.showAlert           = showAlert;
 window.showConfirm         = showConfirm;
 window.showPrompt          = showPrompt;
@@ -105,11 +120,6 @@ window.renderAll           = renderAll;
 window.totalCuentas        = totalCuentas;
 
 // sections
-window.go                  = go;
-window.toggleMas           = toggleMas;
-window.closeMas            = closeMas;
-window.setPer              = setPer;
-window.toggleSidebar       = toggleSidebar;
 
 // dashboard
 window.updateDash          = updateDash;
@@ -232,20 +242,12 @@ window.renderRachaWidget = renderRachaWidget;
 window.calcularRachas    = calcularRachas;
 
 // ui-components
-window.toggleDayPicker     = toggleDayPicker;
 window.selectDay           = selectDay;
 window.setDayPicker        = setDayPicker;
 window.updCustomFundButton = updCustomFundButton;
-window.toggleFormGasto     = toggleFormGasto;
-window.toggleFijoInline    = toggleFijoInline;
 window.toggleFijosPanel    = toggleFijosPanel;
 window.calcDist            = calcDist;
 window.onMetCh             = onMetCh;
-window.selM                = selM;
-window.guardarQ            = guardarQ;
-window.resetTodo           = resetTodo;
-window.resetQuincena       = resetQuincena;
-window.toggleTheme         = toggleTheme;
 window.applyTheme          = applyTheme;
 window.getPreferredTheme   = getPreferredTheme;
 window.initTheme           = initTheme;

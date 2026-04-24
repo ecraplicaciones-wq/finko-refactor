@@ -36,7 +36,7 @@
 ════════════════════════════════════════════════════════ -->
 <aside id="sidebar" aria-label="Menú principal de navegación">
   <div class="sb-logo" id="btn-sidebar-toggle"
-       onclick="toggleSidebar()"
+       data-action="toggleSidebar"
        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebar()}"
        role="button" tabindex="0" aria-label="Expandir o colapsar menú lateral">
     <div class="sb-brand">
@@ -54,7 +54,7 @@
     <!-- ── TAB 1: Hoy (dash) — sin cambio ── -->
     <button class="nb active"
             data-section="dash"
-            onclick="go('dash')"
+            data-action="go" data-arg-sec="dash"
             title="¿Cómo va mi plata hoy?"
             aria-label="Inicio — resumen general de mi plata"
             aria-current="page">
@@ -65,7 +65,7 @@
     <!-- ── TAB 2: Gasté (gast) — sin cambio ── -->
     <button class="nb"
             data-section="gast"
-            onclick="go('gast')"
+            data-action="go" data-arg-sec="gast"
             title="Lo que he gastado y mis gastos fijos"
             aria-label="Gastos — anotar lo que sale">
       <span class="ni" aria-hidden="true">💸</span>
@@ -75,7 +75,7 @@
     <!-- ── TAB 3: Compromisos (fusión Deudas+Agenda) ── -->
     <button class="nb"
             data-section="compromisos"
-            onclick="go('compromisos')"
+            data-action="go" data-arg-sec="compromisos"
             title="Lo que debo y mis pagos agendados"
             aria-label="Compromisos — deudas y pagos programados">
       <span class="ni" aria-hidden="true">🤝</span>
@@ -85,7 +85,7 @@
     <!-- ── TAB 4 sería Alcancías pero va en panel Más en móvil ── -->
     <button class="nb nb-mob-hidden"
             data-section="alcancias"
-            onclick="go('alcancias')"
+            data-action="go" data-arg-sec="alcancias"
             title="Metas de ahorro y plata apartada"
             aria-label="Alcancías — metas y plata apartada">
       <span class="ni" aria-hidden="true">🎯</span>
@@ -94,7 +94,7 @@
 
     <button class="nb nb-mob-hidden"
             data-section="quin"
-            onclick="go('quin')"
+            data-action="go" data-arg-sec="quin"
             title="¿Cómo voy a repartir esta quincena?"
             aria-label="Plan — repartir la plata de la quincena">
       <span class="ni" aria-hidden="true">📋</span>
@@ -103,7 +103,7 @@
 
     <button class="nb nb-mob-hidden"
             data-section="objetivos"
-            onclick="go('objetivos')"
+            data-action="go" data-arg-sec="objetivos"
             title="Lo que estoy ahorrando para algo especial"
             aria-label="Metas — mis objetivos de ahorro">
       <span class="ni" aria-hidden="true">🎯</span>
@@ -112,7 +112,7 @@
 
     <button class="nb nb-mob-hidden"
             data-section="inve"
-            onclick="go('inve')"
+            data-action="go" data-arg-sec="inve"
             title="Hacer crecer mi plata — CDTs, FICs y más"
             aria-label="Invertir — hacer crecer mi plata">
       <span class="ni" aria-hidden="true">📈</span>
@@ -121,7 +121,7 @@
 
     <button class="nb nb-mob-hidden"
             data-section="stat"
-            onclick="go('stat')"
+            data-action="go" data-arg-sec="stat"
             title="¿Cómo me está yendo? Análisis y aprendizajes"
             aria-label="Balance — cómo me está yendo">
       <span class="ni" aria-hidden="true">📊</span>
@@ -130,7 +130,7 @@
 
     <!-- ── TAB 4: Más — panel flotante con secciones secundarias ── -->
     <button class="nb nb-mas" id="btn-mas"
-            onclick="toggleMas()" title="Ver más secciones"
+            data-action="toggleMas" title="Ver más secciones"
             aria-label="Ver más secciones" aria-expanded="false" aria-haspopup="true">
       <span class="ni" aria-hidden="true">⋯</span>
       <span class="nb-txt">Más</span>
@@ -138,14 +138,14 @@
 
     <!-- Tema: en móvil se accede desde el panel Más, no del nav principal -->
     <button class="nb nb-tema" id="btn-theme-bar"
-            onclick="toggleTheme()" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+            data-action="toggleTheme" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
       <span class="ni" aria-hidden="true">☀️</span>
       <span class="nb-txt">Tema</span>
     </button>
   </nav>
 
   <div class="sb-bottom">
-    <button class="nb sb-theme-btn" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+    <button class="nb sb-theme-btn" id="btn-theme" data-action="toggleTheme" title="Cambiar tema">
       <span class="ni">☀️</span><span class="nb-txt">Cambiar tema</span>
     </button>
     <div class="sb-period"><span class="ni">📅</span><span id="hbadge">—</span></div>
@@ -169,7 +169,7 @@
         </div>
       </div>
       <div class="sh-actions">
-        <button class="btn bp bsm" onclick="go('quin')">+ Planear quincena</button>
+        <button class="btn bp bsm" data-action="go" data-arg-sec="quin">+ Planear quincena</button>
       </div>
     </header>
 
@@ -266,7 +266,7 @@
             </div>
           </div>
           <div style="text-align:center;margin-top:8px;">
-            <button onclick="go('ahorro')"
+            <button data-action="go" data-arg-sec="ahorro"
                     style="font-size:11px;color:var(--a4);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
               Ver mis bolsillos en detalle →
             </button>
@@ -288,7 +288,7 @@
     <div class="card mb" style="border-color:rgba(59,158,255,.2)">
       <div class="fb mb">
         <span class="ct" style="margin:0">🏦 Mis cuentas</span>
-        <button class="btn bbl bsm" onclick="openM('m-cuenta')">+ Agregar cuenta</button>
+        <button class="btn bbl bsm" data-action="openM" data-arg-id="m-cuenta">+ Agregar cuenta</button>
       </div>
       <div id="d-cuentas"><div class="tm">Sin cuentas. Agrégalas aquí.</div></div>
     </div>
@@ -322,7 +322,7 @@
         <div class="emp" style="padding:12px;">
           <span class="emp-icon" style="font-size:24px;">📋</span>
           Planifica tu quincena y empieza a controlar tu plata<br>
-          <button class="btn bp bsm" onclick="go('quin')" style="margin-top:10px;">Ir a Planificar →</button>
+          <button class="btn bp bsm" data-action="go" data-arg-sec="quin" style="margin-top:10px;">Ir a Planificar →</button>
         </div>
       </div>
 
@@ -356,7 +356,7 @@
             <div class="fb mb">
               <div style="class="ui-row-gap10"">
                 <span class="ct" style="margin:0">🛡️ Fondo de Emergencia</span>
-                <button class="btn bg bsm" onclick="openM('m-fondo-emergencia')">+ Abonar</button>
+                <button class="btn bg bsm" data-action="openM" data-arg-id="m-fondo-emergencia">+ Abonar</button>
               </div>
               <div class="tm" id="fe-meses-cobertura">0.0 meses cubiertos</div>
             </div>
@@ -390,7 +390,7 @@
       <div id="dash-movimientos-body" class="dash-card-body with-divider">
         <div id="d-rec"><div class="emp"><span class="emp-icon">🕐</span>Sin movimientos registrados</div></div>
         <div id="d-rec-ver-mas" style="text-align:center;margin-top:10px;display:none;">
-          <button class="btn bg bsm" onclick="go('gast')" style="font-size:12px;">Ver todos los movimientos →</button>
+          <button class="btn bg bsm" data-action="go" data-arg-sec="gast" style="font-size:12px;">Ver todos los movimientos →</button>
         </div>
       </div>
     </div>
@@ -409,7 +409,7 @@
           <div class="ct" style="margin:0;font-size:14px;">📆 ¿Cómo quedé este mes?</div>
           <div class="tm" style="margin-top:3px;">Ingresos, gastos y balance mensual</div>
         </div>
-        <button class="btn bbl bsm" onclick="go('stat')" aria-label="Ver análisis mensual completo en Balance">
+        <button class="btn bbl bsm" data-action="go" data-arg-sec="stat" aria-label="Ver análisis mensual completo en Balance">
           Ver en Balance →
         </button>
       </div>
@@ -429,8 +429,8 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn bd bsm" onclick="resetQuincena()" title="Limpia los gastos actuales sin borrar tus cuentas">↺ Reiniciar período</button>
-        <button class="btn" onclick="resetTodo()" style="display:flex;align-items:center;gap:6px;background:rgba(255,68,68,.18);color:var(--dan);font-size:11px;padding:5px 11px;border-radius:6px;" title="Borrar toda la base de datos">🗑️ Borrar todo</button>
+        <button class="btn bd bsm" data-action="resetQuincena" title="Limpia los gastos actuales sin borrar tus cuentas">↺ Reiniciar período</button>
+        <button class="btn" data-action="resetTodo" style="display:flex;align-items:center;gap:6px;background:rgba(255,68,68,.18);color:var(--dan);font-size:11px;padding:5px 11px;border-radius:6px;" title="Borrar toda la base de datos">🗑️ Borrar todo</button>
       </div>
     </header>
 
@@ -450,9 +450,9 @@
           <div class="ct">¿Para cuánto tiempo es esta plata?</div>
           <p class="tm mb">Elige si vas a manejar quincenas o el mes completo.</p>
           <div class="qtabs" role="tablist" aria-label="Frecuencia del presupuesto">
-            <div class="qtab active" onclick="setPer('q1',this)"      role="tab" tabindex="0"  aria-selected="true" ><span>Quincena</span><strong>Días 1 – 15</strong></div>
-            <div class="qtab"        onclick="setPer('q2',this)"      role="tab" tabindex="-1" aria-selected="false"><span>Quincena</span><strong>Días 16 – 31</strong></div>
-            <div class="qtab"        onclick="setPer('mensual',this)" role="tab" tabindex="-1" aria-selected="false"><span>Mensual</span><strong>Mes Completo</strong></div>
+            <div class="qtab active" data-action="setPer" data-arg-per="q1"      role="tab" tabindex="0"  aria-selected="true" ><span>Quincena</span><strong>Días 1 – 15</strong></div>
+            <div class="qtab"        data-action="setPer" data-arg-per="q2"      role="tab" tabindex="-1" aria-selected="false"><span>Quincena</span><strong>Días 16 – 31</strong></div>
+            <div class="qtab"        data-action="setPer" data-arg-per="mensual" role="tab" tabindex="-1" aria-selected="false"><span>Mensual</span><strong>Mes Completo</strong></div>
           </div>
         </div>
 
@@ -460,7 +460,7 @@
           <div style="font-size:32px;margin-bottom:10px;">🎉</div>
           <div class="st" style="font-size:18px;margin-bottom:6px;">¿Llegó Prima o Bono?</div>
           <div class="tm mb" style="line-height:1.5;">No dejes que se vuelva dinero de bolsillo. Simula cómo dividirlo inteligentemente.</div>
-          <button class="btn byw bfw" onclick="openM('m-prima')">Simular distribución</button>
+          <button class="btn byw bfw" data-action="openM" data-arg-id="m-prima">Simular distribución</button>
         </div>
       </div>
 
@@ -471,19 +471,19 @@
           <div class="div"></div>
           <div class="ct">Métodos disponibles</div>
           <div class="gap">
-            <div class="mcd sel" onclick="selM(this,'50-30-20')">
+            <div class="mcd sel" data-action="selM" data-arg-mod="50-30-20">
               <div class="mn">50/30/20 <span class="pill pg">Recomendado</span></div>
               <div class="md">50% lo vital · 30% gustos · 20% ahorro.</div>
             </div>
-            <div class="mcd" onclick="selM(this,'50-20-30')">
+            <div class="mcd" data-action="selM" data-arg-mod="50-20-30">
               <div class="mn">50/20/30 <span class="pill pb">Ahorro Agresivo</span></div>
               <div class="md">50% lo vital · 20% gustos · 30% ahorro.</div>
             </div>
-            <div class="mcd" onclick="selM(this,'70-20-10')">
+            <div class="mcd" data-action="selM" data-arg-mod="70-20-10">
               <div class="mn">70/20/10 <span class="pill py">Ajustado</span></div>
               <div class="md">70% lo vital · 20% gustos · 10% ahorro.</div>
             </div>
-            <div class="mcd" onclick="selM(this,'custom')" style="border-style:dashed;border-color:var(--b3);">
+            <div class="mcd" data-action="selM" data-arg-mod="custom" style="border-style:dashed;border-color:var(--b3);">
               <div class="mn">⚙️ 100% Personalizado</div>
               <div class="md">Define tú mismo las reglas de tu dinero.</div>
             </div>
@@ -501,7 +501,7 @@
             <input type="number" id="q-ing" placeholder="Ej: 2.500.000 — si lo dejas vacío usamos tu saldo total">
             <div class="tm" style="margin-top:4px;">Escríbelo si quieres que los porcentajes y alertas se midan contra tu ingreso real, no contra tus ahorros acumulados.</div>
           </div>
-            <button class="btn bp bfw" onclick="guardarQ()" style="margin-top:16px;padding:16px;font-size:14px;">Fijar Presupuesto Base ✓</button>        
+            <button class="btn bp bfw" data-action="guardarQ" style="margin-top:16px;padding:16px;font-size:14px;">Fijar Presupuesto Base ✓</button>        
         </div>
       </div>
     </div>
@@ -545,7 +545,7 @@
         <!-- Columna izquierda: Formulario + tabla gastos -->
         <div class="gast-col">
           <div class="card" id="form-gasto-card">
-            <button class="form-gasto-header" onclick="toggleFormGasto()"
+            <button class="form-gasto-header" data-action="toggleFormGasto"
                     aria-expanded="false" aria-controls="form-gasto-body"
                     style="width:100%;background:none;border:none;padding:2px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;text-align:left;font-family:var(--ff);">
               <div style="class="ui-row-gap10"">
@@ -641,7 +641,7 @@
         <!-- Columna derecha: Fijos -->
         <div class="gast-col">
           <div class="card" id="form-fijo-card">
-            <button onclick="toggleFijoInline()" aria-expanded="false" aria-controls="form-fijo-body"
+            <button data-action="toggleFijoInline" aria-expanded="false" aria-controls="form-fijo-body"
                     style="width:100%;background:none;border:none;padding:2px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;text-align:left;font-family:var(--ff);">
               <div style="class="ui-row-gap10"">
                 <div id="form-fijo-icon" aria-hidden="true" style="width:30px;height:30px;border-radius:8px;background:rgba(255,214,10,.15);border:1px solid rgba(255,214,10,.3);display:flex;align-items:center;justify-content:center;font-size:15px;">📌</div>
@@ -675,7 +675,7 @@
                   <label>Día de pago</label>
                   <div class="day-picker" id="dp-gf-di">
                     <input type="hidden" id="gf-di" value="">
-                    <button type="button" class="day-pick-trigger" onclick="toggleDayPicker('gf-di')">
+                    <button type="button" class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="gf-di">
                       <span class="day-pick-val">Selecciona el día</span>
                       <span style="font-size:12px;color:var(--t3);">▾</span>
                     </button>
@@ -780,7 +780,7 @@
           <div class="ss">CDTs, fondos, Nequi Ahorro y más: que el dinero genere dinero. 💰</div>
         </div>
       </div>
-      <button class="btn bp bsm" onclick="openM('m-inversion')" aria-label="Registrar una nueva inversión">+ Registrar inversión</button>
+      <button class="btn bp bsm" data-action="openM" data-arg-id="m-inversion" aria-label="Registrar una nueva inversión">+ Registrar inversión</button>
     </header>
 
     <div class="g3 mb">
@@ -950,7 +950,7 @@
     <div id="compromisos-tab-deudas" class="itab-panel active"
          data-tab="deudas" role="tabpanel" aria-label="Lo que debo">
       <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp" onclick="openM('m-deu')" style="padding:10px 18px;font-size:13px;font-weight:700;"
+        <button class="btn bp" data-action="openM" data-arg-id="m-deu" style="padding:10px 18px;font-size:13px;font-weight:700;"
                 aria-label="Registrar una nueva deuda">
           + Anotar deuda
         </button>
@@ -1008,7 +1008,7 @@
     <div id="compromisos-tab-agenda" class="itab-panel"
          data-tab="agenda" role="tabpanel" aria-label="Pagos agendados">
       <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp" onclick="openM('m-pago')" style="padding:10px 18px;font-size:13px;font-weight:700;"
+        <button class="btn bp" data-action="openM" data-arg-id="m-pago" style="padding:10px 18px;font-size:13px;font-weight:700;"
                 aria-label="Programar un nuevo pago">
           + Programar pago
         </button>
@@ -1161,7 +1161,7 @@
   <div class="modal">
     <div class="fb mb">
       <div id="bols-modal-title" class="mtit">🪙 Nuevo Bolsillo</div>
-      <button class="mclose" onclick="closeM('m-nuevo-bolsillo')" aria-label="Cerrar">×</button>
+      <button class="mclose" data-action="closeM" data-arg-id="m-nuevo-bolsillo" aria-label="Cerrar">×</button>
     </div>
     <div class="fg">
       <label for="bols-nombre">¿Para qué es esta plata?</label>
@@ -1193,7 +1193,7 @@
   <div class="modal">
     <div class="fb mb">
       <div id="bols-mov-title" class="mtit">Movimiento</div>
-      <button class="mclose" onclick="closeM('m-bolsillo-mov')" aria-label="Cerrar">×</button>
+      <button class="mclose" data-action="closeM" data-arg-id="m-bolsillo-mov" aria-label="Cerrar">×</button>
     </div>
     <input type="hidden" id="bols-mov-id">
     <input type="hidden" id="bols-mov-tipo">
@@ -1212,7 +1212,7 @@
 <!-- Fondo de emergencia -->
 <div class="modal-ov" id="m-fondo-emergencia" role="dialog" aria-modal="true">
   <div class="modal" style="width:400px;">
-    <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" onclick="closeM('m-fondo-emergencia')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Cuenta de origen</label><select id="fe-fo"></select></div>
     <div class="fg"><label>Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
     <button class="btn bp bfw" onclick="registrarAbonoFondo()">Guardar en el Fondo</button>
@@ -1222,7 +1222,7 @@
 <!-- Agregar cuenta bancaria -->
 <div class="modal-ov" id="m-cuenta" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Agregar cuenta 🏦</div><button class="mclose" onclick="closeM('m-cuenta')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Agregar cuenta 🏦</div><button class="mclose" data-action="closeM" data-arg-id="m-cuenta" aria-label="Cerrar ventana">×</button></div>
     <div class="fg">
       <label>Entidad Financiera</label>
       <select id="cu-banco">
@@ -1297,7 +1297,7 @@
 <!-- Editar gasto -->
 <div class="modal-ov" id="m-edit-gasto" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Editar gasto ✏️</div><button class="mclose" onclick="closeM('m-edit-gasto')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Editar gasto ✏️</div><button class="mclose" data-action="closeM" data-arg-id="m-edit-gasto" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Descripción</label><input type="text" id="eg-de"></div>
     <div class="fr">
       <div class="fg"><label>Monto</label><input type="number" id="eg-mo"></div>
@@ -1351,7 +1351,7 @@
       <div class="mtit">Reporte</div>
       <div style="display:flex;gap:8px;">
         <button class="btn byw bsm" onclick="descargarCSVDirecto()">⬇️ Descargar Excel</button>
-        <button class="mclose" onclick="closeM('m-reporte')" aria-label="Cerrar ventana">×</button>
+        <button class="mclose" data-action="closeM" data-arg-id="m-reporte" aria-label="Cerrar ventana">×</button>
       </div>
     </div>
     <div id="reporte-contenido"></div>
@@ -1361,7 +1361,7 @@
 <!-- Nuevo objetivo -->
 <div class="modal-ov" id="m-objetivo" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Nuevo Objetivo 🎯</div><button class="mclose" onclick="closeM('m-objetivo')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Nuevo Objetivo 🎯</div><button class="mclose" data-action="closeM" data-arg-id="m-objetivo" aria-label="Cerrar ventana">×</button></div>
     <div class="fg">
       <label for="obj-tipo">¿Qué tipo de objetivo es?</label>
       <select id="obj-tipo" onchange="toggleTipoObjetivo()">
@@ -1390,7 +1390,7 @@
 <!-- Acción sobre objetivo (abonar / gastar) -->
 <div class="modal-ov" id="m-obj-accion" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit" id="oa-tit">Acción</div><button class="mclose" onclick="closeM('m-obj-accion')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit" id="oa-tit">Acción</div><button class="mclose" data-action="closeM" data-arg-id="m-obj-accion" aria-label="Cerrar ventana">×</button></div>
     <div class="fg">
       <label for="oa-mo" id="oa-lbl-mo">Monto (COP)</label>
       <input type="number" id="oa-mo" min="0" oninput="evaluarGastoEvento()">
@@ -1418,7 +1418,7 @@
   <div class="modal" style="max-width:520px;">
     <div class="fb mb">
       <div><div class="mtit" style="margin-bottom:2px;">Editar Deuda ✏️</div><div style="font-size:11px;color:var(--t3);">Corrige cualquier dato de esta deuda</div></div>
-      <button class="mclose" onclick="closeM('m-edit-deu')" aria-label="Cerrar ventana">×</button>
+      <button class="mclose" data-action="closeM" data-arg-id="m-edit-deu" aria-label="Cerrar ventana">×</button>
     </div>
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
@@ -1458,7 +1458,7 @@
       <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar?</label>
       <div class="day-picker" id="dp-ed-dia">
         <input type="hidden" id="ed-dia" value="">
-        <div class="day-pick-trigger" onclick="toggleDayPicker('ed-dia')">
+        <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="ed-dia">
           <span class="day-pick-icon">📅</span>
           <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
           <span class="day-pick-arrow">▾</span>
@@ -1476,7 +1476,7 @@
   <div class="modal" style="max-width:520px;">
     <div class="fb mb">
       <div><div class="mtit" style="margin-bottom:2px;">Nueva Deuda</div><div style="font-size:11px;color:var(--t3);">Registra cuánto debes y cuánto pagas cada mes</div></div>
-      <button class="mclose" onclick="closeM('m-deu')" aria-label="Cerrar ventana">×</button>
+      <button class="mclose" data-action="closeM" data-arg-id="m-deu" aria-label="Cerrar ventana">×</button>
     </div>
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
@@ -1516,7 +1516,7 @@
       <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
       <div class="day-picker" id="dp-dn-dia">
         <input type="hidden" id="dn-dia" value="">
-        <div class="day-pick-trigger" onclick="toggleDayPicker('dn-dia')">
+        <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="dn-dia">
           <span class="day-pick-icon">📅</span>
           <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
           <span class="day-pick-arrow">▾</span>
@@ -1535,7 +1535,7 @@
     <div style="padding:24px 24px 0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
         <div><div class="mtit" style="margin-bottom:2px;">Pagar Cuota 💳</div><div style="font-size:11px;color:var(--t3);">Registra el pago de esta deuda</div></div>
-        <button class="mclose" onclick="closeM('m-pgc')" aria-label="Cerrar ventana">×</button>
+        <button class="mclose" data-action="closeM" data-arg-id="m-pgc" aria-label="Cerrar ventana">×</button>
       </div>
       <div style="background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);border-radius:16px;padding:18px;margin-bottom:16px;">
         <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Deuda</div>
@@ -1581,7 +1581,7 @@
 <!-- Agendar pago -->
 <div class="modal-ov" id="m-pago" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Agendar Pago 📅</div><button class="mclose" onclick="closeM('m-pago')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Agendar Pago 📅</div><button class="mclose" data-action="closeM" data-arg-id="m-pago" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Descripción</label><input type="text" id="ag-de"></div>
     <div class="fr">
       <div class="fg"><label>Monto</label><input type="number" id="ag-mo"></div>
@@ -1611,7 +1611,7 @@
 <!-- Confirmar pago agendado -->
 <div class="modal-ov" id="m-conf-pago" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Confirmar Pago ✅</div><button class="mclose" onclick="closeM('m-conf-pago')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Confirmar Pago ✅</div><button class="mclose" data-action="closeM" data-arg-id="m-conf-pago" aria-label="Cerrar ventana">×</button></div>
     <p class="tm mb" id="cp-desc" style="font-size:14px;color:var(--t2);line-height:1.5;"></p>
     <div class="fg">
       <label>¿De dónde salió el dinero finalmente?</label>
@@ -1633,7 +1633,7 @@
 <!-- Nueva inversión -->
 <div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Nueva Inversión 📈</div><button class="mclose" onclick="closeM('m-inversion')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Nueva Inversión 📈</div><button class="mclose" data-action="closeM" data-arg-id="m-inversion" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Nombre</label><input type="text" id="inv-no"></div>
     <div class="fr">
       <div class="fg"><label>Plataforma</label><input type="text" id="inv-pl"></div>
@@ -1655,7 +1655,7 @@
 <!-- Actualizar rendimiento -->
 <div class="modal-ov" id="m-rendimiento" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit" id="rend-t">Actualizar Valor</div><button class="mclose" onclick="closeM('m-rendimiento')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit" id="rend-t">Actualizar Valor</div><button class="mclose" data-action="closeM" data-arg-id="m-rendimiento" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Saldo Total Actual</label><input type="number" id="rend-val"></div>
     <input type="hidden" id="rend-id">
     <button class="btn bp bfw" onclick="guardarRendimiento()">Actualizar</button>
@@ -1665,7 +1665,7 @@
 <!-- Prima / Bono -->
 <div class="modal-ov" id="m-prima" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Prima / Bono 🎉</div><button class="mclose" onclick="closeM('m-prima')" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Prima / Bono 🎉</div><button class="mclose" data-action="closeM" data-arg-id="m-prima" aria-label="Cerrar ventana">×</button></div>
     <div style="background:rgba(255,214,10,.06);border:1px solid rgba(255,214,10,.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:12px;color:var(--t2);line-height:1.6;">
       💡 <strong>Regla 30/40/30:</strong> 30% a deudas · 40% a ahorro · 30% a gustos. La fórmula que los expertos recomiendan para aprovechar los ingresos extra sin derrocharlos.
     </div>
@@ -1679,40 +1679,40 @@
 <!-- ═══════════════════════════════════════════════════════
      PANEL "MÁS" — SOLO MÓVIL (ux_02: grid 3×2)
 ════════════════════════════════════════════════════════ -->
-<div id="mas-overlay" class="mas-overlay" onclick="closeMas()" aria-hidden="true"></div>
+<div id="mas-overlay" class="mas-overlay" data-action="closeMas" aria-hidden="true"></div>
 <div id="mas-panel" class="mas-panel" role="dialog" aria-label="Más secciones" aria-modal="false">
   <div class="mas-handle" aria-hidden="true"></div>
   <div class="mas-grid">
     <!-- Secciones secundarias — acceso desde el panel -->
     <button class="mas-item" data-section="alcancias"
-            onclick="go('alcancias')" aria-label="Ir a Mis alcancías">
+            data-action="go" data-arg-sec="alcancias" aria-label="Ir a Mis alcancías">
       <span class="mas-icon" aria-hidden="true">🎯</span>
       <span class="mas-label">Alcancías</span>
     </button>
     <button class="mas-item" data-section="quin"
-            onclick="go('quin')" aria-label="Ir a Mi Plan de quincena">
+            data-action="go" data-arg-sec="quin" aria-label="Ir a Mi Plan de quincena">
       <span class="mas-icon" aria-hidden="true">📋</span>
       <span class="mas-label">Mi Plan</span>
     </button>
     <button class="mas-item" data-section="objetivos"
-            onclick="go('objetivos')" aria-label="Ir a Mis Metas de ahorro">
+            data-action="go" data-arg-sec="objetivos" aria-label="Ir a Mis Metas de ahorro">
       <span class="mas-icon" aria-hidden="true">🎯</span>
       <span class="mas-label">Metas</span>
     </button>
     <button class="mas-item" data-section="inve"
-            onclick="go('inve')" aria-label="Ir a Invertir mi plata">
+            data-action="go" data-arg-sec="inve" aria-label="Ir a Invertir mi plata">
       <span class="mas-icon" aria-hidden="true">📈</span>
       <span class="mas-label">Invertir</span>
     </button>
     <button class="mas-item" data-section="stat"
-            onclick="go('stat')" aria-label="Ir a Balance — análisis financiero">
+            data-action="go" data-arg-sec="stat" aria-label="Ir a Balance — análisis financiero">
       <span class="mas-icon" aria-hidden="true">📊</span>
       <span class="mas-label">Análisis</span>
     </button>
   </div>
   <!-- Tema: movido aquí desde el nav principal en móvil -->
   <div class="mas-tema-row">
-    <button onclick="toggleTheme(); closeMas();"
+    <button data-action="toggleThemeAndClose"
             aria-label="Cambiar entre tema claro y oscuro"
             class="mas-tema-btn">
       <span aria-hidden="true">☀️</span> Cambiar tema
