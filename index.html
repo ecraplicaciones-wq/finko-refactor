@@ -243,7 +243,7 @@
 
         <!-- Botón acordeón: desglose efectivo / banco -->
         <button id="btn-desglose-hero"
-                onclick="toggleDesgloseHero()"
+                data-action="toggleDesgloseHero"
                 aria-expanded="false"
                 aria-controls="desglose-hero-body"
                 class="ui-acc-btn">
@@ -255,7 +255,7 @@
         <div id="desglose-hero-body" style="display:none;margin-top:10px;">
           <div class="g2">
             <div class="sc green" style="position:relative;">
-              <button onclick="editEfectivoDash()" title="Editar efectivo" aria-label="Editar saldo de efectivo"
+              <button data-action="editEfectivoDash" title="Editar efectivo" aria-label="Editar saldo de efectivo"
                       style="position:absolute;top:10px;right:10px;background:rgba(0,220,130,.12);border:1px solid rgba(0,220,130,.2);color:var(--a1);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .18s;padding:0;">✏️</button>
               <div class="sl">💵 Efectivo en mano</div>
               <div class="sv c-green" id="d-ef">$0</div>
@@ -590,7 +590,7 @@
                   <label>¿Con qué pagas?</label>
                   <div class="fund-select" id="g-fo-wrap">
                     <input type="hidden" id="g-fo" value="efectivo">
-                    <div class="fund-sel-trigger" onclick="toggleFundSelect('g-fo')">
+                    <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="g-fo">
                       <span class="fund-sel-icon">💵</span>
                       <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
                       <span class="fund-sel-arrow">▾</span>
@@ -609,7 +609,7 @@
               <div id="p4k" style="display:none;font-size:12px;margin:10px 0;color:var(--t3);"></div>
               <div id="g-semaforo" role="status" aria-live="polite" style="display:none;padding:12px;border-radius:8px;margin:10px 0;font-size:12px;"></div>
               <div id="g-hormiga-impact" style="display:none;padding:12px;border-radius:8px;background:rgba(121,85,72,.1);border:1px solid rgba(121,85,72,.3);color:#a1887f;margin:10px 0;font-size:12px;"></div>
-              <button class="btn bp bfw" onclick="agregarGasto()" style="margin-top:14px;">Registrar gasto →</button>
+              <button class="btn bp bfw" data-action="agregarGasto" style="margin-top:14px;">Registrar gasto →</button>
             </div>
           </div>
 
@@ -633,7 +633,7 @@
               </table>
             </div>
             <div style="margin-top:16px;text-align:right;">
-              <button class="btn bd" onclick="limpiarGastos()">Limpiar período</button>
+              <button class="btn bd" data-action="limpiarGastos">Limpiar período</button>
             </div>
           </div>
         </div>
@@ -688,7 +688,7 @@
                 <input type="checkbox" id="gf-4k">
                 <label for="gf-4k" style="margin:0;font-size:13px;cursor:pointer;">Aplica 4×1000 GMF</label>
               </div>
-              <button class="btn bp bfw" onclick="guardarFijo()">Guardar gasto fijo →</button>
+              <button class="btn bp bfw" data-action="guardarFijo">Guardar gasto fijo →</button>
             </div>
           </div>
 
@@ -716,13 +716,13 @@
     <div class="itab-bar" role="tablist" aria-label="Ver metas o plata apartada">
       <button class="itab active" data-tab="metas"
               role="tab" aria-selected="true" tabindex="0"
-              onclick="switchSecTab('alcancias','metas',this)"
+              data-action="switchSecTab" data-arg-section="alcancias" data-arg-tab="metas"
               aria-controls="alcancias-tab-metas">
         🎯 Mis metas
       </button>
       <button class="itab" data-tab="apartado"
               role="tab" aria-selected="false" tabindex="-1"
-              onclick="switchSecTab('alcancias','apartado',this)"
+              data-action="switchSecTab" data-arg-section="alcancias" data-arg-tab="apartado"
               aria-controls="alcancias-tab-apartado">
         📦 Lo apartado
       </button>
@@ -732,7 +732,7 @@
     <div id="alcancias-tab-metas" class="itab-panel active"
          data-tab="metas" role="tabpanel" aria-label="Mis metas de ahorro">
       <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp bsm" onclick="openNuevoObjetivo()"
+        <button class="btn bp bsm" data-action="openNuevoObjetivo"
                 aria-label="Crear una nueva meta de ahorro">+ Nueva meta</button>
       </div>
       <div class="al alb mb" style="font-size:11px;"><span class="al-icon" aria-hidden="true">💡</span>Crea un <strong>Ahorro Simple</strong> para alcancías, laptops o imprevistos. Crea un <strong>Evento Planeado</strong> si necesitas ahorrar primero y luego registrar los gastos durante el viaje o cumpleaños.</div>
@@ -743,7 +743,7 @@
     <div id="alcancias-tab-apartado" class="itab-panel"
          data-tab="apartado" role="tabpanel" aria-label="Plata apartada con propósito">
       <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp bsm" onclick="abrirNuevoBolsillo()"
+        <button class="btn bp bsm" data-action="abrirNuevoBolsillo"
                 aria-label="Apartar plata con propósito">+ Apartar plata</button>
       </div>
       <!-- Resumen rápido: total apartado / libre / cantidad -->
@@ -796,7 +796,7 @@
       <p class="tm mb">Calcula cuánto crecerá tu dinero a futuro antes de invertirlo.</p>
 
       <div class="calc-c">
-        <div class="calc-header" onclick="toggleCalc('cdt')">
+        <div class="calc-header" data-action="toggleCalc" data-arg-id="cdt">
           <div class="calc-icon" style="background:rgba(0,220,130,.12);border:1px solid rgba(0,220,130,.2);">📈</div>
           <div class="calc-info"><div class="calc-t">Simulador de CDT</div></div>
           <span id="cdt-arr" style="color:var(--t3);font-size:18px;">▾</span>
@@ -833,7 +833,7 @@
       </div>
 
       <div class="calc-c">
-        <div class="calc-header" onclick="toggleCalc('cre')">
+        <div class="calc-header" data-action="toggleCalc" data-arg-id="cre">
           <div class="calc-icon" style="background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.2);">💳</div>
           <div class="calc-info"><div class="calc-t">Simulador de Crédito</div></div>
           <span id="cre-arr" style="color:var(--t3);font-size:18px;">▾</span>
@@ -853,7 +853,7 @@
       </div>
 
       <div class="calc-c">
-        <div class="calc-header" onclick="toggleCalc('ic')">
+        <div class="calc-header" data-action="toggleCalc" data-arg-id="ic">
           <div class="calc-icon" style="background:rgba(0,229,204,.12);border:1px solid rgba(0,229,204,.2);">🌱</div>
           <div class="calc-info"><div class="calc-t">Interés Compuesto con Aportes</div></div>
           <span id="ic-arr" style="color:var(--t3);font-size:18px;">▾</span>
@@ -876,7 +876,7 @@
       </div>
 
       <div class="calc-c">
-        <div class="calc-header" onclick="toggleCalc('inf')">
+        <div class="calc-header" data-action="toggleCalc" data-arg-id="inf">
           <div class="calc-icon" style="background:rgba(255,153,68,.12);border:1px solid rgba(255,153,68,.2);">🔥</div>
           <div class="calc-info"><div class="calc-t">Rentabilidad Real (vs Inflación)</div></div>
           <span id="inf-arr" style="color:var(--t3);font-size:18px;">▾</span>
@@ -896,7 +896,7 @@
       </div>
 
       <div class="calc-c">
-        <div class="calc-header" onclick="toggleCalc('r72')">
+        <div class="calc-header" data-action="toggleCalc" data-arg-id="r72">
           <div class="calc-icon" style="background:rgba(180,78,255,.12);border:1px solid rgba(180,78,255,.2);">⏳</div>
           <div class="calc-info"><div class="calc-t">¿En cuánto tiempo duplico mi plata? (Regla 72)</div></div>
           <span id="r72-arr" style="color:var(--t3);font-size:18px;">▾</span>
@@ -934,13 +934,13 @@
     <div class="itab-bar" role="tablist" aria-label="Ver deudas o pagos agendados">
       <button class="itab active" data-tab="deudas"
               role="tab" aria-selected="true" tabindex="0"
-              onclick="switchSecTab('compromisos','deudas',this)"
+              data-action="switchSecTab" data-arg-section="compromisos" data-arg-tab="deudas"
               aria-controls="compromisos-tab-deudas">
         🤝 Lo que debo
       </button>
       <button class="itab" data-tab="agenda"
               role="tab" aria-selected="false" tabindex="-1"
-              onclick="switchSecTab('compromisos','agenda',this)"
+              data-action="switchSecTab" data-arg-section="compromisos" data-arg-tab="agenda"
               aria-controls="compromisos-tab-agenda">
         📅 Pagos agendados
       </button>
@@ -995,8 +995,8 @@
       <div class="ct">🧠 Coach de Estrategia de Pagos</div>
       <p class="tm" style="line-height:1.5;font-size:11px;margin-bottom:12px;">Elige el método y Finko ordena automáticamente cuál deuda atacar primero con dinero extra.</p>
       <div class="fr" style="gap:10px;">
-        <button class="btn bp" id="btn-ava"  onclick="setModoDeuda('avalancha')" style="flex:1;">🔥 Método Avalancha</button>
-        <button class="btn bg" id="btn-bola" onclick="setModoDeuda('bola')"      style="flex:1;">⛄ Método Bola de Nieve</button>
+        <button class="btn bp" id="btn-ava"  data-action="setModoDeuda" data-arg-modo="avalancha" style="flex:1;">🔥 Método Avalancha</button>
+        <button class="btn bg" id="btn-bola" data-action="setModoDeuda" data-arg-modo="bola"      style="flex:1;">⛄ Método Bola de Nieve</button>
       </div>
       <div id="deu-coach-msg" style="margin-top:12px;font-size:12px;color:var(--t2);background:var(--s2);padding:10px;border-radius:6px;border:1px dashed var(--b2);"><em>Activa un método para ver el consejo del coach.</em></div>
     </div>
@@ -1051,9 +1051,9 @@
     <div class="g2 mb" style="align-items:start;">
       <div class="card">
         <div class="fb mb">
-          <button class="btn bg bsm" onclick="prevMonth()" style="padding:4px 10px;" aria-label="Mes anterior">◀</button>
+          <button class="btn bg bsm" data-action="prevMonth" style="padding:4px 10px;" aria-label="Mes anterior">◀</button>
           <div class="ct" id="cal-month-title" style="margin:0;text-transform:capitalize;">Cargando...</div>
-          <button class="btn bg bsm" onclick="nextMonth()" style="padding:4px 10px;" aria-label="Mes siguiente">▶</button>
+          <button class="btn bg bsm" data-action="nextMonth" style="padding:4px 10px;" aria-label="Mes siguiente">▶</button>
         </div>
         <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;" aria-label="Leyenda del calendario">
           <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--dan);flex-shrink:0;"></div> Agendado</div>
@@ -1130,17 +1130,17 @@
     <div id="resumen-tab-historial" style="display:none;" role="tabpanel">
       <div class="sh" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div class="tm" style="font-size:12px;">Tus períodos cerrados y el resumen de cada uno</div>
-        <button class="btn bg bsm" onclick="cerrarQ()">Cerrar período ✓</button>
+        <button class="btn bg bsm" data-action="cerrarQ">Cerrar período ✓</button>
       </div>
       <div class="card mb">
         <div class="ct">Gestión de Datos</div>
         <div class="g2">
-          <button class="btn bbl" onclick="exportarDatos()">⬇️ Respaldo JSON</button>
+          <button class="btn bbl" data-action="exportarDatos">⬇️ Respaldo JSON</button>
           <label class="btn bg" style="margin:0;display:flex;justify-content:center;align-items:center;cursor:pointer;">
             ⬆️ Cargar Respaldo
             <input type="file" id="file-import" accept=".json" style="display:none;" onchange="importarDatos(event)">
           </label>
-          <button class="btn byw" onclick="exportarCSV()" style="grid-column:span 2;">📊 Exportar Excel</button>
+          <button class="btn byw" data-action="exportarCSV" style="grid-column:span 2;">📊 Exportar Excel</button>
         </div>
       </div>
       <div id="hi-lst"></div>
@@ -1184,7 +1184,7 @@
       <input type="hidden" id="bols-icono-val" value="🪙">
       <div id="bols-iconos-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px;max-height:140px;overflow-y:auto;"></div>
     </div>
-    <button class="btn bp bfw" onclick="guardarNuevoBolsillo()">Crear bolsillo 🪙</button>
+    <button class="btn bp bfw" data-action="guardarNuevoBolsillo">Crear bolsillo 🪙</button>
   </div>
 </div>
 
@@ -1205,7 +1205,7 @@
       <label for="bols-mov-nota">Nota <span class="tm">(opcional)</span></label>
       <input type="text" id="bols-mov-nota" placeholder="Ej: Quincena, bonificación..." maxlength="60">
     </div>
-    <button class="btn bp bfw" onclick="confirmarMovBolsillo()">Confirmar</button>
+    <button class="btn bp bfw" data-action="confirmarMovBolsillo">Confirmar</button>
   </div>
 </div>
 
@@ -1215,7 +1215,7 @@
     <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Cuenta de origen</label><select id="fe-fo"></select></div>
     <div class="fg"><label>Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
-    <button class="btn bp bfw" onclick="registrarAbonoFondo()">Guardar en el Fondo</button>
+    <button class="btn bp bfw" data-action="registrarAbonoFondo">Guardar en el Fondo</button>
   </div>
 </div>
 
@@ -1255,7 +1255,7 @@
     </div>
     <div class="fg"><label>Alias (Ej: Ahorros, Nómina)</label><input type="text" id="cu-alias"></div>
     <div class="fg"><label>Saldo actual</label><input type="number" id="cu-saldo"></div>
-    <button class="btn bp bfw" onclick="guardarCuenta()">Agregar cuenta</button>
+    <button class="btn bp bfw" data-action="guardarCuenta">Agregar cuenta</button>
   </div>
 </div>
 
@@ -1265,7 +1265,7 @@
     <div style="padding:24px 24px 0;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
         <div class="mtit" id="cdlg-title" style="margin:0;font-size:17px;line-height:1.3;"></div>
-        <button class="mclose" onclick="_cdlgRes(false)" style="margin-left:12px;flex-shrink:0;" aria-label="Cerrar ventana">×</button>
+        <button class="mclose" data-action="cdlgResCancel" style="margin-left:12px;flex-shrink:0;" aria-label="Cerrar ventana">×</button>
       </div>
       <div style="background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:16px;margin-bottom:20px;">
         <div id="cdlg-msg" style="font-size:13px;color:var(--t2);line-height:1.6;white-space:pre-wrap;"></div>
@@ -1275,8 +1275,8 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;padding:16px 24px 24px;border-top:1px solid var(--b1);">
-      <button class="btn bg" id="cdlg-cancel" onclick="_cdlgRes(false)" style="flex:1;padding:12px;font-size:13px;font-weight:600;border-radius:10px;">Cancelar</button>
-      <button class="btn bp" id="cdlg-ok"     onclick="_cdlgRes(true)"  style="flex:1;padding:12px;font-size:13px;font-weight:700;border-radius:10px;">Aceptar</button>
+      <button class="btn bg" id="cdlg-cancel" data-action="cdlgResCancel" style="flex:1;padding:12px;font-size:13px;font-weight:600;border-radius:10px;">Cancelar</button>
+      <button class="btn bp" id="cdlg-ok"     data-action="cdlgResOk"  style="flex:1;padding:12px;font-size:13px;font-weight:700;border-radius:10px;">Aceptar</button>
     </div>
   </div>
 </div>
@@ -1284,13 +1284,13 @@
 <!-- Pagar gasto fijo -->
 <div class="modal-ov" id="modal-pagar-fijo" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="fb mb"><div class="mtit">Pagar Fijo 📌</div><button class="mclose" onclick="cerrarModalFijo()" aria-label="Cerrar ventana">×</button></div>
+    <div class="fb mb"><div class="mtit">Pagar Fijo 📌</div><button class="mclose" data-action="cerrarModalFijo" aria-label="Cerrar ventana">×</button></div>
     <div style="background:var(--s2);padding:14px;margin-bottom:18px;border-radius:8px;">
       <div id="mf-nombre" style="font-weight:700;"></div>
       <div id="mf-monto" style="font-family:var(--fm);font-size:22px;color:var(--a3);font-weight:700;"></div>
     </div>
     <div class="fg"><label>¿De dónde sale el dinero?</label><select id="mf-fo"></select></div>
-    <button class="btn bp bfw" onclick="ejecutarPagoFijo()">Confirmar Pago</button>
+    <button class="btn bp bfw" data-action="ejecutarPagoFijo">Confirmar Pago</button>
   </div>
 </div>
 
@@ -1329,7 +1329,7 @@
         <label>Fondo</label>
         <div class="fund-select" id="eg-fo-wrap">
           <input type="hidden" id="eg-fo" value="efectivo">
-          <div class="fund-sel-trigger" onclick="toggleFundSelect('eg-fo')">
+          <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="eg-fo">
             <span class="fund-sel-icon">💵</span>
             <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
             <span class="fund-sel-arrow">▾</span>
@@ -1340,7 +1340,7 @@
     </div>
     <div class="fg"><label>Fecha</label><input type="date" id="eg-fe"></div>
     <input type="hidden" id="eg-id">
-    <button class="btn bp bfw" onclick="guardarEditarGasto()">Guardar cambios</button>
+    <button class="btn bp bfw" data-action="guardarEditarGasto">Guardar cambios</button>
   </div>
 </div>
 
@@ -1350,7 +1350,7 @@
     <div class="fb mb">
       <div class="mtit">Reporte</div>
       <div style="display:flex;gap:8px;">
-        <button class="btn byw bsm" onclick="descargarCSVDirecto()">⬇️ Descargar Excel</button>
+        <button class="btn byw bsm" data-action="descargarCSVDirecto">⬇️ Descargar Excel</button>
         <button class="mclose" data-action="closeM" data-arg-id="m-reporte" aria-label="Cerrar ventana">×</button>
       </div>
     </div>
@@ -1383,7 +1383,7 @@
       <div class="tm mb" style="line-height:1.5;">¿Cuánto planeas gastar durante el evento? Independiente del ahorro.</div>
       <input type="number" id="obj-pres" min="0">
     </div>
-    <button class="btn bp bfw" onclick="guardarObjetivo()">Crear Objetivo</button>
+    <button class="btn bp bfw" data-action="guardarObjetivo">Crear Objetivo</button>
   </div>
 </div>
 
@@ -1409,7 +1409,7 @@
     </div>
     <input type="hidden" id="oa-id">
     <input type="hidden" id="oa-tipo-accion">
-    <button class="btn bp bfw" onclick="ejecutarAccionObjetivo()">Confirmar</button>
+    <button class="btn bp bfw" data-action="ejecutarAccionObjetivo">Confirmar</button>
   </div>
 </div>
 
@@ -1423,14 +1423,14 @@
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button onclick="selTipoDeudaEdit('tarjeta',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
-        <button onclick="selTipoDeudaEdit('credito',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button onclick="selTipoDeudaEdit('hipoteca',this)"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button onclick="selTipoDeudaEdit('vehiculo',this)"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button onclick="selTipoDeudaEdit('educacion',this)" class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button onclick="selTipoDeudaEdit('persona',this)"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button onclick="selTipoDeudaEdit('salud',this)"     class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button onclick="selTipoDeudaEdit('otro',this)"      class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="tarjeta"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="credito"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="hipoteca"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="vehiculo"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="educacion" class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="persona"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="salud"     class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+        <button data-action="selTipoDeudaEdit" data-arg-tipo="otro"      class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
       </div>
       <input type="hidden" id="ed-ti">
     </div>
@@ -1443,8 +1443,8 @@
       <div>
         <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
         <div style="display:flex;gap:8px;">
-          <button onclick="selFrecDeudaEdit('mensual',this)"   id="btn-edit-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
-          <button onclick="selFrecDeudaEdit('quincenal',this)" id="btn-edit-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
+          <button data-action="selFrecDeudaEdit" data-arg-frec="mensual"   id="btn-edit-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
+          <button data-action="selFrecDeudaEdit" data-arg-frec="quincenal" id="btn-edit-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
         </div>
         <input type="hidden" id="ed-pe" value="mensual">
       </div>
@@ -1467,7 +1467,7 @@
       </div>
     </div>
     <input type="hidden" id="ed-id">
-    <button class="btn bp bfw" onclick="guardarEditarDeuda()" style="margin-top:8px;padding:14px;font-size:14px;">Guardar cambios →</button>
+    <button class="btn bp bfw" data-action="guardarEditarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Guardar cambios →</button>
   </div>
 </div>
 
@@ -1481,14 +1481,14 @@
     <div style="margin-bottom:20px;">
       <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button onclick="selTipoDeuda('tarjeta',this)"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
-        <button onclick="selTipoDeuda('credito',this)"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button onclick="selTipoDeuda('hipoteca',this)"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button onclick="selTipoDeuda('vehiculo',this)"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button onclick="selTipoDeuda('educacion',this)" class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button onclick="selTipoDeuda('persona',this)"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button onclick="selTipoDeuda('salud',this)"     class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button onclick="selTipoDeuda('otro',this)"      class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="tarjeta"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="credito"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="hipoteca"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="vehiculo"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="educacion" class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="persona"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="salud"     class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+        <button data-action="selTipoDeuda" data-arg-tipo="otro"      class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
       </div>
       <input type="hidden" id="dn-ti" value="tarjeta">
     </div>
@@ -1501,8 +1501,8 @@
       <div>
         <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
         <div style="display:flex;gap:8px;">
-          <button onclick="selFrecDeuda('mensual',this)"   id="btn-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
-          <button onclick="selFrecDeuda('quincenal',this)" id="btn-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
+          <button data-action="selFrecDeuda" data-arg-frec="mensual"   id="btn-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
+          <button data-action="selFrecDeuda" data-arg-frec="quincenal" id="btn-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
         </div>
         <input type="hidden" id="dn-pe" value="mensual">
       </div>
@@ -1525,7 +1525,7 @@
       </div>
       <div style="font-size:10px;color:var(--t3);margin-top:6px;">💡 Úsalo para ver esta cuota en la Agenda y recibir alertas de mora a tiempo.</div>
     </div>
-    <button class="btn bp bfw" onclick="guardarDeuda()" style="margin-top:8px;padding:14px;font-size:14px;">Registrar Deuda →</button>
+    <button class="btn bp bfw" data-action="guardarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Registrar Deuda →</button>
   </div>
 </div>
 
@@ -1562,7 +1562,7 @@
         <label style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;display:block;">¿De dónde sale el dinero?</label>
         <div class="fund-select" id="pgc-fo-wrap">
           <input type="hidden" id="pgc-fo" value="efectivo">
-          <div class="fund-sel-trigger" onclick="toggleFundSelect('pgc-fo')">
+          <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="pgc-fo">
             <span class="fund-sel-icon">💵</span>
             <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
             <span class="fund-sel-arrow">▾</span>
@@ -1573,7 +1573,7 @@
       <input type="hidden" id="pgc-id">
     </div>
     <div style="padding:16px 24px 24px;border-top:1px solid var(--b1);margin-top:20px;">
-      <button class="btn bp bfw" onclick="confPagarCuota()" style="padding:14px;font-size:14px;font-weight:700;border-radius:12px;">Confirmar Pago →</button>
+      <button class="btn bp bfw" data-action="confPagarCuota" style="padding:14px;font-size:14px;font-weight:700;border-radius:12px;">Confirmar Pago →</button>
     </div>
   </div>
 </div>
@@ -1604,7 +1604,7 @@
         </select>
       </div>
     </div>
-    <button class="btn bp bfw" onclick="guardarPago()">Agendar pago</button>
+    <button class="btn bp bfw" data-action="guardarPago">Agendar pago</button>
   </div>
 </div>
 
@@ -1617,7 +1617,7 @@
       <label>¿De dónde salió el dinero finalmente?</label>
       <div class="fund-select" id="cp-fo-wrap">
         <input type="hidden" id="cp-fo" value="efectivo">
-        <div class="fund-sel-trigger" onclick="toggleFundSelect('cp-fo')">
+        <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="cp-fo">
           <span class="fund-sel-icon">💵</span>
           <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
           <span class="fund-sel-arrow">▾</span>
@@ -1626,7 +1626,7 @@
       </div>
     </div>
     <input type="hidden" id="cp-id">
-    <button class="btn bp bfw" onclick="ejecutarPagoAgendado()">Registrar Pago</button>
+    <button class="btn bp bfw" data-action="ejecutarPagoAgendado">Registrar Pago</button>
   </div>
 </div>
 
@@ -1648,7 +1648,7 @@
         <option value="efectivo">💵 Efectivo</option>
       </select>
     </div>
-    <button class="btn bp bfw" onclick="guardarInversion()">Registrar Inversión</button>
+    <button class="btn bp bfw" data-action="guardarInversion">Registrar Inversión</button>
   </div>
 </div>
 
@@ -1658,7 +1658,7 @@
     <div class="fb mb"><div class="mtit" id="rend-t">Actualizar Valor</div><button class="mclose" data-action="closeM" data-arg-id="m-rendimiento" aria-label="Cerrar ventana">×</button></div>
     <div class="fg"><label>Saldo Total Actual</label><input type="number" id="rend-val"></div>
     <input type="hidden" id="rend-id">
-    <button class="btn bp bfw" onclick="guardarRendimiento()">Actualizar</button>
+    <button class="btn bp bfw" data-action="guardarRendimiento">Actualizar</button>
   </div>
 </div>
 
@@ -1672,7 +1672,7 @@
     <div class="fg"><label for="prm-mo">Monto recibido (COP)</label><input type="number" id="prm-mo" placeholder="Ej: 2500000" oninput="calcPrima()"></div>
     <div class="fg"><label>¿A qué cuenta llegó el dinero?</label><select id="prm-fo"></select></div>
     <div id="prm-res"></div>
-    <button class="btn bp bfw" onclick="guardarPrima()">Registrar Ingreso →</button>
+    <button class="btn bp bfw" data-action="guardarPrima">Registrar Ingreso →</button>
   </div>
 </div>
 

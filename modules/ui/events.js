@@ -9,7 +9,10 @@ import { sr } from '../infra/a11y.js';
 import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../infra/render.js';
 
 // ─── NAVEGACIÓN + UI SHELL ───────────────────────────────────────────────────
-import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside, toggleDashCard } from './shell.js';
+import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside, toggleDashCard, switchSecTab } from './shell.js';
+
+// ─── CALCULADORAS ─────────────────────────────────────────────────────────────
+import { toggleCalc, guardarPrima } from '../calculadoras.js';
 
 // ─── INGRESOS (gastos + dashboard + resumen + historial) ─────────────────────
 import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga, updateDash, calcScore, renderDashCuentas, calcularResumen, generarConsejo, mostrarResumenQuincena, renderHistorial, delHistorial, cerrarQ } from '../dominio/ingresos.js';
@@ -95,6 +98,17 @@ registerAction('toggleDayPicker', ({ id })   => toggleDayPicker(id));
 registerAction('openM',              ({ id })   => openM(id));
 registerAction('closeM',             ({ id })   => closeM(id));
 registerAction('toggleThemeAndClose',()         => { toggleTheme(); closeMas(); });
+registerAction('switchSecTab',       ({ section, tab }, el) => switchSecTab(section, tab, el));
+
+// ─── ACCIONES DE CALCULADORAS ─────────────────────────────────────────────────
+registerAction('toggleCalc',   ({ id }) => toggleCalc(id));
+registerAction('guardarPrima', ()       => guardarPrima());
+
+// ─── ACCIONES INLINE (definidas en events.js) ─────────────────────────────────
+registerAction('toggleDesgloseHero', () => window.toggleDesgloseHero?.());
+registerAction('editEfectivoDash',   () => window.editEfectivoDash?.());
+registerAction('cdlgResOk',          () => window._cdlgRes?.(true));
+registerAction('cdlgResCancel',      () => window._cdlgRes?.(false));
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 

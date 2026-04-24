@@ -1201,8 +1201,8 @@ registerAction('confPagarCuota',     () => confPagarCuota());
 registerAction('abrirEditarDeuda',   ({ id }) => abrirEditarDeuda(id));
 registerAction('guardarEditarDeuda', () => guardarEditarDeuda());
 registerAction('delDeu',             ({ id }) => delDeu(id));
-registerAction('selTipoDeuda',       ({ tipo }) => selTipoDeuda(tipo));
-registerAction('selTipoDeudaEdit',   ({ tipo }) => selTipoDeudaEdit(tipo));
+registerAction('selTipoDeuda',       ({ tipo }, el) => selTipoDeuda(tipo, el));
+registerAction('selTipoDeudaEdit',   ({ tipo }, el) => selTipoDeudaEdit(tipo, el));
 registerAction('selFrecDeuda',       ({ frec }) => selFrecDeuda(frec));
 registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
 
