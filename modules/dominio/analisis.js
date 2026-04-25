@@ -5,6 +5,60 @@ import { CATS, CCOLORS } from '../core/constants.js';
 import { registerAction } from '../ui/actions.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// FUNCIONES PURAS DEL DOMINIO (R1 auditoría v5)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sin S, sin DOM. Las usan los renders y los cálculos de rachas más abajo.
+
+/**
+ * Días consecutivos sin gastos hormiga, contados desde el día más reciente
+ * con registro hacia atrás. Los días sin ningún registro NO cuentan ni
+ * rompen la racha (gaps son neutrales).
+ *
+ * @param {Array<{fecha:string, hormiga?:boolean, tipo?:string}>} gastos
+ * @returns {number} días con registro y sin hormiga (≥ 0).
+ */
+export function calcularRachaHormiga(gastos) {
+  if (!gastos || !gastos.length) return 0;
+
+  // Mapa fecha → "tuvo hormiga ese día?"
+  const porFecha = {};
+  gastos.forEach(g => {
+    if (porFecha[g.fecha] === undefined) porFecha[g.fecha] = false;
+    if (g.hormiga || g.tipo === 'hormiga') porFecha[g.fecha] = true;
+  });
+
+  // Fechas de más reciente a más antigua
+  const fechas = Object.keys(porFecha).sort().reverse();
+  let racha = 0;
+  for (const f of fechas) {
+    if (porFecha[f]) break;
+    racha++;
+  }
+  return racha;
+}
+
+/**
+ * Quincenas consecutivas con ahorro positivo, contadas desde la más reciente
+ * hacia atrás. La quincena en curso suma 1 si `ahorroActual > 0`.
+ *
+ * @param {Array<{id:number, ahorro?:number}>} historial — quincenas cerradas.
+ * @param {number} ahorroActual — total del período en curso (S.gastos tipo
+ *                                ahorro). Sumar 1 si > 0.
+ * @returns {number} quincenas (≥ 0).
+ */
+export function calcularRachaAhorro(historial, ahorroActual) {
+  // historial ordenado de más reciente a más antiguo (id es timestamp)
+  const hist = [...(historial || [])].sort((a, b) => b.id - a.id);
+
+  let racha = ahorroActual > 0 ? 1 : 0;
+  for (const h of hist) {
+    if ((h.ahorro || 0) > 0) racha++;
+    else break;
+  }
+  return racha;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ═══ ESTADÍSTICAS ═══
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -331,27 +385,7 @@ function _rachaHormiga() {
   const key = _rachaCacheKey();
   if (_rachaCache.key === key) return _rachaCache.hormiga;
 
-  if (!S.gastos?.length) {
-    _rachaCache = { key, hormiga: 0, ahorro: _rachaCache.ahorro };
-    return 0;
-  }
-
-  // Agrupar: para cada fecha, ¿tuvo hormiga?
-  const porFecha = {};
-  S.gastos.forEach(g => {
-    if (porFecha[g.fecha] === undefined) porFecha[g.fecha] = false;
-    if (g.hormiga || g.tipo === 'hormiga') porFecha[g.fecha] = true;
-  });
-
-  // Ordenar fechas de más reciente a más antigua
-  const fechas = Object.keys(porFecha).sort().reverse();
-
-  let racha = 0;
-  for (const fecha of fechas) {
-    if (porFecha[fecha]) break;
-    racha++;
-  }
-
+  const racha = calcularRachaHormiga(S.gastos);
   _rachaCache = { key, hormiga: racha, ahorro: _rachaCache.ahorro };
   return racha;
 }
@@ -369,15 +403,7 @@ function _rachaAhorro() {
     .filter(g => g.tipo === 'ahorro')
     .reduce((s, g) => s + g.monto, 0);
 
-  // Historial ordenado de más reciente a más antiguo (id es timestamp)
-  const hist = [...(S.historial || [])].sort((a, b) => b.id - a.id);
-
-  let racha = ahorroActual > 0 ? 1 : 0;
-  for (const h of hist) {
-    if ((h.ahorro || 0) > 0) racha++;
-    else break;
-  }
-
+  const racha = calcularRachaAhorro(S.historial, ahorroActual);
   _rachaCache = { key, hormiga: _rachaCache.hormiga, ahorro: racha };
   return racha;
 }
