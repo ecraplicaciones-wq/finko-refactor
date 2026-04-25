@@ -1007,6 +1007,70 @@
     .deu-card-footer { display: grid; grid-template-columns: 1fr 1fr; }
     .deu-card-footer .btn-pagar-cuota { grid-column: span 2; margin-left: 0; width: 100%; justify-content: center; }
   }
+
+  /* ─── ULTRA-NARROW PHONES (<360px) ──────────────────────────────────────────
+     Cubre iPhone SE 1ª gen (320px), algunos Android de gama baja y Galaxy Fold
+     cerrado (280px). Hasta ahora la app funcionaba "a los empujones" en estos
+     anchos: el bottom bar se desbordaba, los números grandes cortaban el
+     layout y los paddings de 16px dejaban <288px útiles para contenido.
+     ✅ I6 (auditoría v5): escalón extra de compresión sin romper WCAG 2.5.5
+     (touch targets ≥24px) ni legibilidad (font-size ≥11px en cuerpo).
+     ────────────────────────────────────────────────────────────────────────── */
+  @media (max-width: 359px) {
+    /* Contenedor: recuperar ~6px horizontales */
+    main { padding: 14px 10px 80px; }
+
+    /* Cards: un pelín menos de aire interno */
+    .card, .mc, .sc, .pcard { padding: 14px; }
+
+    /* Tipografía principal: bajar un escalón respecto a 768px */
+    .st     { font-size: 16px; }
+    .mc-val { font-size: 20px; }
+
+    /* Scores visuales: reducir círculo para no dominar la columna */
+    .fin-score { width: 72px; height: 72px; font-size: 22px; border-width: 3px; }
+    .sh-icon   { width: 36px; height: 36px; font-size: 16px; }
+
+    /* Bottom bar: caben 5 pestañas en 320px sin scroll forzado */
+    #sidebar nav .nb { min-width: 46px; max-width: 70px; padding: 0 1px 3px; }
+    #sidebar nav .nb .ni { font-size: 18px; width: 36px; height: 26px; }
+    .nb-txt { font-size: 10px; max-width: 58px; }
+
+    /* Tablas e inputs: conservar touch target (44px) pero compactar textos */
+    table     { font-size: 11px; }
+    td, th    { padding: 10px 6px; }
+    .btn      { font-size: 13px; }
+    .btn.bsm  { font-size: 11px; }
+
+    /* Deudas: en <360 el 1fr/1fr del 480 aprieta demasiado → stack completo */
+    .deu-card-footer { grid-template-columns: 1fr; }
+    .deu-card-footer .btn-pagar-cuota { grid-column: span 1; }
+
+    /* Modal: pegado más a los bordes para ganar ancho útil */
+    .modal { padding: 16px; }
+  }
+
+  /* ─── WIDE DESKTOPS (≥1440px) ───────────────────────────────────────────────
+     Monitores 2K/QHD/ultrawide donde main {max-width:1180px} dejaba ~260px+
+     de espacio vacío a cada lado, haciendo que las tarjetas se vieran
+     huérfanas en el centro. Este bloque ensancha el canvas y aumenta los
+     gaps para que la jerarquía visual respire sin forzar a 3-4 columnas
+     nuevas (que romperían la paridad con los grids existentes).
+     ✅ I6 (auditoría v5): subir max-width + aire sin tocar breakpoints previos.
+     ────────────────────────────────────────────────────────────────────────── */
+  @media (min-width: 1440px) {
+    /* Ensanchar el canvas ~18% (1180 → 1400) manteniendo centrado */
+    main { max-width: 1400px; padding: 32px 40px 120px; }
+
+    /* Más aire entre tarjetas — los 12-14px default quedan apretados a 1440+ */
+    .g2 { gap: 18px; }
+    .g3, .g4, .g5 { gap: 16px; }
+
+    /* Jerarquía tipográfica: subir encabezados y números clave un escalón */
+    .st        { font-size: 24px; }
+    .mc-val    { font-size: 26px; }
+    .fin-score { width: 120px; height: 120px; font-size: 48px; }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

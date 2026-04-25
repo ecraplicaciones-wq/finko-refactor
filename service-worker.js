@@ -16,7 +16,7 @@
 // fantasma (dashboard/gastos/fijos/…) que no existen en la estructura real
 // core/infra/ui/dominio → todo caía al catch de install y la app no funcionaba
 // offline. Ver auditoría C1.
-const CACHE_NAME = 'finko-pro-v6';
+const CACHE_NAME = 'finko-pro-v7';
 
 // ─── ASSETS QUE SE CACHEAN AL INSTALAR ───────────────────────────────────────
 const PRECACHE_ASSETS = [
