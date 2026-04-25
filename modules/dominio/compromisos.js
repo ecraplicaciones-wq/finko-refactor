@@ -16,6 +16,152 @@ import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// FUNCIONES PURAS DEL DOMINIO (R1 auditoría v5)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Estas funciones no leen S ni tocan DOM — son testables aisladamente y las
+// usa renderDeudas / _obtenerAlertaMora / abrirPagarCuota más abajo.
+
+/**
+ * Ordena un array de deudas según la estrategia de pago.
+ *
+ * • avalancha (la financieramente más eficiente):
+ *     orden por tasa DESC → menos intereses totales pagados.
+ *     desempate: pendiente DESC.
+ *
+ * • bola de nieve (la psicológicamente más motivadora):
+ *     orden por pendiente ASC → primeras victorias rápidas.
+ *     desempate: tasa DESC.
+ *
+ * @param {Array<{tasa:number, total:number, pagado:number}>} deudas
+ * @param {'avalancha'|'bola'} modo
+ * @returns {Array} nueva lista ordenada (no muta el input).
+ */
+export function ordenarDeudas(deudas, modo = 'avalancha') {
+  const copia = [...(deudas || [])];
+  if (modo === 'bola') {
+    copia.sort((a, b) => {
+      const dSaldo = ((a.total ?? 0) - (a.pagado ?? 0)) - ((b.total ?? 0) - (b.pagado ?? 0));
+      if (dSaldo !== 0) return dSaldo;
+      return (b.tasa || 0) - (a.tasa || 0);
+    });
+  } else {
+    copia.sort((a, b) => {
+      const dTasa = (b.tasa || 0) - (a.tasa || 0);
+      if (dTasa !== 0) return dTasa;
+      return ((b.total ?? 0) - (b.pagado ?? 0)) - ((a.total ?? 0) - (a.pagado ?? 0));
+    });
+  }
+  return copia;
+}
+
+/**
+ * Días de mora de una deuda relativos a una fecha de referencia.
+ * Si la fecha límite (diaPago del mes corriente) aún no llegó o la deuda ya
+ * fue pagada en el mes, devuelve 0.
+ *
+ * @param {{diaPago?:number, total:number, pagado:number, id?:number,
+ *          nombre?:string}} deuda
+ * @param {Date|string} [fechaRef] — default: ahora.
+ * @param {Array} [gastos] — historial de gastos para detectar pago del mes
+ *                           corriente (S.gastos en el call site real).
+ * @returns {number} días de mora (≥ 0).
+ */
+export function calcularDiasMora(deuda, fechaRef = new Date(), gastos = []) {
+  const ref     = fechaRef instanceof Date ? fechaRef : new Date(fechaRef);
+  const hoyDate = new Date(ref); hoyDate.setHours(0, 0, 0, 0);
+  const diaPago = deuda?.diaPago || 1;
+  const ultimoDiaMes = new Date(hoyDate.getFullYear(), hoyDate.getMonth() + 1, 0).getDate();
+  const diaReal      = Math.min(diaPago, ultimoDiaMes);
+  const fechaLimite  = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), diaReal);
+
+  if (hoyDate <= fechaLimite) return 0;
+
+  const _norm = s => String(s || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  const mesPago    = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, '0')}`;
+  const nombreNorm = _norm(deuda?.nombre);
+
+  const pagadoEsteMes = (gastos || []).find(g => {
+    if (g.cat !== 'deudas' || !String(g.fecha || '').startsWith(mesPago)) return false;
+    if (g.deudaId != null) return g.deudaId === deuda.id;
+    return _norm(g.desc).includes(nombreNorm);
+  });
+
+  if (pagadoEsteMes || ((deuda?.total ?? 0) - (deuda?.pagado ?? 0) <= 0)) return 0;
+
+  const dias = Math.floor((hoyDate - fechaLimite) / 86_400_000);
+  return Math.max(0, dias);
+}
+
+/**
+ * Clasifica los días de mora en niveles para alertas y reportes.
+ *
+ * • leve:  1–29 días — recordatorio amable.
+ * • media: 30–89 días — riesgo de reporte a centrales (Datacrédito).
+ * • grave: 90+ días — debe haber recibido aviso legal (Ley 1266/2008 Art. 13).
+ *
+ * @param {number} dias
+ * @returns {null|'leve'|'media'|'grave'} null si no hay mora.
+ */
+export function clasificarMora(dias) {
+  if (!dias || dias <= 0) return null;
+  if (dias < 30) return 'leve';
+  if (dias < 90) return 'media';
+  return 'grave';
+}
+
+/**
+ * Tiempo proyectado para liquidar una deuda dado el pago periódico.
+ * Devuelve un objeto con descomposición meses/años/meses-restantes y un
+ * `nivel` que el render usa para elegir tono ('liquidada','final','corto','largo').
+ *
+ * @param {number} pendiente — saldo restante.
+ * @param {number} cuota     — pago por período (asumimos mensual).
+ * @returns {{
+ *   liquidada: boolean, mesesRestantes: number,
+ *   anos: number, mesesTras: number,
+ *   nivel: 'liquidada'|'final'|'corto'|'largo'
+ * }}
+ */
+export function calcularTiempoRestanteDeuda(pendiente, cuota) {
+  if (pendiente <= 0) {
+    return { liquidada: true, mesesRestantes: 0, anos: 0, mesesTras: 0, nivel: 'liquidada' };
+  }
+  if (!cuota || cuota <= 0) {
+    return { liquidada: false, mesesRestantes: Infinity, anos: Infinity, mesesTras: 0, nivel: 'largo' };
+  }
+  const mesesRestantes = Math.ceil(pendiente / cuota);
+  const anos      = Math.floor(mesesRestantes / 12);
+  const mesesTras = mesesRestantes % 12;
+  let nivel;
+  if (mesesRestantes === 1)      nivel = 'final';
+  else if (mesesRestantes <= 6)  nivel = 'corto';
+  else                           nivel = 'largo';
+  return { liquidada: false, mesesRestantes, anos, mesesTras, nivel };
+}
+
+/**
+ * Clasifica la carga de cuotas como porcentaje del ingreso mensual.
+ *
+ * • critico : >100% — cuotas exceden ingresos.
+ * • alerta  : 41–100% — sobre-endeudamiento riesgoso.
+ * • bien    : 1–40% — manejable.
+ * • cero    : 0% — sin deudas.
+ *
+ * Estos cortes son los recomendados por SuperFinanciera Colombia: la cuota
+ * total no debería superar el 40% del ingreso disponible.
+ *
+ * @param {number} pct — porcentaje cuotas/ingreso (0–N, no normalizado).
+ * @returns {{ nivel:'critico'|'alerta'|'bien'|'cero', emoji:string }}
+ */
+export function clasificarCargaDeuda(pct) {
+  if (pct > 100) return { nivel: 'critico', emoji: '🚨' };
+  if (pct > 40)  return { nivel: 'alerta',  emoji: '⚠️' };
+  if (pct > 0)   return { nivel: 'bien',    emoji: '✅' };
+  return { nivel: 'cero', emoji: '✅' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS FIJOS RECURRENTES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -716,33 +862,17 @@ export function setModoDeuda(m) {
 
 // ─── MORA REAL ───────────────────────────────────────────────────────────────
 function _obtenerAlertaMora(deuda) {
-  const diaPago = deuda.diaPago || 1;
-  const hoyDate = new Date(); hoyDate.setHours(0, 0, 0, 0);
-  const ultimoDiaMes = new Date(hoyDate.getFullYear(), hoyDate.getMonth() + 1, 0).getDate();
-  const diaReal = Math.min(diaPago, ultimoDiaMes);
-  const fechaLimite = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), diaReal);
+  const diasMora = calcularDiasMora(deuda, new Date(), S.gastos);
+  const nivel    = clasificarMora(diasMora);
+  if (!nivel) return '';
 
-  if (hoyDate > fechaLimite) {
-    const mesPago = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, '0')}`;
-    const _norm = s => String(s || '').toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    const nombreNorm = _norm(deuda.nombre);
-
-    const pagadoEsteMes = S.gastos.find(g => {
-      if (g.cat !== 'deudas' || !g.fecha.startsWith(mesPago)) return false;
-      if (g.deudaId != null) return g.deudaId === deuda.id;
-      return _norm(g.desc).includes(nombreNorm);
-    });
-
-    if (pagadoEsteMes || (deuda.total - deuda.pagado <= 0)) return '';
-
-    const diasMora = Math.floor((hoyDate - fechaLimite) / 86_400_000);
-    if (diasMora <= 0) return '';
-    if (diasMora < 30)  return `<div class="alerta-mora alerta-leve" role="status" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(255,214,10,.1); color:var(--a2); border-radius:8px; border:1px solid rgba(255,214,10,.3); font-size:12px;"><span aria-hidden="true">⏳</span> <strong>Llevás ${diasMora} día${diasMora !== 1 ? 's' : ''} sin cubrir esta cuota.</strong> Entre más esperés, más se acumulan los intereses de mora. No dejés que eso pase.</div>`;
-    if (diasMora < 90)  return `<div class="alerta-mora alerta-media" role="alert" aria-live="assertive" style="margin-top:10px; padding:10px; background:rgba(255,107,53,.1); color:var(--a3); border-radius:8px; border:1px solid rgba(255,107,53,.3); font-size:12px;"><span aria-hidden="true">⚠️</span> <strong>¡${diasMora} días sin pagar es mucho!</strong> Tu historial en Datacrédito puede estar tomando nota. Llamá al banco antes de que la cosa se ponga más difícil.</div>`;
-    return `<div class="alerta-mora alerta-grave" role="alert" aria-live="assertive" style="margin-top:10px; padding:10px; background:rgba(255,68,68,.1); color:var(--dan); border-radius:8px; border:1px solid rgba(255,68,68,.3); font-size:12px;"><span aria-hidden="true">🚨</span> <strong>¡Cuidadito! Llevás ${diasMora} días en mora.</strong> Pero ojo: la ley te protege. El banco debe avisarte con 20 días de anticipación antes de reportarte a Datacrédito (Ley 1266/2008, Art. 13). ¡Actuá hoy!</div>`;
+  if (nivel === 'leve') {
+    return `<div class="alerta-mora alerta-leve" role="status" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(255,214,10,.1); color:var(--a2); border-radius:8px; border:1px solid rgba(255,214,10,.3); font-size:12px;"><span aria-hidden="true">⏳</span> <strong>Llevás ${diasMora} día${diasMora !== 1 ? 's' : ''} sin cubrir esta cuota.</strong> Entre más esperés, más se acumulan los intereses de mora. No dejés que eso pase.</div>`;
   }
-  return '';
+  if (nivel === 'media') {
+    return `<div class="alerta-mora alerta-media" role="alert" aria-live="assertive" style="margin-top:10px; padding:10px; background:rgba(255,107,53,.1); color:var(--a3); border-radius:8px; border:1px solid rgba(255,107,53,.3); font-size:12px;"><span aria-hidden="true">⚠️</span> <strong>¡${diasMora} días sin pagar es mucho!</strong> Tu historial en Datacrédito puede estar tomando nota. Llamá al banco antes de que la cosa se ponga más difícil.</div>`;
+  }
+  return `<div class="alerta-mora alerta-grave" role="alert" aria-live="assertive" style="margin-top:10px; padding:10px; background:rgba(255,68,68,.1); color:var(--dan); border-radius:8px; border:1px solid rgba(255,68,68,.3); font-size:12px;"><span aria-hidden="true">🚨</span> <strong>¡Cuidadito! Llevás ${diasMora} días en mora.</strong> Pero ojo: la ley te protege. El banco debe avisarte con 20 días de anticipación antes de reportarte a Datacrédito (Ley 1266/2008, Art. 13). ¡Actuá hoy!</div>`;
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
