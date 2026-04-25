@@ -23,7 +23,15 @@ function _getPct() {
   };
 }
 
-function _cuotasPeriodo() {
+/**
+ * Suma de cuotas del período activo (S.tipoPeriodo).
+ * • mensual → quincenales × 2 + mensuales
+ * • q1      → quincenales + mensuales
+ * • q2      → solo quincenales
+ *
+ * @returns {number} Total de cuotas del período en pesos.
+ */
+export function cuotasPeriodo() {
   const sq = S.deudas.filter(d => d.periodicidad === 'quincenal').reduce((s, d) => s + d.cuota, 0);
   const sm = S.deudas.filter(d => d.periodicidad === 'mensual').reduce((s, d) => s + d.cuota, 0);
   if (S.tipoPeriodo === 'mensual') return (sq * 2) + sm;
@@ -31,7 +39,14 @@ function _cuotasPeriodo() {
   return sq;
 }
 
-function _consolMes() {
+/**
+ * Consolidado del mes corriente: suma del histórico (quincenas anteriores) + el
+ * ingreso/gasto de la quincena en curso. Devuelve totales de ingreso, gasto,
+ * balance y nº de quincenas registradas.
+ *
+ * @returns {{ ing: number, eg: number, bal: number, q: number }}
+ */
+export function consolMes() {
   const mes  = mesStr();
   const hist = S.historial.filter(h => h.mes === mes);
   let ing = 0, eg = 0;
@@ -39,6 +54,11 @@ function _consolMes() {
   const gasAct = S.gastos.filter(g => g.tipo !== 'ahorro').reduce((s, g) => s + (g.montoTotal ?? g.monto), 0);
   return { ing: ing + S.ingreso, eg: eg + gasAct, bal: (ing + S.ingreso) - (eg + gasAct), q: hist.length + (S.ingreso > 0 ? 1 : 0) };
 }
+
+// Aliases internos para no romper los call sites históricos. Una vez los
+// consumidores adopten el nombre público, se pueden borrar.
+const _cuotasPeriodo = cuotasPeriodo;
+const _consolMes     = consolMes;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS
@@ -534,6 +554,42 @@ export function updateDash() {
 }
 
 // ─── SCORE DE SALUD FINANCIERA ───────────────────────────────────────────────
+/**
+ * Calcula el score financiero (0–100) a partir de los inputs ya agregados.
+ * Pura: no lee S, no toca DOM.
+ *
+ * Distribución de puntos:
+ *   • Ahorro: hasta 40 pts (20% del ingreso = puntaje completo)
+ *   • Deuda:  hasta 30 pts (≤30% del ingreso = puntaje completo, decae lineal)
+ *   • Fondo:  hasta 30 pts (% completado del fondo de emergencia)
+ *
+ * @param {object} inputs
+ * @param {number} inputs.ingreso        Ingreso del período.
+ * @param {number} inputs.totalAhorro    Suma de gastos tipo "ahorro".
+ * @param {number} inputs.cuotasPeriodo  Suma de cuotas del período activo.
+ * @param {number} inputs.fondoPct       Porcentaje completado del fondo (0–100).
+ * @returns {{
+ *   total: number, ptsAhorro: number, ptsDeuda: number, ptsFondo: number,
+ *   nivel: 'excelente'|'aceptable'|'malo'|'critico',
+ *   colorClass: string, frase: string
+ * }|null}  null si ingreso=0 y no hay datos suficientes.
+ */
+export function calcularScoreFinanciero({ ingreso, totalAhorro, cuotasPeriodo, fondoPct }) {
+  const ptsAhorro = ingreso > 0 ? Math.min(((totalAhorro / ingreso) / 0.20) * 40, 40) : 0;
+  const pctDeuda  = ingreso > 0 ? cuotasPeriodo / ingreso : 0;
+  const ptsDeuda  = pctDeuda <= 0.30 ? 30 : Math.max(0, 30 - ((pctDeuda - 0.30) * 100));
+  const ptsFondo  = Math.min((Math.max(0, fondoPct || 0) / 100) * 30, 30);
+  const total     = Math.round(ptsAhorro + ptsDeuda + ptsFondo);
+
+  let nivel, colorClass, frase;
+  if (total >= 80)      { nivel = 'excelente'; colorClass = 'fs-excellent';  frase = 'Excelente — Finanzas muy saludables'; }
+  else if (total >= 60) { nivel = 'aceptable'; colorClass = 'fs-acceptable'; frase = 'Buen camino — Hay margen de mejora'; }
+  else if (total >= 40) { nivel = 'malo';      colorClass = 'fs-bad';        frase = 'Alerta — Revisa tus gastos pronto'; }
+  else                  { nivel = 'critico';   colorClass = 'fs-very-bad';   frase = 'Riesgo — Necesitas un plan de acción'; }
+
+  return { total, ptsAhorro, ptsDeuda, ptsFondo, nivel, colorClass, frase };
+}
+
 export function calcScore() {
   const elScore = document.getElementById('stat-score');
   const elLabel = document.getElementById('stat-score-label');
@@ -549,26 +605,20 @@ export function calcScore() {
     return;
   }
 
-  const ptsAhorro = S.ingreso > 0 ? Math.min(((tA / S.ingreso) / 0.20) * 40, 40) : 0;
+  const cPer     = cuotasPeriodo();
+  const fondoPct = (typeof window.calcularFondoEmergencia === 'function')
+    ? parseFloat(window.calcularFondoEmergencia().porcentajeCompletado) || 0
+    : 0;
 
-  const cPer     = _cuotasPeriodo();
-  const pctDeuda = S.ingreso > 0 ? cPer / S.ingreso : 0;
-  const ptsDeuda = pctDeuda <= 0.30 ? 30 : Math.max(0, 30 - ((pctDeuda - 0.30) * 100));
+  const score = calcularScoreFinanciero({
+    ingreso:       S.ingreso,
+    totalAhorro:   tA,
+    cuotasPeriodo: cPer,
+    fondoPct,
+  });
 
-  let ptsFondo = 0;
-  if (typeof window.calcularFondoEmergencia === 'function') {
-    const statsFondo = window.calcularFondoEmergencia();
-    ptsFondo = Math.min(((parseFloat(statsFondo.porcentajeCompletado) || 0) / 100) * 30, 30);
-  }
-
-  const totalScore = Math.round(ptsAhorro + ptsDeuda + ptsFondo);
+  const { total: totalScore, colorClass, frase } = score;
   elScore.textContent = totalScore;
-
-  let colorClass = '', frase = '';
-  if (totalScore >= 80)      { colorClass = 'fs-excellent';  frase = 'Excelente — Finanzas muy saludables'; }
-  else if (totalScore >= 60) { colorClass = 'fs-acceptable'; frase = 'Buen camino — Hay margen de mejora'; }
-  else if (totalScore >= 40) { colorClass = 'fs-bad';        frase = 'Alerta — Revisa tus gastos pronto'; }
-  else                       { colorClass = 'fs-very-bad';   frase = 'Riesgo — Necesitas un plan de acción'; }
 
   elScore.className   = `fin-score ${colorClass}`;
   elLabel.textContent = frase;
