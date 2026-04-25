@@ -38,10 +38,14 @@ export function setHtml(id, v) {
 }
 
 // ─── MODALES ─────────────────────────────────────────────────────────────────
-let _lastFocused = null;
+// ✅ I5 (auditoría v5): _lastFocused era una sola variable; si se abrían
+// modales anidados el disparador del modal externo se perdía al abrir el
+// interno. Ahora es un stack paralelo al de installTrap → cada openM apila
+// el activeElement y closeM lo desapila al restaurar el foco.
+const _focusStack = [];
 
 export function openM(id) {
-  _lastFocused = document.activeElement;
+  _focusStack.push(document.activeElement);
   const modal = document.getElementById(id);
   if (!modal) return;
   modal.classList.add('open');
@@ -61,9 +65,9 @@ export function closeM(id) {
   // Libera el trap antes de restaurar el foco para que el evento
   // de foco saliente no sea interceptado por el handler.
   removeTrap();
-  if (_lastFocused && typeof _lastFocused.focus === 'function') {
-    _lastFocused.focus();
-    _lastFocused = null;
+  const prevFocus = _focusStack.pop();
+  if (prevFocus && typeof prevFocus.focus === 'function') {
+    prevFocus.focus();
   }
 }
 
