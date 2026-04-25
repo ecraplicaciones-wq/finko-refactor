@@ -2,6 +2,144 @@ import { S } from './core/state.js';
 import { f, hoy, setHtml } from './infra/utils.js';
 import { RETEFUENTE_CDT, SALUD_INDEPEND, PENSION_INDEPEND, SMMLV_2026, TASA_USURA_EA } from './core/constants.js';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// FÓRMULAS PURAS (testables sin DOM)
+// ═════════════════════════════════════════════════════════════════════════════
+// ✅ R1 (auditoría v5): la lógica matemática vive aquí, sin dependencias del
+// DOM ni de S. Las funciones cCDT/cCre/etc. siguen siendo el único punto de
+// entrada para la UI — sólo leen inputs, llaman a estas puras y renderizan.
+// Esto permite:
+//   • tests unitarios deterministas (calculadoras.test.js)
+//   • reutilización futura desde otros módulos (p.ej. dashboard)
+//   • detectar regresiones aritméticas sin levantar happy-dom
+
+/**
+ * CDT — Certificado de Depósito a Término.
+ * Capitalización compuesta por días: C × ((1 + tasaEA)^(días/365) − 1).
+ * @param {number} capital  Monto inicial.
+ * @param {number} tasaEA   Tasa efectiva anual en formato decimal (0.13 = 13%).
+ * @param {number} dias     Plazo en días.
+ * @param {boolean} retencion Si true, descuenta retefuente sobre el rendimiento.
+ * @returns {{rendimientoBruto:number, rendimientoNeto:number, rendimientoMensual:number}}
+ *          rendimientoMensual = ingreso mensual equivalente si pagara intereses cada mes.
+ */
+export function calcCDT(capital, tasaEA, dias, retencion = false) {
+  if (!capital || !tasaEA || !dias) return null;
+  const rendimientoBruto = capital * (Math.pow(1 + tasaEA, dias / 365) - 1);
+  const rendimientoNeto  = retencion ? rendimientoBruto * (1 - RETEFUENTE_CDT) : rendimientoBruto;
+  // Tasa efectiva mensual equivalente a la EA — para vista "intereses cada mes"
+  const tem = Math.pow(1 + tasaEA, 1 / 12) - 1;
+  const rendimientoMensualBruto = capital * tem;
+  const rendimientoMensual = retencion
+    ? rendimientoMensualBruto * (1 - RETEFUENTE_CDT)
+    : rendimientoMensualBruto;
+  return { rendimientoBruto, rendimientoNeto, rendimientoMensual };
+}
+
+/**
+ * Crédito en sistema francés (cuota fija). M = P × [i(1+i)^n] / [(1+i)^n − 1].
+ * @param {number} monto         Capital prestado.
+ * @param {number} tasaMensualPct Tasa mensual en porcentaje (2 = 2%/mes).
+ * @param {number} n             Número de cuotas.
+ * @returns {{cuota:number, totalPagado:number, totalInteres:number, taEA:number}|null}
+ *          taEA = tasa efectiva anual equivalente, en porcentaje.
+ */
+export function calcCredito(monto, tasaMensualPct, n) {
+  if (!monto || !n) return null;
+  const i  = tasaMensualPct / 100;
+  const cuota = i === 0
+    ? monto / n
+    : (monto * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+  const totalPagado  = cuota * n;
+  const totalInteres = totalPagado - monto;
+  const taEA = tasaMensualPct > 0 ? (Math.pow(1 + i, 12) - 1) * 100 : 0;
+  return { cuota, totalPagado, totalInteres, taEA };
+}
+
+/**
+ * Banda contextual del E.A. de un crédito comparado con la usura colombiana.
+ * @param {number} taEA            Tasa efectiva anual en porcentaje.
+ * @param {number} usura           TASA_USURA_EA vigente.
+ * @returns {'razonable'|'estandar'|'alta'|'usura'}
+ */
+export function clasificarTasaCredito(taEA, usura) {
+  if (taEA > usura) return 'usura';
+  if (taEA <= 0)    return 'razonable';
+  const ratio = taEA / usura;
+  if (ratio < 0.65) return 'razonable';
+  if (ratio < 0.85) return 'estandar';
+  return 'alta';
+}
+
+/**
+ * Interés compuesto con aportes periódicos (anualidad).
+ * VF = C(1+tm)^n + A × [(1+tm)^n − 1] / tm
+ * @param {number} capital  Capital inicial.
+ * @param {number} aporte   Aporte mensual.
+ * @param {number} tasaEA   Tasa efectiva anual en decimal (0.10 = 10%).
+ * @param {number} meses    Plazo en meses.
+ * @returns {{valorFinal:number, totalAportado:number, ganancia:number}}
+ */
+export function calcInteresCompuesto(capital, aporte, tasaEA, meses) {
+  const tm = Math.pow(1 + tasaEA, 1 / 12) - 1;
+  const valorFinal = tm > 0
+    ? capital * Math.pow(1 + tm, meses) + aporte * (Math.pow(1 + tm, meses) - 1) / tm
+    : capital + aporte * meses;
+  const totalAportado = capital + aporte * meses;
+  const ganancia      = valorFinal - totalAportado;
+  return { valorFinal, totalAportado, ganancia };
+}
+
+/**
+ * Rentabilidad real ajustada por inflación — fórmula de Fisher.
+ * r_real = (1 + r_nominal) / (1 + inflación) − 1
+ * @param {number} capital     Capital invertido.
+ * @param {number} tasaPct     Tasa nominal anual en porcentaje.
+ * @param {number} inflacionPct Inflación anual en porcentaje.
+ * @returns {{realPct:number, gananciaNominal:number, gananciaReal:number, perdidaInflacion:number}}
+ */
+export function calcRentabilidadReal(capital, tasaPct, inflacionPct) {
+  const realPct = (((1 + tasaPct / 100) / (1 + inflacionPct / 100)) - 1) * 100;
+  const gananciaNominal  = capital * (tasaPct / 100);
+  const gananciaReal     = capital * (realPct / 100);
+  const perdidaInflacion = gananciaNominal - gananciaReal;
+  return { realPct, gananciaNominal, gananciaReal, perdidaInflacion };
+}
+
+/**
+ * Regla del 72 — años para duplicar capital a una tasa anual dada.
+ * Aproximación válida para tasas 6%–20%; cálculo exacto vía logaritmos.
+ * @param {number} tasaPct Tasa anual en porcentaje.
+ * @returns {{aprox:number, exacto:number}|null} null si tasa <= 0.
+ */
+export function calcRegla72(tasaPct) {
+  if (tasaPct <= 0) return null;
+  const aprox  = 72 / tasaPct;
+  const exacto = Math.log(2) / Math.log(1 + tasaPct / 100);
+  return { aprox, exacto };
+}
+
+/**
+ * PILA para independientes — cotización a seguridad social.
+ * IBC = max(ingreso × 40%, 1 SMMLV). Salud 12.5%, Pensión 16%, ARL variable.
+ * @param {number} ingreso Ingreso bruto mensual.
+ * @param {number} arl     Tasa ARL en decimal (0.00522 = clase I).
+ * @returns {{ibc:number, salud:number, pension:number, arlMonto:number, total:number}|null}
+ */
+export function calcPILA(ingreso, arl = 0.00522) {
+  if (ingreso <= 0) return null;
+  const ibc      = Math.max(ingreso * 0.40, SMMLV_2026);
+  const salud    = ibc * SALUD_INDEPEND;
+  const pension  = ibc * PENSION_INDEPEND;
+  const arlMonto = ibc * arl;
+  const total    = salud + pension + arlMonto;
+  return { ibc, salud, pension, arlMonto, total };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// RENDERIZADORES (DOM-bound)
+// ═════════════════════════════════════════════════════════════════════════════
+
 // ─── CDT ─────────────────────────────────────────────────────────────────────
 export function cCDT() {
   const c   = +document.getElementById('cc-cap')?.value || 0;
@@ -13,7 +151,8 @@ export function cCDT() {
   // ✅ FIX #6: antes mostraba "$0 de ganancia" silenciosamente cuando días=0
   // o capital=0, lo que confundía al usuario (¿es un bug? ¿el CDT no rinde?).
   // Ahora limpia el resultado y sale temprano con un mensaje orientador.
-  if (!c || !t || !d) {
+  const r = calcCDT(c, t, d, ck);
+  if (!r) {
     setHtml('cdt-res', c === 0 && t === 0 && d === 0 ? '' :
       `<div style="margin-top:10px; padding:12px; background:var(--s2); border-radius:8px;
                    font-size:12px; color:var(--t3); text-align:center;">
@@ -22,26 +161,18 @@ export function cCDT() {
     return;
   }
 
-  // Interés total al vencimiento usando capitalización compuesta por días
-  const rendTotal = c * (Math.pow(1 + t, d / 365) - 1);
-  const netTotal  = ck ? rendTotal * (1 - RETEFUENTE_CDT) : rendTotal;
-
   if (per === '30') {
-    // Tasa efectiva mensual equivalente a la EA
-    const tem         = Math.pow(1 + t, 1 / 12) - 1;
-    const rendMensual = c * tem;
-    const netMensual  = ck ? rendMensual * (1 - RETEFUENTE_CDT) : rendMensual;
     setHtml('cdt-res', `
       <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
         <div style="font-size:12px; color:var(--t3); margin-bottom:4px;">Recibirás en tu cuenta cada mes:</div>
-        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(netMensual)}</div>
-        <div style="font-size:12px; color:var(--t2); margin-top:10px; border-top:1px solid var(--b1); padding-top:10px;">Ganancia sumada al final del plazo: <strong>${f(netTotal)}</strong></div>
+        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(r.rendimientoMensual)}</div>
+        <div style="font-size:12px; color:var(--t2); margin-top:10px; border-top:1px solid var(--b1); padding-top:10px;">Ganancia sumada al final del plazo: <strong>${f(r.rendimientoNeto)}</strong></div>
       </div>`);
   } else {
     setHtml('cdt-res', `
       <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
         <div style="font-size:12px; color:var(--t3); margin-bottom:4px;">Ganancia neta total al final del plazo:</div>
-        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(netTotal)}</div>
+        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(r.rendimientoNeto)}</div>
       </div>`);
   }
 }
@@ -52,21 +183,13 @@ export function cCre() {
   const p  = +document.getElementById('cr-mo')?.value || 0;
   const tm = Number(document.getElementById('cr-ta')?.value) || 0;  // tasa mensual %
   const n  = +document.getElementById('cr-n')?.value || 0;
-  if (!p || !n) { setHtml('cre-res', ''); return; }
-
-  const i  = tm / 100;
-  const cu = i === 0
-    ? p / n
-    : (p * (i * Math.pow(1 + i, n))) / (Math.pow(1 + i, n) - 1);
-
-  const totalPagado  = cu * n;
-  const totalInterés = totalPagado - p;
+  const r = calcCredito(p, tm, n);
+  if (!r) { setHtml('cre-res', ''); return; }
+  const { cuota: cu, totalPagado, totalInteres: totalInterés, taEA } = r;
 
   // ✅ FIX #7: comparar la tasa mensual ingresada contra la tasa de usura.
-  // Convertimos la tasa mensual a EA para comparar en la misma escala que TASA_USURA_EA.
   // Cobrar por encima de la usura es delito en Colombia (Art. 305 C.P.).
   // Casos típicos: préstamos "gota a gota" (10–20% mensual = 120–692% EA).
-  const taEA = tm > 0 ? (Math.pow(1 + i, 12) - 1) * 100 : 0;
   const sobreUsura = taEA > TASA_USURA_EA;
   const alertaUsura = sobreUsura
     ? `<div style="margin-top:10px; padding:12px; background:rgba(255,68,68,.08);
@@ -85,40 +208,37 @@ export function cCre() {
 
   // ✅ I3 (auditoría v5): contexto colombiano del E.A. para que el usuario
   // entienda si la tasa que le están ofreciendo es razonable, estándar o
-  // cara. Bandas relativas a la usura vigente para que se autoactualicen
-  // cada trimestre cuando se bumpee TASA_USURA_EA en constants.js.
-  //   < 65% de usura → banca tradicional / créditos preferenciales
-  //   65–85% de usura → consumo estándar / tarjeta de crédito típica
-  //   85–100% de usura → cerca del tope legal — verificar regulación
+  // cara. La clasificación es una pura testable (clasificarTasaCredito)
+  // con bandas relativas a la usura → autoactualizables al bumpear
+  // TASA_USURA_EA en constants.js cada trimestre.
   let benchmark = '';
-  if (tm > 0 && !sobreUsura) {
+  const banda = tm > 0 ? clasificarTasaCredito(taEA, TASA_USURA_EA) : null;
+  if (banda === 'razonable') {
+    benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(0,220,130,.06);
+                              border:1px solid rgba(0,220,130,.2); border-radius:8px;
+                              font-size:11px; color:var(--t2); line-height:1.5;">
+        ✓ <strong style="color:var(--a1);">Tasa razonable.</strong>
+        Está en el rango que ofrece la banca tradicional para créditos
+        de libre inversión a buenos clientes (~13–20% E.A.).
+      </div>`;
+  } else if (banda === 'estandar') {
+    benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,214,10,.06);
+                              border:1px solid rgba(255,214,10,.25); border-radius:8px;
+                              font-size:11px; color:var(--t2); line-height:1.5;">
+        ○ <strong style="color:var(--a2);">Tasa estándar de consumo.</strong>
+        Comparable a tarjeta de crédito o crédito de consumo de banca
+        tradicional. Evalúa si puedes negociarla más baja antes de firmar.
+      </div>`;
+  } else if (banda === 'alta') {
     const ratio = taEA / TASA_USURA_EA;
-    if (ratio < 0.65) {
-      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(0,220,130,.06);
-                                border:1px solid rgba(0,220,130,.2); border-radius:8px;
-                                font-size:11px; color:var(--t2); line-height:1.5;">
-          ✓ <strong style="color:var(--a1);">Tasa razonable.</strong>
-          Está en el rango que ofrece la banca tradicional para créditos
-          de libre inversión a buenos clientes (~13–20% E.A.).
-        </div>`;
-    } else if (ratio < 0.85) {
-      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,214,10,.06);
-                                border:1px solid rgba(255,214,10,.25); border-radius:8px;
-                                font-size:11px; color:var(--t2); line-height:1.5;">
-          ○ <strong style="color:var(--a2);">Tasa estándar de consumo.</strong>
-          Comparable a tarjeta de crédito o crédito de consumo de banca
-          tradicional. Evalúa si puedes negociarla más baja antes de firmar.
-        </div>`;
-    } else {
-      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,107,53,.07);
-                                border:1px solid rgba(255,107,53,.3); border-radius:8px;
-                                font-size:11px; color:var(--t2); line-height:1.5;">
-          ⚠️ <strong style="color:var(--a3);">Cerca del tope legal.</strong>
-          Estás a menos del ${Math.max(1, Math.round((1 - ratio) * 100))}%
-          del límite de usura (${TASA_USURA_EA}% E.A.). Verifica que la
-          entidad esté vigilada por la Superfinanciera antes de firmar.
-        </div>`;
-    }
+    benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,107,53,.07);
+                              border:1px solid rgba(255,107,53,.3); border-radius:8px;
+                              font-size:11px; color:var(--t2); line-height:1.5;">
+        ⚠️ <strong style="color:var(--a3);">Cerca del tope legal.</strong>
+        Estás a menos del ${Math.max(1, Math.round((1 - ratio) * 100))}%
+        del límite de usura (${TASA_USURA_EA}% E.A.). Verifica que la
+        entidad esté vigilada por la Superfinanciera antes de firmar.
+      </div>`;
   }
 
   setHtml('cre-res', `
@@ -146,13 +266,7 @@ export function cIC() {
   const ta = (+document.getElementById('ic-tas')?.value || 0) / 100; // EA
   const m  = +document.getElementById('ic-mes')?.value || 0;
 
-  const tm = Math.pow(1 + ta, 1 / 12) - 1; // tasa mensual equivalente
-  const vf = tm > 0
-    ? c * Math.pow(1 + tm, m) + a * (Math.pow(1 + tm, m) - 1) / tm
-    : c + a * m;
-
-  const totalAportado = c + a * m;
-  const ganancia      = vf - totalAportado;
+  const { valorFinal: vf, totalAportado, ganancia } = calcInteresCompuesto(c, a, ta, m);
 
   setHtml('ic-res', `
     <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
@@ -246,13 +360,9 @@ export function cPila() {
 
   const ing = +ingEl.value || 0;
   const arl = +(arlEl?.value || 0.00522); // Clase I por defecto
-  if (ing <= 0) { resEl.innerHTML = ''; return; }
-
-  const ibc     = Math.max(ing * 0.40, SMMLV_2026); // Art. 18 Ley 1122/2007
-  const salud   = ibc * SALUD_INDEPEND;
-  const pension = ibc * PENSION_INDEPEND;
-  const arlVal  = ibc * arl;
-  const tot     = salud + pension + arlVal;
+  const r = calcPILA(ing, arl);
+  if (!r) { resEl.innerHTML = ''; return; }
+  const { ibc, salud, pension, arlMonto: arlVal, total: tot } = r;
 
   resEl.innerHTML = `
     <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
@@ -280,10 +390,8 @@ export function cInf() {
   const tas = +document.getElementById('in-tas')?.value || 0;
   const inf = +document.getElementById('in-inf')?.value || 0;
 
-  const real            = (((1 + tas / 100) / (1 + inf / 100)) - 1) * 100;
-  const gananciaNominal = cap * (tas / 100);
-  const gananciaReal    = cap * (real / 100);
-  const perdidaInflacion = gananciaNominal - gananciaReal;
+  const { realPct: real, gananciaNominal, gananciaReal, perdidaInflacion } =
+    calcRentabilidadReal(cap, tas, inf);
   const color = real > 0 ? 'var(--a1)' : 'var(--dan)';
   const msg   = real > 0
     ? '✅ ¡Genial! Tu dinero está creciendo por encima de la inflación.'
@@ -311,16 +419,14 @@ export function cInf() {
 export function cR72() {
   const cap = +document.getElementById('r72-cap')?.value || 0;
   const tas = +document.getElementById('r72-tas')?.value || 0;
-  if (tas <= 0) { setHtml('r72-res', ''); return; }
+  const r = calcRegla72(tas);
+  if (!r) { setHtml('r72-res', ''); return; }
+  const { aprox: years, exacto: yearsExacto } = r;
 
-  const years    = 72 / tas;
   const fullYears = Math.floor(years);
   const months   = Math.round((years % 1) * 12);
   let timeStr    = `${fullYears} año${fullYears !== 1 ? 's' : ''}`;
   if (months > 0) timeStr += ` y ${months} mes${months !== 1 ? 'es' : ''}`;
-
-  // Cálculo exacto complementario via logaritmo natural
-  const yearsExacto = Math.log(2) / Math.log(1 + tas / 100);
 
   let html = `
     <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
