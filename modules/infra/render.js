@@ -111,8 +111,15 @@ export function renderAll() {
 }
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
-window.renderSmart = renderSmart;
-window.renderAll   = renderAll;
-window.updSaldo    = updSaldo;
-window.totalCuentas = totalCuentas;
-window.updateBadge = updateBadge;
+// Guard `typeof window` para que el módulo cargue también en entornos sin DOM
+// (tests con node, SSR). El resto del archivo (setEl/setHtml de utils, queries
+// del DOM dentro de renderX) ya está protegido por las propias funciones de
+// utils.js que devuelven temprano si no hay element. Las exposiciones globales
+// son el único punto que rompía al evaluar el módulo.
+if (typeof window !== 'undefined') {
+  window.renderSmart  = renderSmart;
+  window.renderAll    = renderAll;
+  window.updSaldo     = updSaldo;
+  window.totalCuentas = totalCuentas;
+  window.updateBadge  = updateBadge;
+}

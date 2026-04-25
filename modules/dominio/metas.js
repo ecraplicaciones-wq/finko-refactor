@@ -3,7 +3,7 @@ import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
 import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo } from '../infra/utils.js';
 import { renderSmart } from '../infra/render.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 // ═══ OBJETIVOS ════════════════════════════════════════════════════════════════
 
@@ -435,13 +435,16 @@ registerAction('delInversion',            ({ id }) => delInversion(id));
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // guardarObjetivo, openNuevoObjetivo, ejecutarAccionObjetivo,
 // guardarInversion, guardarRendimiento → migrados a data-action
-window.toggleTipoObjetivo      = toggleTipoObjetivo;      // llamado desde JS
-window.renderObjetivos         = renderObjetivos;          // llamado desde JS
-window.abrirAccionObj          = abrirAccionObj;           // HTML dinámico
-window.evaluarGastoEvento      = evaluarGastoEvento;       // llamado desde JS
-window.delObjetivo             = delObjetivo;              // HTML dinámico
-window.calcSimObj              = calcSimObj;               // HTML dinámico
-window.populateSelectObjetivos = populateSelectObjetivos;  // llamado desde JS
-window.renderInversiones       = renderInversiones;        // llamado desde JS
-window.openRendimiento         = openRendimiento;          // HTML dinámico
-window.delInversion            = delInversion;             // HTML dinámico
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  window.toggleTipoObjetivo      = toggleTipoObjetivo;      // llamado desde JS
+  window.renderObjetivos         = renderObjetivos;          // llamado desde JS
+  window.abrirAccionObj          = abrirAccionObj;           // HTML dinámico
+  window.evaluarGastoEvento      = evaluarGastoEvento;       // llamado desde JS
+  window.delObjetivo             = delObjetivo;              // HTML dinámico
+  window.calcSimObj              = calcSimObj;               // HTML dinámico
+  window.populateSelectObjetivos = populateSelectObjetivos;  // llamado desde JS
+  window.renderInversiones       = renderInversiones;        // llamado desde JS
+  window.openRendimiento         = openRendimiento;          // HTML dinámico
+  window.delInversion            = delInversion;             // HTML dinámico
+}

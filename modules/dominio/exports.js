@@ -2,7 +2,7 @@ import { S }    from '../core/state.js';
 import { save, CURRENT_VERSION, medirUso } from '../core/storage.js';
 import { f, hoy } from '../infra/utils.js';
 import { CATS, GMF_TASA } from '../core/constants.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 // ─── EXPORTAR JSON (RESPALDO COMPLETO) ───────────────────────────────────────
 export function exportarDatos() {
@@ -289,5 +289,8 @@ registerAction('generarReporteHTML',  () => generarReporteHTML());
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // exportarDatos, exportarCSV, descargarCSVDirecto → migrados a data-action
-window.importarDatos      = importarDatos;    // input[type=file] handler
-window.generarReporteHTML = generarReporteHTML; // llamado desde JS
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  window.importarDatos      = importarDatos;    // input[type=file] handler
+  window.generarReporteHTML = generarReporteHTML; // llamado desde JS
+}

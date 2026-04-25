@@ -4,7 +4,7 @@ import { save }     from '../core/storage.js';
 import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo } from '../infra/utils.js';
 import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, TOPE_DIAN, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 let _filtroGasto = '';
 
@@ -1153,23 +1153,25 @@ registerAction('cerrarQ',               () => cerrarQ());
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// gastos — delGasto/abrirEditarGasto en HTML dinámico; render* llamados desde JS
-// agregarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, cerrarQ → data-action
-window.delGasto               = delGasto;
-window.abrirEditarGasto       = abrirEditarGasto;
-window.renderGastos           = renderGastos;
-window.prev4k                 = prev4k;
-window.actualizarSemaforo     = actualizarSemaforo;
-window.calcularImpactoHormiga = calcularImpactoHormiga;
-// dashboard — llamados desde JS
-window.updateDash             = updateDash;
-window.calcScore              = calcScore;
-window.renderDashCuentas      = renderDashCuentas;
-// resumen — llamados desde JS
-window.mostrarResumenQuincena = mostrarResumenQuincena;
-window.calcularResumen        = calcularResumen;
-window.generarConsejo         = generarConsejo;
-// historial — delHistorial en HTML dinámico; renderHistorial desde JS
-window.renderHistorial        = renderHistorial;
-window.delHistorial           = delHistorial;
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  // gastos — delGasto/abrirEditarGasto en HTML dinámico; render* llamados desde JS
+  // agregarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, cerrarQ → data-action
+  window.delGasto               = delGasto;
+  window.abrirEditarGasto       = abrirEditarGasto;
+  window.renderGastos           = renderGastos;
+  window.prev4k                 = prev4k;
+  window.actualizarSemaforo     = actualizarSemaforo;
+  window.calcularImpactoHormiga = calcularImpactoHormiga;
+  // dashboard — llamados desde JS
+  window.updateDash             = updateDash;
+  window.calcScore              = calcScore;
+  window.renderDashCuentas      = renderDashCuentas;
+  // resumen — llamados desde JS
+  window.mostrarResumenQuincena = mostrarResumenQuincena;
+  window.calcularResumen        = calcularResumen;
+  window.generarConsejo         = generarConsejo;
+  // historial — delHistorial en HTML dinámico; renderHistorial desde JS
+  window.renderHistorial        = renderHistorial;
+  window.delHistorial           = delHistorial;
+}

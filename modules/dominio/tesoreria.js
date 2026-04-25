@@ -14,7 +14,7 @@ import {
 import { sr }         from '../infra/a11y.js';
 import { BANCOS_CO }  from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CUENTAS BANCARIAS
@@ -737,28 +737,30 @@ registerAction('selIconoBolsillo',     ({ icon }) => selIconoBolsillo(icon));
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
 // ═══════════════════════════════════════════════════════════════════════════════
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  // cuentas — guardarCuenta → data-action; del*/edit* en HTML dinámico
+  window.delCuenta              = delCuenta;
+  window.editSaldoCuenta        = editSaldoCuenta;
+  window.editSaldoCuentaDash    = editSaldoCuentaDash;
+  window.renderCuentas          = renderCuentas;
+  window.actualizarListasFondos = actualizarListasFondos;
+  window.toggleFundSelect       = toggleFundSelect;
+  window.selFundOpt             = selFundOpt;
 
-// cuentas — guardarCuenta → data-action; del*/edit* en HTML dinámico
-window.delCuenta              = delCuenta;
-window.editSaldoCuenta        = editSaldoCuenta;
-window.editSaldoCuentaDash    = editSaldoCuentaDash;
-window.renderCuentas          = renderCuentas;
-window.actualizarListasFondos = actualizarListasFondos;
-window.toggleFundSelect       = toggleFundSelect;
-window.selFundOpt             = selFundOpt;
+  // fondo de emergencia — registrarAbonoFondo → data-action; resto desde JS
+  window.calcularFondoEmergencia = calcularFondoEmergencia;
+  window.actualizarVistaFondo    = actualizarVistaFondo;
+  window.abrirFondoEmergencia    = abrirFondoEmergencia;
 
-// fondo de emergencia — registrarAbonoFondo → data-action; resto desde JS
-window.calcularFondoEmergencia = calcularFondoEmergencia;
-window.actualizarVistaFondo    = actualizarVistaFondo;
-window.abrirFondoEmergencia    = abrirFondoEmergencia;
-
-// bolsillos — guardarNuevoBolsillo/confirmarMovBolsillo → data-action
-// abrirNuevoBolsillo → data-action; abrir*/eliminar* desde JS/dinámico
-window.totalBolsillos       = totalBolsillos;
-window.platoLibre           = platoLibre;
-window.renderBolsillos      = renderBolsillos;
-window.abrirAbonarBolsillo  = abrirAbonarBolsillo;
-window.abrirRetirarBolsillo = abrirRetirarBolsillo;
-window.eliminarBolsillo     = eliminarBolsillo;
-window.renderIconosBolsillo = renderIconosBolsillo;
-window.selIconoBolsillo     = selIconoBolsillo;
+  // bolsillos — guardarNuevoBolsillo/confirmarMovBolsillo → data-action
+  // abrirNuevoBolsillo → data-action; abrir*/eliminar* desde JS/dinámico
+  window.totalBolsillos       = totalBolsillos;
+  window.platoLibre           = platoLibre;
+  window.renderBolsillos      = renderBolsillos;
+  window.abrirAbonarBolsillo  = abrirAbonarBolsillo;
+  window.abrirRetirarBolsillo = abrirRetirarBolsillo;
+  window.eliminarBolsillo     = eliminarBolsillo;
+  window.renderIconosBolsillo = renderIconosBolsillo;
+  window.selIconoBolsillo     = selIconoBolsillo;
+}

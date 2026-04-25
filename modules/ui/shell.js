@@ -722,28 +722,33 @@ export function toggleDashCard(key) {
 }
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
-window.go               = go;
-window.toggleMas        = toggleMas;
-window.closeMas         = closeMas;
-window.setPer           = setPer;
-window.setResumenTab    = setResumenTab;
-window.toggleSidebar    = toggleSidebar;
-window.switchSecTab     = switchSecTab;
+// Guard `typeof window` para que el módulo cargue también en entornos sin DOM
+// (tests con node, SSR). Las funciones expuestas siguen llamables desde HTML
+// inline `onclick=""` cuando el módulo se carga en un browser real.
+if (typeof window !== 'undefined') {
+  window.go               = go;
+  window.toggleMas        = toggleMas;
+  window.closeMas         = closeMas;
+  window.setPer           = setPer;
+  window.setResumenTab    = setResumenTab;
+  window.toggleSidebar    = toggleSidebar;
+  window.switchSecTab     = switchSecTab;
 
-window.toggleDayPicker     = toggleDayPicker;
-window.selectDay           = selectDay;
-window.setDayPicker        = setDayPicker;
-window.updCustomFundButton = updCustomFundButton;
-window.toggleFormGasto     = toggleFormGasto;
-window.toggleFijoInline    = toggleFijoInline;
-window.toggleFijosPanel    = toggleFijosPanel;
-window.calcDist            = calcDist;
-window.onMetCh             = onMetCh;
-window.selM                = selM;
-window.guardarQ            = guardarQ;
-window.resetTodo           = resetTodo;
-window.resetQuincena       = resetQuincena;
-window.toggleTheme         = toggleTheme;
-window.applyTheme          = applyTheme;
-window.getPreferredTheme   = getPreferredTheme;
-window.initTheme           = initTheme;
+  window.toggleDayPicker     = toggleDayPicker;
+  window.selectDay           = selectDay;
+  window.setDayPicker        = setDayPicker;
+  window.updCustomFundButton = updCustomFundButton;
+  window.toggleFormGasto     = toggleFormGasto;
+  window.toggleFijoInline    = toggleFijoInline;
+  window.toggleFijosPanel    = toggleFijosPanel;
+  window.calcDist            = calcDist;
+  window.onMetCh             = onMetCh;
+  window.selM                = selM;
+  window.guardarQ            = guardarQ;
+  window.resetTodo           = resetTodo;
+  window.resetQuincena       = resetQuincena;
+  window.toggleTheme         = toggleTheme;
+  window.applyTheme          = applyTheme;
+  window.getPreferredTheme   = getPreferredTheme;
+  window.initTheme           = initTheme;
+}

@@ -2,7 +2,7 @@ import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
 import { f, hoy, setEl, setHtml } from '../infra/utils.js';
 import { CATS, CCOLORS } from '../core/constants.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ═══ ESTADÍSTICAS ═══
@@ -748,9 +748,12 @@ registerAction('renderRachaWidget',    () => renderRachaWidget());
 registerAction('calcularRachas',       () => calcularRachas());
 
 // ─── EXPOSICIÓN GLOBAL ────────────────────────────────────────────────────────
-window.renderStats           = renderStats;
-window.calcDistribucionReal  = calcDistribucionReal;
-window.evaluarLogros         = evaluarLogros;
-window.renderLogros          = renderLogros;
-window.renderRachaWidget     = renderRachaWidget;
-window.calcularRachas        = calcularRachas;
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  window.renderStats           = renderStats;
+  window.calcDistribucionReal  = calcDistribucionReal;
+  window.evaluarLogros         = evaluarLogros;
+  window.renderLogros          = renderLogros;
+  window.renderRachaWidget     = renderRachaWidget;
+  window.calcularRachas        = calcularRachas;
+}

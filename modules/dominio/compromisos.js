@@ -13,7 +13,7 @@ import {
 } from '../infra/utils.js';
 import { CATS, GMF_TASA, TASA_USURA_EA } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
-import { registerAction } from '../ui/events.js';
+import { registerAction } from '../ui/actions.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS FIJOS RECURRENTES
@@ -1209,22 +1209,24 @@ registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
 // ═══════════════════════════════════════════════════════════════════════════════
+// Guard `typeof window` para soportar tests/SSR sin DOM.
+if (typeof window !== 'undefined') {
+  // fijos — solo los usados en HTML dinámico (desmFijo, delFijo, abrirModalFijo)
+  window.renderFijos      = renderFijos;
+  window.abrirModalFijo   = abrirModalFijo;
+  window.desmFijo         = desmFijo;
+  window.delFijo          = delFijo;
 
-// fijos — solo los usados en HTML dinámico (desmFijo, delFijo, abrirModalFijo)
-window.renderFijos      = renderFijos;
-window.abrirModalFijo   = abrirModalFijo;
-window.desmFijo         = desmFijo;
-window.delFijo          = delFijo;
+  // agenda — solo los usados en HTML dinámico (marcarPagado, delPago, showDayDetails)
+  window.renderCal       = renderCal;
+  window.showDayDetails  = showDayDetails;
+  window.marcarPagado    = marcarPagado;
+  window.delPago         = delPago;
+  window.renderPagos     = renderPagos;
 
-// agenda — solo los usados en HTML dinámico (marcarPagado, delPago, showDayDetails)
-window.renderCal       = renderCal;
-window.showDayDetails  = showDayDetails;
-window.marcarPagado    = marcarPagado;
-window.delPago         = delPago;
-window.renderPagos     = renderPagos;
-
-// deudas — solo los usados en HTML dinámico (abrirPagarCuota, abrirEditarDeuda, delDeu)
-window.renderDeudas     = renderDeudas;
-window.abrirPagarCuota  = abrirPagarCuota;
-window.abrirEditarDeuda = abrirEditarDeuda;
-window.delDeu           = delDeu;
+  // deudas — solo los usados en HTML dinámico (abrirPagarCuota, abrirEditarDeuda, delDeu)
+  window.renderDeudas     = renderDeudas;
+  window.abrirPagarCuota  = abrirPagarCuota;
+  window.abrirEditarDeuda = abrirEditarDeuda;
+  window.delDeu           = delDeu;
+}

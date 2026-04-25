@@ -40,42 +40,11 @@ import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } fr
 import { renderStats, evaluarLogros, renderLogros, renderRachaWidget, calcularRachas } from '../dominio/analisis.js';
 
 // ─── SISTEMA DE DELEGACIÓN CON data-action ───────────────────────────────────
-
-const ACTIONS = new Map();
-
-export function registerAction(name, fn) {
-  ACTIONS.set(name, fn);
-}
-
-// Delegación global de clicks
-document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-
-  const action = el.dataset.action;
-  const fn = ACTIONS.get(action);
-
-  if (!fn) {
-    console.warn('Acción no registrada:', action);
-    return;
-  }
-
-  // Extraer argumentos de data-arg-*
-  const args = {};
-  Array.from(el.attributes).forEach(attr => {
-    if (attr.name.startsWith('data-arg-')) {
-      const key = attr.name.replace('data-arg-', '');
-      args[key] = attr.value;
-    }
-  });
-
-  fn(args, el, e);
-});
-
-// === INIT: registrar acciones desde módulos ===
-export function initActions() {
-  // Los módulos llamarán registerAction() en su init
-}
+// Movido a ./actions.js para romper la dependencia circular con los módulos
+// de dominio. Re-exportamos para mantener compatibilidad con cualquier
+// consumidor histórico que aún espere encontrarlo aquí.
+import { registerAction, initActions } from './actions.js';
+export { registerAction, initActions };
 
 // ─── ACCIONES DE SHELL (sin circular dependency) ──────────────────────────────
 registerAction('toggleDashCard',  ({ key })  => toggleDashCard(key));
@@ -133,106 +102,108 @@ registerAction('cdlgResCancel',      () => window._cdlgRes?.(false));
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // Solo se exponen funciones llamadas desde HTML dinámico (innerHTML) o desde JS externo.
 // Las llamadas desde HTML estático (index.html) usan data-action y NO necesitan window.*.
+// Guard `typeof window` para soportar entornos sin DOM (tests con node, SSR).
+if (typeof window !== 'undefined') {
+  // utils — usados en HTML dinámico y desde JS externo
+  window.f                   = f;
+  window.hoy                 = hoy;
+  window.mesStr              = mesStr;
+  window.he                  = he;
+  window.setEl               = setEl;
+  window.setHtml             = setHtml;
+  window.sr                  = sr;
+  window.showAlert           = showAlert;
+  window.showConfirm         = showConfirm;
+  window.showPrompt          = showPrompt;
+  window.showPromptConfirm   = showPromptConfirm;
+  window.save                = save;
 
-// utils — usados en HTML dinámico y desde JS externo
-window.f                   = f;
-window.hoy                 = hoy;
-window.mesStr              = mesStr;
-window.he                  = he;
-window.setEl               = setEl;
-window.setHtml             = setHtml;
-window.sr                  = sr;
-window.showAlert           = showAlert;
-window.showConfirm         = showConfirm;
-window.showPrompt          = showPrompt;
-window.showPromptConfirm   = showPromptConfirm;
-window.save                = save;
+  // render / infra — llamados desde otros módulos vía window (renderSmart, etc.)
+  window.updSaldo            = updSaldo;
+  window.updateBadge         = updateBadge;
+  window.renderSmart         = renderSmart;
+  window.renderAll           = renderAll;
+  window.totalCuentas        = totalCuentas;
+  window.updateDash          = updateDash;
+  window.calcScore           = calcScore;
+  window.renderDashCuentas   = renderDashCuentas;
 
-// render / infra — llamados desde otros módulos vía window (renderSmart, etc.)
-window.updSaldo            = updSaldo;
-window.updateBadge         = updateBadge;
-window.renderSmart         = renderSmart;
-window.renderAll           = renderAll;
-window.totalCuentas        = totalCuentas;
-window.updateDash          = updateDash;
-window.calcScore           = calcScore;
-window.renderDashCuentas   = renderDashCuentas;
+  // gastos — delGasto y abrir* en HTML dinámico; render* llamados desde JS
+  window.delGasto            = delGasto;
+  window.abrirEditarGasto    = abrirEditarGasto;
+  window.renderGastos        = renderGastos;
+  window.actualizarSemaforo  = actualizarSemaforo;
+  window.calcularImpactoHormiga = calcularImpactoHormiga;
 
-// gastos — delGasto y abrir* en HTML dinámico; render* llamados desde JS
-window.delGasto            = delGasto;
-window.abrirEditarGasto    = abrirEditarGasto;
-window.renderGastos        = renderGastos;
-window.actualizarSemaforo  = actualizarSemaforo;
-window.calcularImpactoHormiga = calcularImpactoHormiga;
+  // fijos — abrir*/desm*/del* en HTML dinámico; render* desde JS
+  window.renderFijos         = renderFijos;
+  window.abrirModalFijo      = abrirModalFijo;
+  window.desmFijo            = desmFijo;
+  window.delFijo             = delFijo;
 
-// fijos — abrir*/desm*/del* en HTML dinámico; render* desde JS
-window.renderFijos         = renderFijos;
-window.abrirModalFijo      = abrirModalFijo;
-window.desmFijo            = desmFijo;
-window.delFijo             = delFijo;
+  // deudas — abrir*/del* en HTML dinámico; render* desde JS
+  window.renderDeudas        = renderDeudas;
+  window.abrirPagarCuota     = abrirPagarCuota;
+  window.abrirEditarDeuda    = abrirEditarDeuda;
+  window.delDeu              = delDeu;
 
-// deudas — abrir*/del* en HTML dinámico; render* desde JS
-window.renderDeudas        = renderDeudas;
-window.abrirPagarCuota     = abrirPagarCuota;
-window.abrirEditarDeuda    = abrirEditarDeuda;
-window.delDeu              = delDeu;
+  // objetivos — abrir*/del*/calc* en HTML dinámico; render* desde JS
+  window.renderObjetivos          = renderObjetivos;
+  window.abrirAccionObj           = abrirAccionObj;
+  window.delObjetivo              = delObjetivo;
+  window.calcSimObj               = calcSimObj;
 
-// objetivos — abrir*/del*/calc* en HTML dinámico; render* desde JS
-window.renderObjetivos          = renderObjetivos;
-window.abrirAccionObj           = abrirAccionObj;
-window.delObjetivo              = delObjetivo;
-window.calcSimObj               = calcSimObj;
+  // inversiones — open*/del* en HTML dinámico; render* desde JS
+  window.renderInversiones   = renderInversiones;
+  window.openRendimiento     = openRendimiento;
+  window.delInversion        = delInversion;
 
-// inversiones — open*/del* en HTML dinámico; render* desde JS
-window.renderInversiones   = renderInversiones;
-window.openRendimiento     = openRendimiento;
-window.delInversion        = delInversion;
+  // agenda — marcar*/del*/showDay* en HTML dinámico; render* desde JS
+  window.renderCal            = renderCal;
+  window.showDayDetails       = showDayDetails;
+  window.marcarPagado         = marcarPagado;
+  window.delPago              = delPago;
+  window.renderPagos          = renderPagos;
 
-// agenda — marcar*/del*/showDay* en HTML dinámico; render* desde JS
-window.renderCal            = renderCal;
-window.showDayDetails       = showDayDetails;
-window.marcarPagado         = marcarPagado;
-window.delPago              = delPago;
-window.renderPagos          = renderPagos;
+  // cuentas — del*/edit* en HTML dinámico; render* y selFundOpt desde JS/dinámico
+  window.delCuenta              = delCuenta;
+  window.editSaldoCuenta        = editSaldoCuenta;
+  window.editSaldoCuentaDash    = editSaldoCuentaDash;
+  window.renderCuentas          = renderCuentas;
+  window.actualizarListasFondos = actualizarListasFondos;
+  window.selFundOpt             = selFundOpt;
 
-// cuentas — del*/edit* en HTML dinámico; render* y selFundOpt desde JS/dinámico
-window.delCuenta              = delCuenta;
-window.editSaldoCuenta        = editSaldoCuenta;
-window.editSaldoCuentaDash    = editSaldoCuentaDash;
-window.renderCuentas          = renderCuentas;
-window.actualizarListasFondos = actualizarListasFondos;
-window.selFundOpt             = selFundOpt;
+  // historial — delHistorial en HTML dinámico; render* e importar desde JS
+  window.renderHistorial     = renderHistorial;
+  window.delHistorial        = delHistorial;
+  window.importarDatos       = importarDatos;
+  window.generarReporteHTML  = generarReporteHTML;
 
-// historial — delHistorial en HTML dinámico; render* e importar desde JS
-window.renderHistorial     = renderHistorial;
-window.delHistorial        = delHistorial;
-window.importarDatos       = importarDatos;
-window.generarReporteHTML  = generarReporteHTML;
+  // resumen / fondo — llamados desde JS
+  window.mostrarResumenQuincena  = mostrarResumenQuincena;
+  window.calcularResumen         = calcularResumen;
+  window.generarConsejo          = generarConsejo;
+  window.calcularFondoEmergencia = calcularFondoEmergencia;
+  window.actualizarVistaFondo    = actualizarVistaFondo;
 
-// resumen / fondo — llamados desde JS
-window.mostrarResumenQuincena  = mostrarResumenQuincena;
-window.calcularResumen         = calcularResumen;
-window.generarConsejo          = generarConsejo;
-window.calcularFondoEmergencia = calcularFondoEmergencia;
-window.actualizarVistaFondo    = actualizarVistaFondo;
+  // stats / logros — llamados desde JS
+  window.renderStats       = renderStats;
+  window.evaluarLogros     = evaluarLogros;
+  window.renderLogros      = renderLogros;
+  window.renderRachaWidget = renderRachaWidget;
+  window.calcularRachas    = calcularRachas;
 
-// stats / logros — llamados desde JS
-window.renderStats       = renderStats;
-window.evaluarLogros     = evaluarLogros;
-window.renderLogros      = renderLogros;
-window.renderRachaWidget = renderRachaWidget;
-window.calcularRachas    = calcularRachas;
-
-// ui-components — llamados desde JS
-window.selectDay           = selectDay;
-window.setDayPicker        = setDayPicker;
-window.updCustomFundButton = updCustomFundButton;
-window.toggleFijosPanel    = toggleFijosPanel;
-window.calcDist            = calcDist;
-window.onMetCh             = onMetCh;
-window.applyTheme          = applyTheme;
-window.getPreferredTheme   = getPreferredTheme;
-window.initTheme           = initTheme;
+  // ui-components — llamados desde JS
+  window.selectDay           = selectDay;
+  window.setDayPicker        = setDayPicker;
+  window.updCustomFundButton = updCustomFundButton;
+  window.toggleFijosPanel    = toggleFijosPanel;
+  window.calcDist            = calcDist;
+  window.onMetCh             = onMetCh;
+  window.applyTheme          = applyTheme;
+  window.getPreferredTheme   = getPreferredTheme;
+  window.initTheme           = initTheme;
+}
 
 // ─── BANNER OFFLINE ──────────────────────────────────────────────────────────
 // Muestra un aviso amable cuando el dispositivo pierde la conexión.
@@ -278,8 +249,10 @@ function _actualizarBannerOffline() {
   if (offline) sr('Sin conexión a internet. La app sigue funcionando con tus datos guardados.');
 }
 
-window.addEventListener('online',  _actualizarBannerOffline);
-window.addEventListener('offline', _actualizarBannerOffline);
+if (typeof window !== 'undefined') {
+  window.addEventListener('online',  _actualizarBannerOffline);
+  window.addEventListener('offline', _actualizarBannerOffline);
+}
 
 // ─── ARRANQUE ────────────────────────────────────────────────────────────────
 function _initDatos() {

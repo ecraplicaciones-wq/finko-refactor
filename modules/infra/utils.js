@@ -1,4 +1,5 @@
 import { FOCUSABLE_SEL, getFocusable, installTrap, removeTrap } from './a11y.js';
+import { S } from '../core/state.js';
 
 // ─── FORMATO Y FECHAS ─────────────────────────────────────────────────────────
 export function f(n) {
@@ -219,7 +220,7 @@ export function descontarFondo(fo, mo) {
   } else {
     S.saldos.banco = Math.max(0, S.saldos.banco - mo);
   }
-  window.updSaldo?.();
+  if (typeof window !== 'undefined') window.updSaldo?.();
 }
 
 /**
