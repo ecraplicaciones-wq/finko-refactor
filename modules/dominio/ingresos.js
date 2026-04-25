@@ -2,7 +2,7 @@
 import { S }        from '../core/state.js';
 import { save }     from '../core/storage.js';
 import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo } from '../infra/utils.js';
-import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, CCOLORS } from '../core/constants.js';
+import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, TOPE_DIAN, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 import { registerAction } from '../ui/events.js';
 
@@ -477,14 +477,31 @@ export function updateDash() {
     al.push(`<div class="al alg" style="align-items:center; border-width:2px;"><span class=\"al-icon\" style=\"font-size:24px;\" aria-hidden=\"true\">🎉</span><div style="flex:1"><strong>¡Es época de Prima/Bono!</strong> Si recibiste este dinero extra, regístralo aquí para simular su distribución inteligente.</div><button class="btn bp bsm" onclick="openM('m-prima')" style="white-space:nowrap; padding:8px 12px; font-size:12px;">+ Registrar Prima</button></div>`);
   }
 
+  // ── Cesantías e intereses sobre cesantías (Ley 50/1990 + Decreto 116/76) ──
+  // Enero: el empleador paga al trabajador los intereses (12% sobre cesantías)
+  //        hasta el 31. El depósito llega a la cuenta del trabajador.
+  // Febrero: el empleador consigna las cesantías al fondo (Porvenir, Colfondos,
+  //          Protección, Skandia) hasta el 14. La plata NO va a la billetera
+  //          del usuario — por eso el aviso es para "verificar con el fondo".
+  // No condicionamos por tipo de empleo (igual que prima): es un recordatorio
+  // legal universal; quienes no aplican simplemente lo ignoran.
+  if (mesActual === 1) {
+    al.push(`<div class="al alb"><span class=\"al-icon\" aria-hidden=\"true\">💼</span><div><strong>Intereses sobre cesantías:</strong> Antes del <strong>31 de enero</strong>, tu empleador debe pagarte el 12% sobre tus cesantías. Verifica que el depósito haya llegado a tu cuenta.</div></div>`);
+  }
+  if (mesActual === 2) {
+    al.push(`<div class="al alb"><span class=\"al-icon\" aria-hidden=\"true\">🏦</span><div><strong>Consignación de cesantías:</strong> Antes del <strong>14 de febrero</strong>, tu empleador debe consignar tus cesantías al fondo (Porvenir, Colfondos, Protección, Skandia). Revisa con tu fondo para confirmar.</div></div>`);
+  }
+
   const anioActual = new Date().getFullYear().toString();
   let ingresosAnio = S.ingreso;
   S.historial.forEach(h => { if (h.periodo && h.periodo.includes(anioActual)) ingresosAnio += h.ingreso; });
-  const TOPE_DIAN_VALOR = 73_323_600;
-  if (ingresosAnio >= TOPE_DIAN_VALOR) {
-    al.push(`<div class="al ald"><span class=\"al-icon\" aria-hidden=\"true\">🏛️</span><div><strong>Alerta DIAN (Declaración de Renta):</strong> Tus ingresos este año suman <strong>${f(ingresosAnio)}</strong>. Has superado el tope legal aproximado (${f(TOPE_DIAN_VALOR)}). Contacta a un contador público.</div></div>`);
-  } else if (ingresosAnio >= 50_000_000) {
-    al.push(`<div class="al alw"><span class=\"al-icon\" aria-hidden=\"true\">🏛️</span><div><strong>Aviso DIAN:</strong> Llevas <strong>${f(ingresosAnio)}</strong> este año. Estás próximo al tope legal para declarar renta (aprox. ${f(TOPE_DIAN_VALOR)}). Ve reuniendo tus soportes.</div></div>`);
+  // TOPE_DIAN viene de constants.js (1400 UVT × UVT_2026). Antes era un literal
+  // 73_323_600 hardcoded que se desincronizaba cada vez que cambiaba la UVT
+  // anual.
+  if (ingresosAnio >= TOPE_DIAN) {
+    al.push(`<div class="al ald"><span class=\"al-icon\" aria-hidden=\"true\">🏛️</span><div><strong>Alerta DIAN (Declaración de Renta):</strong> Tus ingresos este año suman <strong>${f(ingresosAnio)}</strong>. Has superado el tope legal aproximado (${f(TOPE_DIAN)}). Contacta a un contador público.</div></div>`);
+  } else if (ingresosAnio >= TOPE_DIAN * 0.68) {
+    al.push(`<div class="al alw"><span class=\"al-icon\" aria-hidden=\"true\">🏛️</span><div><strong>Aviso DIAN:</strong> Llevas <strong>${f(ingresosAnio)}</strong> este año. Estás próximo al tope legal para declarar renta (aprox. ${f(TOPE_DIAN)}). Ve reuniendo tus soportes.</div></div>`);
   }
 
   if (S.saldos.efectivo === 0 && S.saldos.banco === 0 && S.ingreso > 0) {

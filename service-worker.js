@@ -12,7 +12,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ⚠️ Actualizar CACHE_NAME con cada release que cambie assets críticos.
-const CACHE_NAME = 'finko-pro-v5';
+// v6: se corrigieron los paths de PRECACHE_ASSETS — antes listaba 11 módulos
+// fantasma (dashboard/gastos/fijos/…) que no existen en la estructura real
+// core/infra/ui/dominio → todo caía al catch de install y la app no funcionaba
+// offline. Ver auditoría C1.
+const CACHE_NAME = 'finko-pro-v6';
 
 // ─── ASSETS QUE SE CACHEAN AL INSTALAR ───────────────────────────────────────
 const PRECACHE_ASSETS = [
@@ -22,28 +26,27 @@ const PRECACHE_ASSETS = [
   './style.css',      // El query param ?v=X se normaliza en el fetch handler (Fix ②)
   './manifest.json',
 
-  // ─── Módulos JS ────────────────────────────────────────────────────────────
-  './modules/ui/events.js',
+  // ─── Módulos JS (estructura real: core/infra/ui/dominio) ───────────────────
+  // core/
   './modules/core/state.js',
   './modules/core/storage.js',
   './modules/core/constants.js',
+  // infra/
   './modules/infra/utils.js',
   './modules/infra/a11y.js',
   './modules/infra/render.js',
-  './modules/ui/sections.js',
-  './modules/dominio/dashboard.js',
-  './modules/dominio/gastos.js',
-  './modules/dominio/fijos.js',
-  './modules/dominio/deudas.js',
-  './modules/dominio/objetivos.js',
-  './modules/dominio/inversiones.js',
-  './modules/dominio/agenda.js',
-  './modules/dominio/tesoreria.js',
-  './modules/dominio/historial.js',
-  './modules/calculadoras.js',
-  './modules/dominio/stats.js',
-  './modules/ui/ui-components.js',
+  // ui/
+  './modules/ui/shell.js',
+  './modules/ui/events.js',
+  // dominio/
+  './modules/dominio/analisis.js',
+  './modules/dominio/compromisos.js',
   './modules/dominio/exports.js',
+  './modules/dominio/ingresos.js',
+  './modules/dominio/metas.js',
+  './modules/dominio/tesoreria.js',
+  // lazy-loaded (pero lo precacheamos para offline completo)
+  './modules/calculadoras.js',
 
   // ─── Iconos para instalación PWA ───────────────────────────────────────────
   // ✅ Fix ①: el manifest.json referencia estos archivos. Sin cachearlos, el

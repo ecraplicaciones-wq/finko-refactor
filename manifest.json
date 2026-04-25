@@ -90,10 +90,10 @@
       "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Ver deudas",
-      "short_name": "Deudas",
-      "description": "Ver el estado de mis compromisos",
-      "url": "./#deu",
+      "name": "Ver compromisos",
+      "short_name": "Compromisos",
+      "description": "Ver el estado de mis deudas y pagos fijos",
+      "url": "./#compromisos",
       "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
     }
   ],

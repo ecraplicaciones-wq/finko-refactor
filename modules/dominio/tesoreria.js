@@ -124,8 +124,18 @@ export function actualizarListasFondos() {
     const optsEl = wrap.querySelector('.fund-sel-opts'); if (!optsEl) return;
 
     const fondos = fondosDisponibles();
+    // Migrado a data-action: el onclick="selFundOpt('…','${fo.nombre}'…)" se
+    // rompía si el nombre de la cuenta tenía comilla simple (ej. "Juan's Bank").
+    // he() escapa ' → &#39;, pero el parser de HTML decodifica entities ANTES de
+    // pasar el string al parser de JS, así que el bug persistía. Los data-arg-*
+    // están entre comillas dobles y el browser resuelve el escape correctamente.
     optsEl.innerHTML = fondos.map(fo => `
-      <div class="fund-sel-opt" onclick="selFundOpt('${id}','${fo.value}','${fo.icon}','${fo.nombre}',${fo.saldo})">
+      <div class="fund-sel-opt" data-action="selFundOpt"
+           data-arg-id="${id}"
+           data-arg-value="${fo.value}"
+           data-arg-icon="${fo.icon}"
+           data-arg-nombre="${fo.nombre}"
+           data-arg-saldo="${fo.saldo == null ? '' : fo.saldo}">
         <span class="fund-sel-opt-icon">${fo.icon}</span>
         <div class="fund-sel-opt-info">
           <div class="fund-sel-opt-name">${fo.nombre}</div>
@@ -703,7 +713,9 @@ registerAction('editSaldoCuentaDash',    ({ id }) => editSaldoCuentaDash(id));
 registerAction('renderCuentas',          () => renderCuentas());
 registerAction('actualizarListasFondos', () => actualizarListasFondos());
 registerAction('toggleFundSelect',       ({ id }) => toggleFundSelect(id));
-registerAction('selFundOpt',             ({ id }) => selFundOpt(id));
+registerAction('selFundOpt',             ({ id, value, icon, nombre, saldo }) =>
+  selFundOpt(id, value, icon, nombre, saldo === '' || saldo == null ? null : Number(saldo))
+);
 // fondo de emergencia
 registerAction('calcularFondoEmergencia', () => calcularFondoEmergencia());
 registerAction('actualizarVistaFondo',    () => actualizarVistaFondo());
