@@ -5,6 +5,129 @@ import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFond
 import { renderSmart } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// FUNCIONES PURAS DEL DOMINIO (R1 auditoría v5)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sin S, sin DOM. Las usan los renders y los modales más abajo.
+
+/**
+ * Progreso de la fase de ahorro de un objetivo.
+ *
+ * @param {{ahorrado:number, objetivoAhorro:number}} obj
+ * @returns {{pct:number, falta:number, completado:boolean,
+ *            colorVar:'var(--a1)'|'var(--a2)'|'var(--a4)'}}
+ */
+export function calcularProgresoObjetivo(obj) {
+  const ahorrado = obj?.ahorrado || 0;
+  const meta     = obj?.objetivoAhorro || 0;
+  const pctRaw   = meta > 0 ? (ahorrado / meta) * 100 : 0;
+  const pct      = Math.min(pctRaw, 100);
+  const falta    = Math.max(0, meta - ahorrado);
+  const completado = pct >= 100;
+  let colorVar;
+  if (pct >= 100)      colorVar = 'var(--a1)';
+  else if (pct > 50)   colorVar = 'var(--a2)';
+  else                 colorVar = 'var(--a4)';
+  return { pct, falta, completado, colorVar };
+}
+
+/**
+ * Progreso de gasto de un objetivo tipo evento (presupuesto consumido).
+ *
+ * @param {{gastado:number, presupuesto:number}} obj
+ * @returns {{pct:number, disponible:number, excedido:boolean,
+ *            colorVar:'var(--dan)'|'var(--a2)'|'var(--a1)'}}
+ */
+export function calcularProgresoEvento(obj) {
+  const gastado     = obj?.gastado || 0;
+  const presupuesto = obj?.presupuesto || 0;
+  const pctRaw      = presupuesto > 0 ? (gastado / presupuesto) * 100 : 0;
+  const pct         = Math.min(pctRaw, 100);
+  const disponible  = Math.max(0, presupuesto - gastado);
+  const excedido    = pctRaw >= 100 && presupuesto > 0;
+  let colorVar;
+  if (pct >= 100)     colorVar = 'var(--dan)';
+  else if (pct > 75)  colorVar = 'var(--a2)';
+  else                colorVar = 'var(--a1)';
+  return { pct, disponible, excedido, colorVar };
+}
+
+/**
+ * Simulación de tiempo para llegar a una meta de ahorro.
+ *
+ * @param {{aporte:number, diasPer:number, falta:number}} inputs
+ *   • aporte  — pesos por período.
+ *   • diasPer — duración de un período (1=día, 7=semana, 15=quincena, 30=mes).
+ *   • falta   — pesos restantes para la meta.
+ * @returns {null|{periodos:number, diasTotal:number, frecNombre:string,
+ *                 tiempoStr:string}}  null si los inputs no permiten estimación.
+ */
+export function calcularSimObjetivo({ aporte, diasPer, falta }) {
+  if (!(aporte > 0) || !(falta > 0)) return null;
+  const dp        = diasPer > 0 ? diasPer : 15;
+  const periodos  = Math.ceil(falta / aporte);
+  const diasTotal = periodos * dp;
+  const nombres   = { 30: 'mes', 15: 'quincena', 7: 'semana', 1: 'día' };
+  const frecNombre = nombres[dp] || 'período';
+
+  let tiempoStr;
+  if (diasTotal < 30) {
+    tiempoStr = `${diasTotal} días`;
+  } else if (diasTotal < 365) {
+    const m = Math.ceil(diasTotal / 30);
+    tiempoStr = `${m} mes${m !== 1 ? 'es' : ''}`;
+  } else {
+    const a  = Math.floor(diasTotal / 365);
+    const mr = Math.floor((diasTotal % 365) / 30);
+    tiempoStr = `${a} año${a !== 1 ? 's' : ''}` +
+                (mr > 0 ? ` y ${mr} mes${mr !== 1 ? 'es' : ''}` : '');
+  }
+  return { periodos, diasTotal, frecNombre, tiempoStr };
+}
+
+/**
+ * Aporte por frecuencia para llegar a `falta` en `diasRestantes`.
+ * Usa min 1 período para evitar división por 0.
+ *
+ * @param {number} falta
+ * @param {number} diasRestantes
+ * @returns {{diario:number, semanal:number, quincenal:number, mensual:number}}
+ */
+export function calcularAportePorFrecuencia(falta, diasRestantes) {
+  if (!(falta > 0) || !(diasRestantes > 0)) {
+    return { diario: 0, semanal: 0, quincenal: 0, mensual: 0 };
+  }
+  const calc = dias => falta / Math.max(1, diasRestantes / dias);
+  return {
+    diario:    calc(1),
+    semanal:   calc(7),
+    quincenal: calc(15),
+    mensual:   calc(30),
+  };
+}
+
+/**
+ * Rendimiento de una inversión: porcentaje y semaforización.
+ *
+ * @param {{capital:number, rendimiento:number}} inv
+ * @returns {{valorTotal:number, pct:number, signo:'+'|'',
+ *            colorVar:'var(--a1)'|'var(--dan)', positivo:boolean}}
+ */
+export function calcularRendimientoInversion(inv) {
+  const capital     = inv?.capital || 0;
+  const rendimiento = inv?.rendimiento || 0;
+  const valorTotal  = capital + rendimiento;
+  const pct         = capital > 0 ? (rendimiento / capital) * 100 : 0;
+  const positivo    = rendimiento >= 0;
+  return {
+    valorTotal,
+    pct,
+    signo:    positivo ? '+' : '',
+    colorVar: positivo ? 'var(--a1)' : 'var(--dan)',
+    positivo,
+  };
+}
+
 // ═══ OBJETIVOS ════════════════════════════════════════════════════════════════
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
@@ -240,23 +363,15 @@ export function calcSimObj(objId, falta) {
   if (!aporteEl || !frecEl || !resEl) return;
   const aporte  = +aporteEl.value || 0;
   const diasPer = +frecEl.value || 15;
-  if (aporte <= 0 || falta <= 0) { resEl.innerHTML = ''; return; }
 
-  const periodos  = Math.ceil(falta / aporte);
-  const diasTotal = periodos * diasPer;
-  const nombres   = { 30: 'mes', 15: 'quincena', 7: 'semana', 1: 'día' };
-  const frecNom   = nombres[diasPer] || 'período';
-
-  let tiempoStr = '';
-  if (diasTotal < 30)       tiempoStr = `${diasTotal} días`;
-  else if (diasTotal < 365) { const m = Math.ceil(diasTotal / 30); tiempoStr = `${m} mes${m !== 1 ? 'es' : ''}`; }
-  else { const a = Math.floor(diasTotal / 365); const mr = Math.floor((diasTotal % 365) / 30); tiempoStr = `${a} año${a !== 1 ? 's' : ''}${mr > 0 ? ` y ${mr} mes${mr !== 1 ? 'es' : ''}` : ''}`; }
+  const sim = calcularSimObjetivo({ aporte, diasPer, falta });
+  if (!sim) { resEl.innerHTML = ''; return; }
 
   resEl.innerHTML = `
     <div style="background:rgba(157,115,235,.1); border:1px solid rgba(157,115,235,.2); border-radius:8px; padding:10px; text-align:center; margin-top:8px;">
-      <div style="font-size:11px; color:var(--t2); margin-bottom:3px;">Ahorrando <strong>${f(aporte)}</strong> por ${frecNom} llegarás en:</div>
-      <div style="font-family:var(--fm); font-size:20px; font-weight:800; color:var(--a5);">${tiempoStr}</div>
-      <div style="font-size:10px; color:var(--t3); margin-top:3px;">${periodos} ${frecNom}${periodos !== 1 ? 's' : ''}</div>
+      <div style="font-size:11px; color:var(--t2); margin-bottom:3px;">Ahorrando <strong>${f(aporte)}</strong> por ${sim.frecNombre} llegarás en:</div>
+      <div style="font-family:var(--fm); font-size:20px; font-weight:800; color:var(--a5);">${sim.tiempoStr}</div>
+      <div style="font-size:10px; color:var(--t3); margin-top:3px;">${sim.periodos} ${sim.frecNombre}${sim.periodos !== 1 ? 's' : ''}</div>
     </div>`;
 }
 
