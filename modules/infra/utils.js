@@ -26,6 +26,28 @@ export function he(s) {
     .replace(/'/g, '&#39;');
 }
 
+// ─── CONTROL DE FLUJO ────────────────────────────────────────────────────────
+/**
+ * Envuelve `fn` para que cada llamada resetee un timer de `ms`; la función
+ * real sólo se ejecuta `ms` milisegundos después de la última invocación.
+ *
+ * Nota: storage.js implementa su propio debounce inline con `_saveTimer` +
+ * `_savePendiente` porque necesita semántica extra (flush sincrónico en
+ * pagehide/beforeunload). Este helper es para consumidores nuevos
+ * —render, autocomplete, resize— donde el patrón clásico es suficiente.
+ *
+ * @param {Function} fn - callback a envolver.
+ * @param {number}   ms - retardo en milisegundos antes de ejecutar.
+ * @returns {Function}   versión debounced que reenvía argumentos.
+ */
+export function debounce(fn, ms) {
+  let t = null;
+  return function (...args) {
+    if (t) clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
 // ─── DOM HELPERS ─────────────────────────────────────────────────────────────
 export function setEl(id, v) {
   const e = document.getElementById(id);
