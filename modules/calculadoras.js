@@ -83,6 +83,44 @@ export function cCre() {
        </div>`
     : '';
 
+  // ✅ I3 (auditoría v5): contexto colombiano del E.A. para que el usuario
+  // entienda si la tasa que le están ofreciendo es razonable, estándar o
+  // cara. Bandas relativas a la usura vigente para que se autoactualicen
+  // cada trimestre cuando se bumpee TASA_USURA_EA en constants.js.
+  //   < 65% de usura → banca tradicional / créditos preferenciales
+  //   65–85% de usura → consumo estándar / tarjeta de crédito típica
+  //   85–100% de usura → cerca del tope legal — verificar regulación
+  let benchmark = '';
+  if (tm > 0 && !sobreUsura) {
+    const ratio = taEA / TASA_USURA_EA;
+    if (ratio < 0.65) {
+      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(0,220,130,.06);
+                                border:1px solid rgba(0,220,130,.2); border-radius:8px;
+                                font-size:11px; color:var(--t2); line-height:1.5;">
+          ✓ <strong style="color:var(--a1);">Tasa razonable.</strong>
+          Está en el rango que ofrece la banca tradicional para créditos
+          de libre inversión a buenos clientes (~13–20% E.A.).
+        </div>`;
+    } else if (ratio < 0.85) {
+      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,214,10,.06);
+                                border:1px solid rgba(255,214,10,.25); border-radius:8px;
+                                font-size:11px; color:var(--t2); line-height:1.5;">
+          ○ <strong style="color:var(--a2);">Tasa estándar de consumo.</strong>
+          Comparable a tarjeta de crédito o crédito de consumo de banca
+          tradicional. Evalúa si puedes negociarla más baja antes de firmar.
+        </div>`;
+    } else {
+      benchmark = `<div style="margin-top:10px; padding:10px 12px; background:rgba(255,107,53,.07);
+                                border:1px solid rgba(255,107,53,.3); border-radius:8px;
+                                font-size:11px; color:var(--t2); line-height:1.5;">
+          ⚠️ <strong style="color:var(--a3);">Cerca del tope legal.</strong>
+          Estás a menos del ${Math.max(1, Math.round((1 - ratio) * 100))}%
+          del límite de usura (${TASA_USURA_EA}% E.A.). Verifica que la
+          entidad esté vigilada por la Superfinanciera antes de firmar.
+        </div>`;
+    }
+  }
+
   setHtml('cre-res', `
     <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
       <div style="font-size:12px; color:var(--t3); margin-bottom:4px;">Cuota mensual fija:</div>
@@ -95,6 +133,7 @@ export function cCre() {
           <strong style="font-family:var(--fm); color:${sobreUsura ? 'var(--dan)' : 'var(--t3)'};">${taEA.toFixed(2)}%</strong>
         </div>` : ''}
       </div>
+      ${benchmark}
       ${alertaUsura}
     </div>`);
 }
