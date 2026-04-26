@@ -1495,7 +1495,13 @@
     <div class="fg"><label>¿Cómo se llama esta deuda?</label><input type="text" id="dn-no" placeholder="Ej: Tarjeta Bancolombia, Crédito del carro..."></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
       <div><label style="margin-bottom:5px;display:block;">¿Cuánto debes en total?</label><input type="number" id="dn-to" placeholder="Ej: 5000000"></div>
-      <div><label style="margin-bottom:5px;display:block;">¿Cuánto pagas cada vez?</label><input type="number" id="dn-cu" placeholder="Ej: 300000"></div>
+      <div>
+        <label style="margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+          <span>¿Cuánto pagas cada vez?</span>
+          <button type="button" data-action="toggleAutoCuota" id="btn-auto-cuota" aria-expanded="false" aria-controls="panel-auto-cuota" style="background:none;border:none;color:var(--a1);font-size:10px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">💡 Calcular</button>
+        </label>
+        <input type="number" id="dn-cu" placeholder="Ej: 300000">
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
       <div>
@@ -1511,6 +1517,23 @@
         <input type="number" id="dn-ta" step="0.1" placeholder="Ej: 2.5">
         <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no sabes la tasa, déjalo en 0</div>
       </div>
+    </div>
+    <div id="panel-auto-cuota" hidden style="margin-bottom:14px;padding:14px;border-radius:12px;background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
+        <span aria-hidden="true" style="font-size:18px;">💡</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px;">Calculá tu cuota automáticamente</div>
+          <div style="font-size:11px;color:var(--t3);line-height:1.5;">Llená el total, la tasa anual y a cuántos meses lo querés pagar. Usamos la fórmula estándar de cuota fija (sistema francés).</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
+        <div>
+          <label for="dn-plazo" style="margin-bottom:4px;display:block;font-size:11px;">¿En cuántos meses la pagás?</label>
+          <input type="number" id="dn-plazo" min="1" placeholder="Ej: 12" style="width:100%;">
+        </div>
+        <button type="button" data-action="calcularCuotaAuto" class="btn bp" style="padding:10px 14px;font-size:12px;font-weight:700;white-space:nowrap;">Calcular →</button>
+      </div>
+      <div id="auto-cuota-out" role="status" aria-live="polite" style="margin-top:10px;font-size:11px;color:var(--t3);min-height:0;"></div>
     </div>
     <div class="fg" style="margin-bottom:14px;">
       <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>

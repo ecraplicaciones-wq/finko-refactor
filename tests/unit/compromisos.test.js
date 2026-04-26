@@ -17,6 +17,7 @@ import {
   clasificarMora,
   calcularTiempoRestanteDeuda,
   clasificarCargaDeuda,
+  calcularCuotaSugerida,
 } from '../../modules/dominio/compromisos.js';
 
 // ─── ordenarDeudas ───────────────────────────────────────────────────────────
@@ -298,6 +299,121 @@ describe('clasificarCargaDeuda()', () => {
     expect(clasificarCargaDeuda(20).emoji).toBe('✅');
     expect(clasificarCargaDeuda(50).emoji).toBe('⚠️');
     expect(clasificarCargaDeuda(150).emoji).toBe('🚨');
+  });
+
+});
+
+// ─── calcularCuotaSugerida (I2 auditoría v5) ─────────────────────────────────
+
+describe('calcularCuotaSugerida()', () => {
+
+  it('inputs inválidos devuelven null', () => {
+    expect(calcularCuotaSugerida()).toBeNull();
+    expect(calcularCuotaSugerida({})).toBeNull();
+    expect(calcularCuotaSugerida({ total: 0,           plazoMeses: 12 })).toBeNull();
+    expect(calcularCuotaSugerida({ total: -1_000_000,  plazoMeses: 12 })).toBeNull();
+    expect(calcularCuotaSugerida({ total: 1_000_000,   plazoMeses: 0  })).toBeNull();
+    expect(calcularCuotaSugerida({ total: 1_000_000,   plazoMeses: -3 })).toBeNull();
+  });
+
+  it('sin tasa (0% E.A.): cuota = capital / n períodos', () => {
+    const r = calcularCuotaSugerida({ total: 1_200_000, tasaEA: 0, plazoMeses: 12 });
+    expect(r.cuota).toBe(100_000);             // 1.2M / 12
+    expect(r.totalPagado).toBe(1_200_000);     // sin intereses
+    expect(r.totalInteres).toBe(0);
+    expect(r.nPeriodos).toBe(12);
+    expect(r.tasaPeriodo).toBe(0);
+  });
+
+  it('tasaEA omitida = sin intereses', () => {
+    const r = calcularCuotaSugerida({ total: 600_000, plazoMeses: 6 });
+    expect(r.cuota).toBe(100_000);
+    expect(r.totalInteres).toBe(0);
+  });
+
+  it('crédito 5M @ 24% E.A. a 12 meses → cuota ≈ 467.263', () => {
+    // tm = (1.24)^(1/12) − 1 ≈ 0.018087 (1.8087%/mes)
+    // cuota = 5M × tm × (1+tm)^12 / ((1+tm)^12 − 1)
+    //       = 5M × 0.022428 / 0.24 ≈ 467_263
+    const r = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 24, plazoMeses: 12 });
+    expect(Math.round(r.cuota)).toBe(467_263);
+    // Total pagado ≈ 5.607M, interés ≈ 607.151
+    expect(Math.round(r.totalPagado))  .toBe(5_607_151);
+    expect(Math.round(r.totalInteres)) .toBe(607_151);
+    expect(r.nPeriodos).toBe(12);
+    expect(r.tasaPeriodo).toBeGreaterThan(0.018);
+    expect(r.tasaPeriodo).toBeLessThan(0.019);
+  });
+
+  it('hipoteca 200M @ 12% E.A. a 240 meses (20 años)', () => {
+    const r = calcularCuotaSugerida({ total: 200_000_000, tasaEA: 12, plazoMeses: 240 });
+    // tm ≈ 0.949% mensual → cuota ≈ 2.135M
+    expect(Math.round(r.cuota)).toBeGreaterThan(2_100_000);
+    expect(Math.round(r.cuota)).toBeLessThan(2_200_000);
+    expect(r.nPeriodos).toBe(240);
+  });
+
+  it('periodicidad quincenal duplica las cuotas y baja la tasa por período', () => {
+    // Mismo capital, mismo plazo en MESES, pero cobra quincena → 24 cuotas/año
+    const mensual   = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 24, plazoMeses: 12, periodicidad: 'mensual' });
+    const quincenal = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 24, plazoMeses: 12, periodicidad: 'quincenal' });
+    expect(quincenal.nPeriodos).toBe(24);  // 12 × 2
+    expect(quincenal.tasaPeriodo).toBeLessThan(mensual.tasaPeriodo);
+    // Cuota quincenal ligeramente MENOR que mensual/2: al pagar más seguido,
+    // se amortiza más rápido y se paga un poco menos interés en total.
+    expect(quincenal.cuota).toBeLessThan(mensual.cuota / 2);
+    expect(quincenal.cuota).toBeGreaterThan(mensual.cuota / 2 - 5000);
+    expect(quincenal.totalPagado).toBeLessThan(mensual.totalPagado);
+  });
+
+  it('quincenal sin tasa: cuota = capital / (plazoMeses × 2)', () => {
+    const r = calcularCuotaSugerida({ total: 1_200_000, tasaEA: 0, plazoMeses: 12, periodicidad: 'quincenal' });
+    expect(r.cuota).toBe(50_000);   // 1.2M / 24 quincenas
+    expect(r.nPeriodos).toBe(24);
+    expect(r.totalInteres).toBe(0);
+  });
+
+  it('tasa de usura colombiana (~26.96% E.A. 2026) genera cuota razonable', () => {
+    const r = calcularCuotaSugerida({ total: 10_000_000, tasaEA: 26.96, plazoMeses: 24 });
+    // Sanity check: cuota debe ser positiva, < capital, y > capital/n
+    expect(r.cuota).toBeGreaterThan(10_000_000 / 24);  // hay intereses
+    expect(r.cuota).toBeLessThan(10_000_000);
+    expect(r.totalInteres).toBeGreaterThan(0);
+  });
+
+  it('tasa negativa se trata como 0 (defensivo)', () => {
+    const r = calcularCuotaSugerida({ total: 1_200_000, tasaEA: -5, plazoMeses: 12 });
+    expect(r.cuota).toBe(100_000);   // como si tasaEA = 0
+    expect(r.totalInteres).toBe(0);
+  });
+
+  it('NaN o string en tasaEA se tratan como 0', () => {
+    const rNaN = calcularCuotaSugerida({ total: 1_200_000, tasaEA: NaN,    plazoMeses: 12 });
+    const rStr = calcularCuotaSugerida({ total: 1_200_000, tasaEA: 'abc',  plazoMeses: 12 });
+    expect(rNaN.cuota).toBe(100_000);
+    expect(rStr.cuota).toBe(100_000);
+  });
+
+  it('totalPagado siempre ≥ total prestado', () => {
+    [0, 5, 12, 25, 35].forEach(tasa => {
+      const r = calcularCuotaSugerida({ total: 1_000_000, tasaEA: tasa, plazoMeses: 12 });
+      expect(r.totalPagado).toBeGreaterThanOrEqual(1_000_000 - 1);  // ε redondeo
+      expect(r.totalInteres).toBeGreaterThanOrEqual(-1);
+    });
+  });
+
+  it('a más plazo, mayor interés total (sentido financiero)', () => {
+    const corto = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 20, plazoMeses: 12 });
+    const largo = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 20, plazoMeses: 60 });
+    expect(largo.totalInteres).toBeGreaterThan(corto.totalInteres);
+    // Pero cuota menor a más plazo
+    expect(largo.cuota).toBeLessThan(corto.cuota);
+  });
+
+  it('a más tasa, mayor cuota (manteniendo plazo)', () => {
+    const baja = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 12, plazoMeses: 12 });
+    const alta = calcularCuotaSugerida({ total: 5_000_000, tasaEA: 30, plazoMeses: 12 });
+    expect(alta.cuota).toBeGreaterThan(baja.cuota);
   });
 
 });

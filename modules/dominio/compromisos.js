@@ -161,6 +161,55 @@ export function clasificarCargaDeuda(pct) {
   return { nivel: 'cero', emoji: '✅' };
 }
 
+/**
+ * Calcula la cuota sugerida (sistema francés / cuota fija) a partir del
+ * capital, tasa anual E.A. y número de períodos. Es la fórmula estándar de
+ * amortización colombiana — la misma que usa la calculadora de crédito.
+ *
+ *     cuota = C × i × (1+i)^n / ((1+i)^n − 1)
+ *
+ * Donde i es la tasa por período (mensual o quincenal) y n el plazo en
+ * períodos. La conversión de E.A. a tasa mensual usa equivalencia financiera
+ * estricta:  i_mensual = (1 + EA)^(1/12) − 1.
+ *
+ * Si tasaEA = 0 ó no se proporciona, la cuota es simplemente capital / n
+ * (préstamo sin intereses, ej: amigos / familiares).
+ *
+ * @param {object} params
+ * @param {number} params.total       — capital prestado (positivo).
+ * @param {number} [params.tasaEA=0]  — tasa anual E.A. en %, no decimal.
+ * @param {number} params.plazoMeses  — número de meses a pagar.
+ * @param {'mensual'|'quincenal'} [params.periodicidad='mensual']
+ *     Si es quincenal, se duplica el número de cuotas y se usa tasa quincenal
+ *     equivalente: (1+EA)^(1/24) − 1.
+ * @returns {{
+ *   cuota: number,           // pago por período (cifra absoluta).
+ *   totalPagado: number,     // cuota × n períodos.
+ *   totalInteres: number,    // totalPagado − total.
+ *   nPeriodos: number,       // n usado en la fórmula.
+ *   tasaPeriodo: number,     // i por período en decimal (0.02 = 2%).
+ * } | null}
+ *     null si los inputs son inválidos (total≤0, plazo≤0).
+ */
+export function calcularCuotaSugerida({ total, tasaEA = 0, plazoMeses, periodicidad = 'mensual' } = {}) {
+  if (!total || total <= 0)            return null;
+  if (!plazoMeses || plazoMeses <= 0)  return null;
+
+  const ea = Math.max(0, +tasaEA || 0) / 100;       // a decimal
+  const periodosPorAno = periodicidad === 'quincenal' ? 24 : 12;
+  const nPeriodos      = periodicidad === 'quincenal' ? plazoMeses * 2 : plazoMeses;
+  const i              = ea > 0 ? Math.pow(1 + ea, 1 / periodosPorAno) - 1 : 0;
+
+  const cuota = i === 0
+    ? total / nPeriodos
+    : (total * i * Math.pow(1 + i, nPeriodos)) / (Math.pow(1 + i, nPeriodos) - 1);
+
+  const totalPagado  = cuota * nPeriodos;
+  const totalInteres = totalPagado - total;
+
+  return { cuota, totalPagado, totalInteres, nPeriodos, tasaPeriodo: i };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS FIJOS RECURRENTES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -833,10 +882,105 @@ export async function guardarDeuda() {
     pagado:       0
   });
 
-  ['dn-no', 'dn-to', 'dn-cu', 'dn-ta', 'dn-dia'].forEach(i => {
+  ['dn-no', 'dn-to', 'dn-cu', 'dn-ta', 'dn-dia', 'dn-plazo'].forEach(i => {
     const e = document.getElementById(i); if (e) e.value = '';
   });
+  // Reset panel auto-cuota
+  const panel  = document.getElementById('panel-auto-cuota');
+  const btnAuto = document.getElementById('btn-auto-cuota');
+  const out    = document.getElementById('auto-cuota-out');
+  if (panel)   panel.hidden = true;
+  if (btnAuto) btnAuto.setAttribute('aria-expanded', 'false');
+  if (out)     out.innerHTML = '';
+
   closeM('m-deu'); save(); renderSmart(['deudas']);
+}
+
+// ─── AUTO-CUOTA (I2 auditoría v5) ────────────────────────────────────────────
+/**
+ * Abre/cierra el panel "Calcular cuota automática" en el modal de nueva deuda.
+ * No depende de S — solo toca DOM del modal.
+ */
+export function toggleAutoCuota() {
+  const panel = document.getElementById('panel-auto-cuota');
+  const btn   = document.getElementById('btn-auto-cuota');
+  if (!panel || !btn) return;
+  const oculto = panel.hidden;
+  panel.hidden = !oculto;
+  btn.setAttribute('aria-expanded', String(oculto));
+  if (oculto) {
+    // Al abrir, focus en plazo para teclar de una
+    const plazo = document.getElementById('dn-plazo');
+    if (plazo) plazo.focus();
+  }
+}
+
+/**
+ * Lee total + tasa + plazo + periodicidad del modal, calcula la cuota sugerida
+ * y la inserta en `dn-cu`, mostrando un mensaje con los intereses totales.
+ *
+ * Si los inputs son insuficientes (falta total o plazo), muestra un hint en el
+ * `aria-live` del panel sin romper el flujo.
+ */
+export async function calcularCuotaAuto() {
+  const total      = +document.getElementById('dn-to')?.value || 0;
+  const tasaEA     = +document.getElementById('dn-ta')?.value || 0;
+  const plazoMeses = +document.getElementById('dn-plazo')?.value || 0;
+  const periodicidad = document.getElementById('dn-pe')?.value || 'mensual';
+  const out        = document.getElementById('auto-cuota-out');
+
+  if (!total) {
+    if (out) out.innerHTML = '<span style="color:var(--a3);">Primero ponele el total que debés (arriba ↑).</span>';
+    return;
+  }
+  if (!plazoMeses) {
+    if (out) out.innerHTML = '<span style="color:var(--a3);">Decinos en cuántos meses la querés pagar.</span>';
+    return;
+  }
+
+  const r = calcularCuotaSugerida({ total, tasaEA, plazoMeses, periodicidad });
+  if (!r) {
+    if (out) out.innerHTML = '<span style="color:var(--dan);">No se puede calcular con esos datos. Revisá total y plazo.</span>';
+    return;
+  }
+
+  // Inserta la cuota en el campo
+  const cu = document.getElementById('dn-cu');
+  if (cu) cu.value = Math.round(r.cuota);
+
+  // Aviso usura si la tasa supera el límite legal colombiano
+  const avisoUsura = (tasaEA > TASA_USURA_EA)
+    ? `<div style="margin-top:6px;color:var(--dan);font-weight:700;">🚨 ¡Ojo! Esa tasa supera la usura legal en Colombia (${TASA_USURA_EA}% E.A.). Es ilegal cobrarte tanto.</div>`
+    : '';
+
+  const sufijoPeriodo = periodicidad === 'quincenal' ? 'quincena' : 'mes';
+  const totalCuotas   = r.nPeriodos;
+  const interesPct    = total > 0 ? Math.round((r.totalInteres / total) * 100) : 0;
+
+  if (out) {
+    out.innerHTML = `
+      <div style="background:var(--s2);border-radius:8px;padding:10px;margin-top:6px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;margin-bottom:4px;">
+          <span>Cuota por <strong>${sufijoPeriodo}</strong>:</span>
+          <strong style="color:var(--a1);font-family:var(--fm);">${f(Math.round(r.cuota))}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;margin-bottom:4px;">
+          <span>Total de cuotas:</span>
+          <strong style="font-family:var(--fm);">${totalCuotas}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;margin-bottom:4px;">
+          <span>Vas a pagar en total:</span>
+          <strong style="font-family:var(--fm);">${f(Math.round(r.totalPagado))}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;">
+          <span>De los cuales son intereses:</span>
+          <strong style="color:${interesPct > 30 ? 'var(--dan)' : 'var(--a3)'};font-family:var(--fm);">${f(Math.round(r.totalInteres))} (${interesPct}%)</strong>
+        </div>
+        ${avisoUsura}
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--t3);">✅ Cuota copiada al campo de arriba. Podés ajustarla a mano si querés.</div>
+    `;
+  }
 }
 
 // ─── ESTRATEGIA: AVALANCHA / BOLA DE NIEVE ───────────────────────────────────
@@ -1335,6 +1479,8 @@ registerAction('selTipoDeuda',       ({ tipo }, el) => selTipoDeuda(tipo, el));
 registerAction('selTipoDeudaEdit',   ({ tipo }, el) => selTipoDeudaEdit(tipo, el));
 registerAction('selFrecDeuda',       ({ frec }) => selFrecDeuda(frec));
 registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
+registerAction('toggleAutoCuota',    () => toggleAutoCuota());
+registerAction('calcularCuotaAuto',  () => calcularCuotaAuto());
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
