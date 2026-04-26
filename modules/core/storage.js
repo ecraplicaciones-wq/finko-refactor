@@ -11,7 +11,7 @@
 import { S, resetAppState } from './state.js';
 
 export const STORAGE_KEY    = 'fco_v4';
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 // Límite práctico: 5 MB - 50 KB de margen de seguridad
 const LIMITE_BYTES     = 5 * 1024 * 1024;
@@ -88,6 +88,12 @@ function _migrar(data, fromVersion) {
   if (v < 6) {
     if (!Array.isArray(d.meDeben)) d.meDeben = [];
     v = 6;
+  }
+
+  // ── v6 → v7: agregar lastBackupAt (banner de respaldo cada 30 días) ──────
+  if (v < 7) {
+    if (typeof d.lastBackupAt === 'undefined') d.lastBackupAt = null;
+    v = 7;
   }
 
   d._version = CURRENT_VERSION;

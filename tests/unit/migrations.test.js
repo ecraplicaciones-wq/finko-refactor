@@ -65,6 +65,12 @@ function _migrar(data, fromVersion) {
     v = 6;
   }
 
+  // ── v6 → v7: agregar lastBackupAt (banner de respaldo cada 30 días) ──────
+  if (v < 7) {
+    if (typeof d.lastBackupAt === 'undefined') d.lastBackupAt = null;
+    v = 7;
+  }
+
   d._version = CURRENT_VERSION;
   return d;
 }
@@ -197,6 +203,35 @@ describe('Migraciones de schema', () => {
     });
   });
 
+  describe('v6 → v7', () => {
+    it('agrega lastBackupAt = null cuando no existe el campo', () => {
+      const v6Data = { _version: 6 };
+      const migrado = _migrar(v6Data, 6);
+      expect(migrado.lastBackupAt).toBe(null);
+      expect('lastBackupAt' in migrado).toBe(true);
+    });
+
+    it('preserva lastBackupAt preexistente sin pisarlo', () => {
+      const v6Data = { _version: 6, lastBackupAt: '2026-04-10' };
+      const migrado = _migrar(v6Data, 6);
+      expect(migrado.lastBackupAt).toBe('2026-04-10');
+    });
+
+    it('preserva lastBackupAt explícitamente null sin sobreescribir', () => {
+      // null ≠ undefined: si el usuario lo guardó como null, lo respetamos.
+      const v6Data = { _version: 6, lastBackupAt: null };
+      const migrado = _migrar(v6Data, 6);
+      expect(migrado.lastBackupAt).toBe(null);
+    });
+
+    it('es idempotente: aplicar dos veces da el mismo resultado', () => {
+      const v6Data = { _version: 6 };
+      const m1 = _migrar(v6Data, 6);
+      const m2 = _migrar({ ...m1, _version: 7 }, 7);
+      expect(m2.lastBackupAt).toBe(m1.lastBackupAt);
+    });
+  });
+
   describe('legacy (sin _version) → CURRENT_VERSION', () => {
     it('migra estado sin _version desde v0 hasta CURRENT_VERSION', () => {
       const legacyData = {
@@ -218,6 +253,7 @@ describe('Migraciones de schema', () => {
       });
       expect(Array.isArray(migrado.bolsillos)).toBe(true);
       expect(Array.isArray(migrado.meDeben)).toBe(true);
+      expect(migrado.lastBackupAt).toBe(null);
       expect(migrado.logros).toEqual({
         desbloqueados: [],
         vistos: [],

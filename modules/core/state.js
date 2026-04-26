@@ -20,6 +20,7 @@ export function resetAppState() {
     fondoEmergencia: { objetivoMeses: 6, actual: 0 },
     bolsillos:       [],
     meDeben:         [],   // R3 — préstamos hechos a amigos/familia
+    lastBackupAt:    null, // v7 — fecha 'YYYY-MM-DD' del último export/import
     logros:          { desbloqueados: [], vistos: [], rachas: {} }  // ✅ agregado
   });
 }

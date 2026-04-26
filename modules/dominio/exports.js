@@ -1,11 +1,64 @@
 import { S }    from '../core/state.js';
 import { save, CURRENT_VERSION, medirUso } from '../core/storage.js';
-import { f, hoy } from '../infra/utils.js';
+import { f, he, hoy } from '../infra/utils.js';
 import { CATS, GMF_TASA } from '../core/constants.js';
 import { registerAction } from '../ui/actions.js';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// FUNCIÓN PURA — ESTADO DEL ÚLTIMO RESPALDO
+// ═══════════════════════════════════════════════════════════════════════════════
+/**
+ * Decide si toca recordarle al usuario que haga un backup.
+ * Sin S, sin DOM. La consume `_renderBackupNudge()` y los tests.
+ *
+ * Estados:
+ *   • 'nunca'    — nunca exportó. Mostrar banner.
+ *   • 'reciente' — hizo backup dentro del umbral. No mostrar.
+ *   • 'vencido'  — hace `umbralDias` o más que no respalda. Mostrar.
+ *   • 'futuro'   — fecha de backup en el futuro (clock skew). No mostrar.
+ *
+ * Se considera "backup" tanto un export (exportarDatos) como un import
+ * (importarDatos): tener un .json en el dispositivo es la garantía.
+ *
+ * @param {string|null} lastBackupISO  'YYYY-MM-DD' del último backup, o null.
+ * @param {string}      hoyISO         'YYYY-MM-DD' de hoy.
+ * @param {number}      [umbralDias=30]
+ * @returns {{
+ *   estado: 'nunca'|'reciente'|'vencido'|'futuro',
+ *   diasDesde: number|null,
+ *   mostrar: boolean,
+ *   umbralDias: number
+ * }}
+ */
+export function calcularEstadoBackup(lastBackupISO, hoyISO, umbralDias = 30) {
+  const u = umbralDias > 0 ? umbralDias : 30;
+  const wrap = (estado, dias, mostrar) => ({
+    estado, diasDesde: dias, mostrar, umbralDias: u,
+  });
+
+  if (!hoyISO) return wrap('nunca', null, false); // sin hoy no podemos decidir
+  if (!lastBackupISO) return wrap('nunca', null, true);
+
+  const last  = new Date(lastBackupISO + 'T12:00:00');
+  const today = new Date(hoyISO        + 'T12:00:00');
+  if (isNaN(last.getTime()) || isNaN(today.getTime())) {
+    return wrap('nunca', null, true); // fecha corrupta → tratamos como nunca
+  }
+
+  const dias = Math.floor((today - last) / 86_400_000);
+  if (dias < 0)   return wrap('futuro',   0,    false);
+  if (dias >= u)  return wrap('vencido',  dias, true);
+  return            wrap('reciente', dias, false);
+}
+
 // ─── EXPORTAR JSON (RESPALDO COMPLETO) ───────────────────────────────────────
 export function exportarDatos() {
+  // Marcar la fecha del respaldo ANTES de serializar para que el snapshot
+  // y el localStorage queden consistentes (evita un segundo `save` posterior
+  // y que el JSON descargado lleve un `lastBackupAt` viejo).
+  S.lastBackupAt = hoy();
+  save();
+
   // Incluir metadatos de versión y fecha para que el import pueda validar
   // y migrar correctamente, incluso desde versiones futuras.
   const snapshot = {
@@ -22,6 +75,10 @@ export function exportarDatos() {
   a.download = `finko_backup_${hoy()}.json`;
   a.click();
   URL.revokeObjectURL(url);
+
+  // Esconder el nudge de respaldo si está visible (y resetear dismiss flag).
+  _backupNudgeDismissedThisSession = false;
+  _renderBackupNudge();
 }
 
 // ─── IMPORTAR JSON ───────────────────────────────────────────────────────────
@@ -90,6 +147,12 @@ export function importarDatos(e) {
       if (!S.saldos)         S.saldos         = { efectivo: 0, banco: 0 };
       if (!S.fondoEmergencia) S.fondoEmergencia = { objetivoMeses: 6, actual: 0 };
       if (!S.logros)          S.logros          = { desbloqueados: [], vistos: [], rachas: {} };
+
+      // Marcar el último respaldo: el archivo importado YA es un .json en
+      // disco, equivalente a haber hecho export en esa fecha. Si el archivo
+      // venía sin _exportadoEn (formato muy viejo), tratamos el import como
+      // un evento de respaldo "ahora" para no fastidiar con el banner.
+      S.lastBackupAt = d._exportadoEn || hoy();
 
       // Limpiar metadatos del backup del estado en memoria
       delete S._exportadoEn;
@@ -280,17 +343,77 @@ export function generarReporteHTML() {
     </div>`;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// NUDGE DE RESPALDO EN EL DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════════
+// Tarjeta blanda (no banner fixed) que aparece arriba del dashboard cuando
+// `calcularEstadoBackup` lo recomienda. Si el usuario lo descarta con "Luego",
+// se silencia HASTA que recargue la app (flag a nivel módulo).
+
+let _backupNudgeDismissedThisSession = false;
+
+export function _renderBackupNudge() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-backup-nudge');
+  if (!el) return;
+
+  if (_backupNudgeDismissedThisSession) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const estado = calcularEstadoBackup(S.lastBackupAt || null, hoy(), 30);
+  if (!estado.mostrar) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const titulo = estado.estado === 'nunca'
+    ? '🛟 Aún no has hecho un respaldo'
+    : `🛟 Hace ${estado.diasDesde} días que no respaldas`;
+
+  const cuerpo = estado.estado === 'nunca'
+    ? 'Tus datos viven solo en este navegador. Si lo limpias o cambias de teléfono, se borrarían. Te toma 5 segundos exportar un archivo de respaldo.'
+    : 'Tus datos viven solo en este navegador. Exportá un respaldo nuevo para no perder nada si algo pasa.';
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(59,158,255,.3);background:rgba(59,158,255,.05);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:13px;font-weight:800;color:var(--a4);margin-bottom:6px;">${he(titulo)}</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.5;">${he(cuerpo)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn bbl bsm" data-action="exportarDatos">📥 Hacer respaldo</button>
+          <button class="btn bg bsm"  data-action="dismissBackupNudge" aria-label="Recordarme luego">Luego</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function dismissBackupNudge() {
+  _backupNudgeDismissedThisSession = true;
+  _renderBackupNudge();
+}
+
 // ─── REGISTRO DE ACCIONES ─────────────────────────────────────────────────────
 registerAction('exportarDatos',       () => exportarDatos());
 registerAction('importarDatos',       () => importarDatos());
 registerAction('exportarCSV',         () => exportarCSV());
 registerAction('descargarCSVDirecto', () => exportarCSV());
 registerAction('generarReporteHTML',  () => generarReporteHTML());
+registerAction('dismissBackupNudge',  () => dismissBackupNudge());
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // exportarDatos, exportarCSV, descargarCSVDirecto → migrados a data-action
 // Guard `typeof window` para soportar tests/SSR sin DOM.
 if (typeof window !== 'undefined') {
-  window.importarDatos      = importarDatos;    // input[type=file] handler
-  window.generarReporteHTML = generarReporteHTML; // llamado desde JS
+  window.importarDatos       = importarDatos;     // input[type=file] handler
+  window.generarReporteHTML  = generarReporteHTML; // llamado desde JS
+  window.renderBackupNudge   = _renderBackupNudge; // llamado desde updateDash
+  window.dismissBackupNudge  = dismissBackupNudge; // por si algún HTML viejo
 }
