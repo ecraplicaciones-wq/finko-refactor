@@ -320,6 +320,131 @@ export function platoLibre() {
   return Math.max(0, saldoReal - totalBolsillos());
 }
 
+/**
+ * Detecta bolsillos "olvidados": aquellos sin aportes (abono o saldo_inicial)
+ * en al menos `umbralDias` días. Si el bolsillo no tiene movimientos pero sí
+ * `fechaCreado`, se mide desde esa fecha (creado pero nunca alimentado).
+ *
+ * Pura: no depende de S, no toca el DOM. La consume el dashboard para mostrar
+ * un nudge cariñoso "estos bolsillos te están esperando".
+ *
+ * @param {Array<{
+ *   id:number, nombre:string, monto:number, icono?:string,
+ *   fechaCreado?:string,
+ *   movimientos?: Array<{tipo:string, fecha:string}>
+ * }>} bolsillos
+ * @param {string} hoyISO       'YYYY-MM-DD' actual.
+ * @param {number} [umbralDias=15]
+ * @returns {Array<{
+ *   id:number, nombre:string, icono:string, monto:number,
+ *   diasSinAporte:number, ultimoAporte:string|null
+ * }>} ordenado por diasSinAporte DESC.
+ */
+export function bolsillosOlvidados(bolsillos, hoyISO, umbralDias = 15) {
+  if (!Array.isArray(bolsillos) || bolsillos.length === 0) return [];
+  if (!hoyISO) return [];
+  const hoyD = new Date(hoyISO + 'T12:00:00');
+  if (isNaN(hoyD.getTime())) return [];
+
+  // 'saldo_inicial' cuenta como aporte al crear; 'retiro' NO interrumpe el conteo.
+  const TIPOS_APORTE = new Set(['abono', 'saldo_inicial']);
+  const out = [];
+
+  for (const b of bolsillos) {
+    if (!b) continue;
+    let ultimoAporte = null;
+    if (Array.isArray(b.movimientos)) {
+      for (const m of b.movimientos) {
+        if (!m || !TIPOS_APORTE.has(m.tipo)) continue;
+        const f = m.fecha;
+        if (!f) continue;
+        if (!ultimoAporte || f > ultimoAporte) ultimoAporte = f;
+      }
+    }
+    if (!ultimoAporte) ultimoAporte = b.fechaCreado || null;
+    if (!ultimoAporte) continue; // sin fecha base, no podemos juzgar
+
+    const fAporte = new Date(ultimoAporte + 'T12:00:00');
+    if (isNaN(fAporte.getTime())) continue;
+    const dias = Math.floor((hoyD - fAporte) / 86_400_000);
+    if (dias < umbralDias) continue;
+
+    out.push({
+      id:           b.id,
+      nombre:       b.nombre || 'Sin nombre',
+      icono:        b.icono  || '🪙',
+      monto:        Number(b.monto) || 0,
+      diasSinAporte: dias,
+      ultimoAporte,
+    });
+  }
+
+  return out.sort((a, b) => b.diasSinAporte - a.diasSinAporte);
+}
+
+/**
+ * Renderiza la tarjeta de "bolsillos esperando atención" en el dashboard.
+ * Si no hay olvidados, oculta el contenedor. Muestra los 3 más viejos.
+ */
+export function renderBolsillosOlvidados() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-bolsillos-olvidados');
+  if (!el) return;
+
+  const olvidados = bolsillosOlvidados(S.bolsillos || [], hoy(), 15);
+  if (olvidados.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const top = olvidados.slice(0, 3);
+
+  const fmtTiempo = (dias) => {
+    if (dias >= 30) {
+      const m = Math.floor(dias / 30);
+      return `${m} mes${m !== 1 ? 'es' : ''}`;
+    }
+    if (dias >= 14) {
+      const sem = Math.floor(dias / 7);
+      return `${sem} semanas`;
+    }
+    return `${dias} días`;
+  };
+
+  const filas = top.map(b => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b1);">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:22px;flex-shrink:0;" aria-hidden="true">${b.icono}</span>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${he(b.nombre)}">${he(b.nombre)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            Sin aportes hace <strong>${fmtTiempo(b.diasSinAporte)}</strong> · Tiene ${f(b.monto)}
+          </div>
+        </div>
+      </div>
+      <button class="btn bbl bsm" data-action="abrirAbonarBolsillo" data-arg-id="${b.id}" aria-label="Abonar al bolsillo ${he(b.nombre)}">+ Abonar</button>
+    </div>
+  `).join('');
+
+  const titulo = olvidados.length === 1
+    ? 'Un bolsillo te está esperando'
+    : `${olvidados.length} bolsillos te están esperando`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(255,214,10,.3);background:rgba(255,214,10,.04);">
+      <div style="font-size:11px;font-weight:800;color:var(--a2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        🪙 ${he(titulo)}
+      </div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:4px;">
+        Llevan tiempo sin recibir un aporte. Un poquito ahora les vuelve a dar vida.
+      </div>
+      ${filas}
+    </div>
+  `;
+}
+
 // ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
 export function renderBolsillos() {
   _initBolsillos();
@@ -722,17 +847,18 @@ registerAction('actualizarVistaFondo',    () => actualizarVistaFondo());
 registerAction('registrarAbonoFondo',     () => registrarAbonoFondo());
 registerAction('abrirFondoEmergencia',    () => abrirFondoEmergencia());
 // bolsillos
-registerAction('totalBolsillos',       () => totalBolsillos());
-registerAction('platoLibre',           () => platoLibre());
-registerAction('renderBolsillos',      () => renderBolsillos());
-registerAction('abrirNuevoBolsillo',   () => abrirNuevoBolsillo());
-registerAction('guardarNuevoBolsillo', () => guardarNuevoBolsillo());
-registerAction('abrirAbonarBolsillo',  ({ id }) => abrirAbonarBolsillo(id));
-registerAction('abrirRetirarBolsillo', ({ id }) => abrirRetirarBolsillo(id));
-registerAction('confirmarMovBolsillo', () => confirmarMovBolsillo());
-registerAction('eliminarBolsillo',     ({ id }) => eliminarBolsillo(id));
-registerAction('renderIconosBolsillo', () => renderIconosBolsillo());
-registerAction('selIconoBolsillo',     ({ icon }) => selIconoBolsillo(icon));
+registerAction('totalBolsillos',           () => totalBolsillos());
+registerAction('platoLibre',               () => platoLibre());
+registerAction('renderBolsillos',          () => renderBolsillos());
+registerAction('renderBolsillosOlvidados', () => renderBolsillosOlvidados());
+registerAction('abrirNuevoBolsillo',       () => abrirNuevoBolsillo());
+registerAction('guardarNuevoBolsillo',     () => guardarNuevoBolsillo());
+registerAction('abrirAbonarBolsillo',      ({ id }) => abrirAbonarBolsillo(id));
+registerAction('abrirRetirarBolsillo',     ({ id }) => abrirRetirarBolsillo(id));
+registerAction('confirmarMovBolsillo',     () => confirmarMovBolsillo());
+registerAction('eliminarBolsillo',         ({ id }) => eliminarBolsillo(id));
+registerAction('renderIconosBolsillo',     () => renderIconosBolsillo());
+registerAction('selIconoBolsillo',         ({ icon }) => selIconoBolsillo(icon));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
@@ -755,12 +881,13 @@ if (typeof window !== 'undefined') {
 
   // bolsillos — guardarNuevoBolsillo/confirmarMovBolsillo → data-action
   // abrirNuevoBolsillo → data-action; abrir*/eliminar* desde JS/dinámico
-  window.totalBolsillos       = totalBolsillos;
-  window.platoLibre           = platoLibre;
-  window.renderBolsillos      = renderBolsillos;
-  window.abrirAbonarBolsillo  = abrirAbonarBolsillo;
-  window.abrirRetirarBolsillo = abrirRetirarBolsillo;
-  window.eliminarBolsillo     = eliminarBolsillo;
-  window.renderIconosBolsillo = renderIconosBolsillo;
-  window.selIconoBolsillo     = selIconoBolsillo;
+  window.totalBolsillos           = totalBolsillos;
+  window.platoLibre               = platoLibre;
+  window.renderBolsillos          = renderBolsillos;
+  window.renderBolsillosOlvidados = renderBolsillosOlvidados; // updateDash
+  window.abrirAbonarBolsillo      = abrirAbonarBolsillo;
+  window.abrirRetirarBolsillo     = abrirRetirarBolsillo;
+  window.eliminarBolsillo         = eliminarBolsillo;
+  window.renderIconosBolsillo     = renderIconosBolsillo;
+  window.selIconoBolsillo         = selIconoBolsillo;
 }

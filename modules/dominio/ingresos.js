@@ -575,9 +575,10 @@ export function updateDash() {
   // Comparación con quincena anterior
   _renderComparacionQuincena({ gastado: tG, ahorro: tA, hormiga: tH, ingreso: S.ingreso });
 
-  // Nudge defensivo: respaldo cada 30 días — _renderBackupNudge() lo inyecta
+  // Nudges defensivos: respaldo cada 30 días + bolsillos olvidados (15d sin aporte)
   if (typeof window !== 'undefined') {
     window.renderBackupNudge?.();
+    window.renderBolsillosOlvidados?.();
   }
 
   updSaldo();

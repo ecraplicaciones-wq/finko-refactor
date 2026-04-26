@@ -17,6 +17,7 @@ import {
   calcularFondoEmergencia,
   totalBolsillos,
   platoLibre,
+  bolsillosOlvidados,
 } from '../../modules/dominio/tesoreria.js';
 import {
   descontarFondo,
@@ -272,6 +273,225 @@ describe('reintegrarFondo()', () => {
     descontarFondo('banco', 250_000);
     reintegrarFondo('banco', 250_000);
     expect(S.saldos.banco).toBe(1_000_000);
+  });
+
+});
+
+// ─── bolsillosOlvidados ──────────────────────────────────────────────────────
+
+describe('bolsillosOlvidados()', () => {
+
+  // Helper: un bolsillo con la forma esperada por la app real
+  const mkBol = (over = {}) => ({
+    id: 1,
+    nombre: 'Test',
+    monto: 100_000,
+    icono: '🪙',
+    fechaCreado: '2026-01-01',
+    movimientos: [],
+    ...over,
+  });
+
+  it('retorna [] cuando no hay bolsillos', () => {
+    expect(bolsillosOlvidados([], '2026-04-26')).toEqual([]);
+  });
+
+  it('retorna [] cuando bolsillos no es array', () => {
+    expect(bolsillosOlvidados(null, '2026-04-26')).toEqual([]);
+    expect(bolsillosOlvidados(undefined, '2026-04-26')).toEqual([]);
+  });
+
+  it('retorna [] cuando hoyISO es falsy', () => {
+    const bols = [mkBol({ fechaCreado: '2026-01-01' })];
+    expect(bolsillosOlvidados(bols, '')).toEqual([]);
+    expect(bolsillosOlvidados(bols, null)).toEqual([]);
+  });
+
+  it('retorna [] cuando hoyISO tiene formato inválido', () => {
+    const bols = [mkBol({ fechaCreado: '2026-01-01' })];
+    expect(bolsillosOlvidados(bols, 'no-fecha')).toEqual([]);
+  });
+
+  it('bolsillo con abono ayer → no olvidado', () => {
+    const bols = [mkBol({
+      movimientos: [{ tipo: 'abono', fecha: '2026-04-25', monto: 50_000 }],
+    })];
+    expect(bolsillosOlvidados(bols, '2026-04-26', 15)).toEqual([]);
+  });
+
+  it('bolsillo con último abono hace 16 días → olvidado', () => {
+    const bols = [mkBol({
+      id: 7,
+      nombre: 'Vacaciones',
+      movimientos: [{ tipo: 'abono', fecha: '2026-04-10', monto: 50_000 }],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(7);
+    expect(r[0].diasSinAporte).toBe(16);
+    expect(r[0].ultimoAporte).toBe('2026-04-10');
+  });
+
+  it('toma el más reciente entre varios abonos', () => {
+    const bols = [mkBol({
+      movimientos: [
+        { tipo: 'abono', fecha: '2026-01-15', monto: 10_000 },
+        { tipo: 'abono', fecha: '2026-04-20', monto: 50_000 }, // el más nuevo
+        { tipo: 'abono', fecha: '2026-02-10', monto: 30_000 },
+      ],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toEqual([]); // el último abono fue hace 6 días → no olvidado
+  });
+
+  it('saldo_inicial cuenta como aporte (no se considera olvidado)', () => {
+    const bols = [mkBol({
+      fechaCreado: '2026-01-01',
+      movimientos: [
+        { tipo: 'saldo_inicial', fecha: '2026-04-20', monto: 100_000 },
+      ],
+    })];
+    expect(bolsillosOlvidados(bols, '2026-04-26', 15)).toEqual([]);
+  });
+
+  it('retiros NO cuentan como aporte: con solo retiros recientes sigue olvidado', () => {
+    const bols = [mkBol({
+      fechaCreado: '2026-01-01',
+      movimientos: [
+        { tipo: 'abono',  fecha: '2026-01-05', monto: 100_000 }, // hace ~111d
+        { tipo: 'retiro', fecha: '2026-04-20', monto: 30_000 },  // reciente, ignorado
+      ],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].ultimoAporte).toBe('2026-01-05');
+    expect(r[0].diasSinAporte).toBeGreaterThanOrEqual(100);
+  });
+
+  it('sin movimientos pero con fechaCreado vieja → olvidado desde la creación', () => {
+    const bols = [mkBol({
+      id: 3,
+      nombre: 'Recién creado y abandonado',
+      monto: 0,
+      fechaCreado: '2026-04-01',
+      movimientos: [],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(3);
+    expect(r[0].diasSinAporte).toBe(25);
+    expect(r[0].ultimoAporte).toBe('2026-04-01');
+  });
+
+  it('sin fechaCreado y sin movimientos → no se incluye (no hay con qué juzgar)', () => {
+    const bols = [{ id: 99, nombre: 'Huérfano', monto: 0 }];
+    expect(bolsillosOlvidados(bols, '2026-04-26', 15)).toEqual([]);
+  });
+
+  it('umbral custom 7 → más estricto', () => {
+    const bols = [mkBol({
+      id: 1,
+      movimientos: [{ tipo: 'abono', fecha: '2026-04-18', monto: 10_000 }], // hace 8d
+    })];
+    const dias15 = bolsillosOlvidados(bols, '2026-04-26', 15);
+    const dias7  = bolsillosOlvidados(bols, '2026-04-26', 7);
+    expect(dias15).toEqual([]); // 8 < 15
+    expect(dias7).toHaveLength(1); // 8 >= 7
+  });
+
+  it('múltiples olvidados se ordenan por diasSinAporte DESC', () => {
+    const bols = [
+      mkBol({
+        id: 1, nombre: 'Reciente olvidado',
+        movimientos: [{ tipo: 'abono', fecha: '2026-04-09', monto: 10 }], // 17d
+      }),
+      mkBol({
+        id: 2, nombre: 'Más viejo',
+        movimientos: [{ tipo: 'abono', fecha: '2026-01-15', monto: 10 }], // ~101d
+      }),
+      mkBol({
+        id: 3, nombre: 'Antiquísimo',
+        movimientos: [{ tipo: 'abono', fecha: '2025-12-01', monto: 10 }], // ~146d
+      }),
+    ];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r.map(x => x.id)).toEqual([3, 2, 1]); // del más olvidado al menos
+    expect(r[0].diasSinAporte).toBeGreaterThan(r[1].diasSinAporte);
+    expect(r[1].diasSinAporte).toBeGreaterThan(r[2].diasSinAporte);
+  });
+
+  it('mezcla recientes y olvidados: solo devuelve los olvidados', () => {
+    const bols = [
+      mkBol({
+        id: 1, nombre: 'Activo',
+        movimientos: [{ tipo: 'abono', fecha: '2026-04-25', monto: 10 }],
+      }),
+      mkBol({
+        id: 2, nombre: 'Abandonado',
+        movimientos: [{ tipo: 'abono', fecha: '2026-03-01', monto: 10 }],
+      }),
+    ];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(2);
+  });
+
+  it('forma del objeto devuelto incluye los campos del UI', () => {
+    const bols = [mkBol({
+      id: 42,
+      nombre: 'Viaje',
+      monto: 250_000,
+      icono: '✈️',
+      fechaCreado: '2026-01-01',
+      movimientos: [],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r[0]).toMatchObject({
+      id: 42,
+      nombre: 'Viaje',
+      icono: '✈️',
+      monto: 250_000,
+      ultimoAporte: '2026-01-01',
+    });
+    expect(typeof r[0].diasSinAporte).toBe('number');
+  });
+
+  it('bolsillo sin nombre / sin icono recibe defaults razonables', () => {
+    const bols = [{
+      id: 1,
+      monto: 0,
+      fechaCreado: '2026-01-01',
+      movimientos: [],
+    }];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r[0].nombre).toBe('Sin nombre');
+    expect(r[0].icono).toBe('🪙');
+  });
+
+  it('item null/undefined dentro del array no rompe el cálculo', () => {
+    const bols = [
+      null,
+      undefined,
+      mkBol({ id: 1, fechaCreado: '2026-01-01', movimientos: [] }),
+    ];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(1);
+  });
+
+  it('movimientos con fecha vacía o tipo desconocido se ignoran', () => {
+    const bols = [mkBol({
+      id: 1,
+      fechaCreado: '2026-01-01',
+      movimientos: [
+        { tipo: 'abono', fecha: '' },             // sin fecha → ignorado
+        { tipo: 'misterioso', fecha: '2026-04-25' }, // tipo desconocido
+        null,                                       // robusto
+      ],
+    })];
+    const r = bolsillosOlvidados(bols, '2026-04-26', 15);
+    expect(r).toHaveLength(1);
+    expect(r[0].ultimoAporte).toBe('2026-01-01'); // cae al fechaCreado
   });
 
 });
