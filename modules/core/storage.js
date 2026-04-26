@@ -11,7 +11,7 @@
 import { S, resetAppState } from './state.js';
 
 export const STORAGE_KEY    = 'fco_v4';
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 
 // Límite práctico: 5 MB - 50 KB de margen de seguridad
 const LIMITE_BYTES     = 5 * 1024 * 1024;
@@ -82,6 +82,12 @@ function _migrar(data, fromVersion) {
       }
     }
     v = 5;
+  }
+
+  // ── v5 → v6: agregar meDeben (R3 — préstamos a terceros) ──────────────────
+  if (v < 6) {
+    if (!Array.isArray(d.meDeben)) d.meDeben = [];
+    v = 6;
   }
 
   d._version = CURRENT_VERSION;
@@ -263,6 +269,7 @@ export function loadData() {
     if (!Array.isArray(S.pagosAgendados)) S.pagosAgendados = [];
     if (!Array.isArray(S.inversiones))    S.inversiones    = [];
     if (!Array.isArray(S.bolsillos))      S.bolsillos      = [];
+    if (!Array.isArray(S.meDeben))        S.meDeben        = [];
     if (!S.saldos || typeof S.saldos !== 'object') {
       S.saldos = { efectivo: 0, banco: 0 };
     }

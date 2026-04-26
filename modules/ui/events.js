@@ -33,6 +33,10 @@ import { guardarCuenta, delCuenta, editSaldoCuenta, editSaldoCuentaDash, renderC
 // ─── EXPORTACIÓN / IMPORTACIÓN ────────────────────────────────────────────────
 import { exportarDatos, importarDatos, exportarCSV, generarReporteHTML } from '../dominio/exports.js';
 
+// ─── ME DEBEN (R3 — préstamos personales) ─────────────────────────────────────
+// El módulo se auto-registra: registerAction() y window.* desde dentro.
+import '../dominio/personales.js';
+
 // ─── FONDO DE EMERGENCIA ─────────────────────────────────────────────────────
 import { calcularFondoEmergencia, actualizarVistaFondo, registrarAbonoFondo } from '../dominio/tesoreria.js';
 

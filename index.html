@@ -19,6 +19,7 @@
   <link rel="modulepreload" href="./modules/dominio/tesoreria.js">
   <link rel="modulepreload" href="./modules/dominio/dashboard.js">
   <link rel="modulepreload" href="./modules/dominio/gastos.js">
+  <link rel="modulepreload" href="./modules/dominio/personales.js">
   <link rel="modulepreload" href="./modules/ui/sections.js">
   <meta name="theme-color" content="#00dc82">
   <meta name="mobile-web-app-capable" content="yes">
@@ -80,6 +81,16 @@
             aria-label="Compromisos — deudas y pagos programados">
       <span class="ni" aria-hidden="true">🤝</span>
       <span class="nb-txt">Deberes</span>
+    </button>
+
+    <!-- ── R3: Me Deben — préstamos a familia/amigos (cara opuesta a Compromisos) ── -->
+    <button class="nb nb-mob-hidden"
+            data-section="meDeben"
+            data-action="go" data-arg-sec="meDeben"
+            title="Plata que TÚ prestaste a otros — a quién y cuánto"
+            aria-label="Me deben — préstamos personales a familia y amigos">
+      <span class="ni" aria-hidden="true">🤝</span>
+      <span class="nb-txt">Me deben</span>
     </button>
 
     <!-- ── TAB 4 sería Alcancías pero va en panel Más en móvil ── -->
@@ -1078,6 +1089,73 @@
   </section>
 
 
+  <!-- ─── ME DEBEN (R3 — préstamos personales) ───────────── -->
+  <section class="sec" id="sec-meDeben" aria-label="Me deben — préstamos a familia y amigos">
+
+    <header class="sh">
+      <div class="sh-left">
+        <div class="sh-icon" aria-hidden="true" style="background:linear-gradient(135deg,rgba(255,214,10,.15),rgba(0,220,130,.15));color:var(--a2);">🤝</div>
+        <div>
+          <h1>Me deben 🤝</h1>
+          <p class="sh-sub">Plata que prestaste a familia o amigos. Anotala para no olvidarte — sin presión.</p>
+        </div>
+      </div>
+      <button class="btn bp" data-action="abrirNuevoMeDeben"
+              style="padding:10px 18px;font-size:13px;font-weight:700;"
+              aria-label="Registrar nuevo préstamo personal">+ Nuevo préstamo</button>
+    </header>
+
+    <div class="sec-body">
+
+      <!-- Resumen ─────────────────────────────────────────── -->
+      <div class="card" style="margin-bottom:16px;padding:18px;border-radius:16px;background:linear-gradient(135deg,rgba(255,214,10,.06),rgba(0,220,130,.06));border:1px solid var(--b1);">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Te deben</div>
+            <div id="md-res-pendiente" style="font-family:var(--fm);font-size:20px;font-weight:800;color:var(--a2);">$0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Ya cobraste</div>
+            <div id="md-res-cobrado" style="font-family:var(--fm);font-size:20px;font-weight:800;color:var(--a1);">$0</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Total prestado</div>
+            <div id="md-res-prestado" style="font-family:var(--fm);font-size:20px;font-weight:800;color:var(--t1);">$0</div>
+          </div>
+        </div>
+        <div style="height:6px;background:var(--s3);border-radius:999px;overflow:hidden;margin-bottom:6px;">
+          <div id="md-res-barra" style="height:100%;border-radius:999px;background:var(--a1);transition:width .4s ease;width:0%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);">
+          <span><span id="md-res-activos">0</span> préstamo(s) activo(s)</span>
+          <span><span id="md-res-pct">0%</span> recuperado</span>
+        </div>
+      </div>
+
+      <!-- Filtros ──────────────────────────────────────────── -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn bp" id="btn-md-antiguo"  data-action="setOrdenMeDeben" data-arg-modo="antiguo"  style="padding:8px 12px;font-size:11px;">📅 Más antiguos</button>
+        <button class="btn bg" id="btn-md-reciente" data-action="setOrdenMeDeben" data-arg-modo="reciente" style="padding:8px 12px;font-size:11px;">🆕 Más recientes</button>
+        <button class="btn bg" id="btn-md-monto"    data-action="setOrdenMeDeben" data-arg-modo="monto"    style="padding:8px 12px;font-size:11px;">💰 Mayor saldo</button>
+      </div>
+
+      <!-- Lista ────────────────────────────────────────────── -->
+      <div id="md-lst"></div>
+
+      <!-- Educación / contexto ────────────────────────────── -->
+      <div style="margin-top:18px;padding:14px;border-radius:12px;background:var(--s2);border:1px solid var(--b1);">
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <span aria-hidden="true" style="font-size:18px;">💡</span>
+          <div style="flex:1;font-size:12px;color:var(--t2);line-height:1.6;">
+            <strong style="color:var(--t1);">Tip colombiano:</strong> Prestar a familia y amigos es generoso, pero también incomoda cobrar. Anotalo siempre — no para presionarlos, sino para que vos no olvides. Y si la deuda pasa de 60 días, ya es hora de tener "esa charla". No te quedes con la plata por pena.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
 
   <!-- ─── RESUMEN / ESTADÍSTICAS ────────────────────────── -->
   <section class="sec" id="sec-stat" aria-label="Resumen y estadísticas">
@@ -1653,6 +1731,63 @@
   </div>
 </div>
 
+<!-- ═════════════════════════════════════════════════════════════════════════
+     R3: Me Deben — modales nuevo/editar y registrar pago
+═════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Nuevo / Editar préstamo personal -->
+<div class="modal-ov" id="m-md" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:480px;">
+    <div class="fb mb">
+      <div>
+        <div class="mtit" id="md-titulo" style="margin-bottom:2px;">Nuevo Préstamo 🤝</div>
+        <div style="font-size:11px;color:var(--t3);">Anotá a quién le prestaste y cuánto. Lo del cobro lo manejas vos.</div>
+      </div>
+      <button class="mclose" data-action="closeM" data-arg-id="m-md" aria-label="Cerrar ventana">×</button>
+    </div>
+    <div class="fg"><label>¿A quién le prestaste?</label><input type="text" id="md-pe" placeholder="Ej: María, Hermano Carlos, Vecino..." maxlength="50"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div><label style="margin-bottom:5px;display:block;">¿Cuánto?</label><input type="number" id="md-mo" placeholder="Ej: 100000" min="1"></div>
+      <div><label style="margin-bottom:5px;display:block;">¿Cuándo se la prestaste?</label><input type="date" id="md-fe"></div>
+    </div>
+    <div class="fg"><label>¿Para qué? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label><input type="text" id="md-mt" placeholder="Ej: Mercado del mes, Pasaje, Favor..." maxlength="80"></div>
+    <div class="fg">
+      <label>¿Te dijo cuándo te devuelve? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
+      <input type="date" id="md-fl">
+      <div style="font-size:10px;color:var(--t3);margin-top:4px;">Te ayuda a saber cuándo recordarle.</div>
+    </div>
+    <button class="btn bp bfw" data-action="guardarMeDeben" style="margin-top:8px;padding:14px;font-size:14px;">Guardar →</button>
+  </div>
+</div>
+
+<!-- Registrar pago de préstamo personal -->
+<div class="modal-ov" id="m-mdp" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:420px;">
+    <div class="fb mb">
+      <div>
+        <div class="mtit" style="margin-bottom:2px;">¡Te pagaron! 💵</div>
+        <div style="font-size:11px;color:var(--t3);">Registrá lo que ya te devolvieron.</div>
+      </div>
+      <button class="mclose" data-action="closeM" data-arg-id="m-mdp" aria-label="Cerrar ventana">×</button>
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);border-radius:14px;padding:16px;margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Persona</div>
+      <div id="mdp-no" style="font-weight:800;font-size:16px;color:var(--t1);margin-bottom:10px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--t3);">Pendiente:</span>
+        <strong id="mdp-pendiente" style="font-family:var(--fm);font-size:18px;color:var(--a2);">$0</strong>
+      </div>
+    </div>
+    <div class="fg">
+      <label>¿Cuánto te pagó?</label>
+      <input type="number" id="mdp-mo" placeholder="Ej: 50000" min="1">
+      <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si te pagó todo, dejalo en el monto pendiente.</div>
+    </div>
+    <button class="btn bp bfw" data-action="confPagarMeDeben" style="padding:14px;font-size:14px;">Registrar Pago →</button>
+  </div>
+</div>
+
+
 <!-- Nueva inversión -->
 <div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true">
   <div class="modal">
@@ -1731,6 +1866,11 @@
             data-action="go" data-arg-sec="stat" aria-label="Ir a Balance — análisis financiero">
       <span class="mas-icon" aria-hidden="true">📊</span>
       <span class="mas-label">Análisis</span>
+    </button>
+    <button class="mas-item" data-section="meDeben"
+            data-action="go" data-arg-sec="meDeben" aria-label="Ir a Me deben — préstamos a familia y amigos">
+      <span class="mas-icon" aria-hidden="true">🤝</span>
+      <span class="mas-label">Me deben</span>
     </button>
   </div>
   <!-- Tema: movido aquí desde el nav principal en móvil -->

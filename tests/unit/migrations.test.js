@@ -59,6 +59,12 @@ function _migrar(data, fromVersion) {
     v = 5;
   }
 
+  // ── v5 → v6: agregar meDeben (R3 — préstamos a terceros) ──────────────────
+  if (v < 6) {
+    if (!Array.isArray(d.meDeben)) d.meDeben = [];
+    v = 6;
+  }
+
   d._version = CURRENT_VERSION;
   return d;
 }
@@ -156,6 +162,41 @@ describe('Migraciones de schema', () => {
     });
   });
 
+  describe('v5 → v6', () => {
+    it('agrega meDeben array vacío si no existe', () => {
+      const v5Data = { _version: 5 };
+      const migrado = _migrar(v5Data, 5);
+      expect(Array.isArray(migrado.meDeben)).toBe(true);
+      expect(migrado.meDeben).toEqual([]);
+    });
+
+    it('preserva meDeben preexistente sin pisar', () => {
+      const v5Data = {
+        _version: 5,
+        meDeben: [
+          { id: 1, persona: 'María', monto: 50_000, fecha: '2026-04-20' }
+        ]
+      };
+      const migrado = _migrar(v5Data, 5);
+      expect(migrado.meDeben).toHaveLength(1);
+      expect(migrado.meDeben[0].persona).toBe('María');
+    });
+
+    it('reemplaza meDeben no-array con array vacío', () => {
+      const v5Data = { _version: 5, meDeben: 'broken' };
+      const migrado = _migrar(v5Data, 5);
+      expect(Array.isArray(migrado.meDeben)).toBe(true);
+      expect(migrado.meDeben).toEqual([]);
+    });
+
+    it('es idempotente: aplicar dos veces da el mismo resultado', () => {
+      const v5Data = { _version: 5, meDeben: [{ id: 1, persona: 'X' }] };
+      const m1 = _migrar(v5Data, 5);
+      const m2 = _migrar({ ...m1, _version: 6 }, 6);
+      expect(m2.meDeben).toEqual(m1.meDeben);
+    });
+  });
+
   describe('legacy (sin _version) → CURRENT_VERSION', () => {
     it('migra estado sin _version desde v0 hasta CURRENT_VERSION', () => {
       const legacyData = {
@@ -176,6 +217,7 @@ describe('Migraciones de schema', () => {
         actual: 0
       });
       expect(Array.isArray(migrado.bolsillos)).toBe(true);
+      expect(Array.isArray(migrado.meDeben)).toBe(true);
       expect(migrado.logros).toEqual({
         desbloqueados: [],
         vistos: [],

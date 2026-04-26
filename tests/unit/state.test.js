@@ -22,6 +22,11 @@ describe('resetAppState()', () => {
     expect(S.bolsillos).toHaveLength(0);
   });
 
+  it('inicializa meDeben como array vacío', () => {
+    expect(Array.isArray(S.meDeben)).toBe(true);
+    expect(S.meDeben).toHaveLength(0);
+  });
+
   it('inicializa logros con estructura correcta', () => {
     expect(S.logros).toBeDefined();
     expect(Array.isArray(S.logros.desbloqueados)).toBe(true);

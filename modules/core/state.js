@@ -19,6 +19,7 @@ export function resetAppState() {
     inversiones:     [],
     fondoEmergencia: { objetivoMeses: 6, actual: 0 },
     bolsillos:       [],
+    meDeben:         [],   // R3 — préstamos hechos a amigos/familia
     logros:          { desbloqueados: [], vistos: [], rachas: {} }  // ✅ agregado
   });
 }

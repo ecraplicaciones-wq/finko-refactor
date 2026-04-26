@@ -47,6 +47,7 @@ const SEC_LABELS = {
   dash:         'Inicio — resumen de mi plata',
   gast:         'Gasté — lo que he gastado',
   compromisos:  'Mis compromisos — deudas y pagos agendados',
+  meDeben:      'Me deben — préstamos a familia y amigos',
   alcancias:    'Mis alcancías — metas y plata apartada',
   inve:         'Crecer — invertir mi plata',
   stat:         'Balance — cómo me está yendo',
@@ -54,7 +55,7 @@ const SEC_LABELS = {
 };
 
 // Secciones que activan el botón ⋯ en móvil
-const MAS_SECTIONS = ['quin', 'inve', 'stat'];
+const MAS_SECTIONS = ['quin', 'inve', 'stat', 'meDeben'];
 
 // ─── SWIPE HORIZONTAL — NAVEGACIÓN TÁCTIL ────────────────────────────────────
 /**
@@ -193,6 +194,7 @@ export function go(id) {
   if (id === 'stat')         window.setResumenTab?.('analisis');
   if (id === 'gast')         window.updSaldo?.();
   if (id === 'compromisos')  _renderCompromisos();
+  if (id === 'meDeben')      window.renderMeDeben?.();
   if (id === 'alcancias')    _renderAlcancias();
   if (id === 'quin')         _cargarCalculadoras();   // ← lazy-load
 

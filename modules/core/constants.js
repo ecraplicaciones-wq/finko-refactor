@@ -65,7 +65,8 @@ export const CCOLORS = {
 
 // ux_02: NAVS reducido de 9 a 7 — fusión Deudas+Agenda → compromisos,
 // Metas+Apartado → alcancias. go() redirige los IDs viejos automáticamente.
-export const NAVS = ['dash', 'quin', 'gast', 'compromisos', 'alcancias', 'inve', 'stat'];
+// R3: 'meDeben' añadido como sección secundaria (panel "Más").
+export const NAVS = ['dash', 'quin', 'gast', 'compromisos', 'meDeben', 'alcancias', 'inve', 'stat'];
 
 export const BANCOS_CO = [
   { id: 'nequi',       nombre: 'Nequi',               icono: '📱', color: '#b44eff' },
