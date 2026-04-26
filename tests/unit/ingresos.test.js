@@ -19,6 +19,7 @@ import {
   calcularResumen,
   generarConsejo,
   calcularScoreFinanciero,
+  calcularTopHormigas,
 } from '../../modules/dominio/ingresos.js';
 
 // ─── cuotasPeriodo ───────────────────────────────────────────────────────────
@@ -440,6 +441,132 @@ describe('calcularScoreFinanciero()', () => {
       ingreso: 1_000_000, totalAhorro: 200_000, cuotasPeriodo: 0, fondoPct: null,
     });
     expect(s.ptsFondo).toBe(0);
+  });
+
+});
+
+// ─── calcularTopHormigas ──────────────────────────────────────────────────────
+
+describe('calcularTopHormigas()', () => {
+
+  it('lista vacía / no-array → []', () => {
+    expect(calcularTopHormigas([])).toEqual([]);
+    expect(calcularTopHormigas(null)).toEqual([]);
+    expect(calcularTopHormigas(undefined)).toEqual([]);
+  });
+
+  it('ignora gastos que no son hormiga', () => {
+    const gastos = [
+      { fecha: '2026-04-25', desc: 'Mercado',  monto: 100_000, tipo: 'necesidad' },
+      { fecha: '2026-04-25', desc: 'Café',     monto:   3_000, tipo: 'hormiga' },
+      { fecha: '2026-04-25', desc: 'Netflix',  monto:  35_000, tipo: 'deseo' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r).toHaveLength(1);
+    expect(r[0].concepto).toBe('Café');
+  });
+
+  it('reconoce g.hormiga=true aunque tipo no sea "hormiga"', () => {
+    const gastos = [
+      { fecha: '2026-04-25', desc: 'Café', monto: 3_000, tipo: 'deseo', hormiga: true },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r).toHaveLength(1);
+    expect(r[0].total).toBe(3_000);
+  });
+
+  it('agrupa por descripción case + tilde insensitive', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'Café',  monto: 3_000, tipo: 'hormiga' },
+      { fecha: '2026-04-05', desc: 'café',  monto: 4_000, tipo: 'hormiga' },
+      { fecha: '2026-04-10', desc: 'CAFE',  monto: 5_000, tipo: 'hormiga' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r).toHaveLength(1);
+    expect(r[0].total).toBe(12_000);
+    expect(r[0].count).toBe(3);
+    expect(r[0].concepto).toBe('Café');  // primera variante encontrada
+  });
+
+  it('limita al top N (default 3)', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'A', monto: 100, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'B', monto:  90, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'C', monto:  80, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'D', monto:  70, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'E', monto:  60, tipo: 'hormiga' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r).toHaveLength(3);
+    expect(r.map(x => x.concepto)).toEqual(['A', 'B', 'C']);
+  });
+
+  it('respeta limit personalizado', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'A', monto: 100, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'B', monto:  90, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'C', monto:  80, tipo: 'hormiga' },
+    ];
+    expect(calcularTopHormigas(gastos, null, 1)).toHaveLength(1);
+    expect(calcularTopHormigas(gastos, null, 2)).toHaveLength(2);
+    expect(calcularTopHormigas(gastos, null, 5)).toHaveLength(3);  // tope a count real
+  });
+
+  it('limit 0 / negativo → []', () => {
+    const gastos = [{ fecha: '2026-04-01', desc: 'A', monto: 100, tipo: 'hormiga' }];
+    expect(calcularTopHormigas(gastos, null, 0)).toEqual([]);
+    expect(calcularTopHormigas(gastos, null, -3)).toEqual([]);
+  });
+
+  it('filtra por mes "YYYY-MM" cuando se proporciona', () => {
+    const gastos = [
+      { fecha: '2026-03-15', desc: 'Café', monto: 50_000, tipo: 'hormiga' },  // mes anterior
+      { fecha: '2026-04-01', desc: 'Café', monto:  3_000, tipo: 'hormiga' },
+      { fecha: '2026-04-25', desc: 'Café', monto:  4_000, tipo: 'hormiga' },
+      { fecha: '2026-05-01', desc: 'Café', monto: 99_000, tipo: 'hormiga' },  // mes siguiente
+    ];
+    const r = calcularTopHormigas(gastos, '2026-04');
+    expect(r).toHaveLength(1);
+    expect(r[0].total).toBe(7_000);    // solo abril
+    expect(r[0].count).toBe(2);
+  });
+
+  it('mes sin hormigas → []', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'Café', monto: 3_000, tipo: 'hormiga' },
+    ];
+    expect(calcularTopHormigas(gastos, '2026-05')).toEqual([]);
+  });
+
+  it('usa montoTotal sobre monto cuando existe (gastos con 4×1000)', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'Café', monto: 3_000, montoTotal: 3_012, tipo: 'hormiga' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r[0].total).toBe(3_012);
+  });
+
+  it('gastos sin descripción se agrupan como "Sin descripción"', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: '',           monto: 1_000, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: undefined,    monto: 2_000, tipo: 'hormiga' },
+      { fecha: '2026-04-01',                     monto: 3_000, tipo: 'hormiga' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r).toHaveLength(1);
+    expect(r[0].concepto).toBe('Sin descripción');
+    expect(r[0].total).toBe(6_000);
+    expect(r[0].count).toBe(3);
+  });
+
+  it('orden estable: total DESC', () => {
+    const gastos = [
+      { fecha: '2026-04-01', desc: 'B', monto: 50, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'A', monto: 100, tipo: 'hormiga' },
+      { fecha: '2026-04-01', desc: 'C', monto: 75, tipo: 'hormiga' },
+    ];
+    const r = calcularTopHormigas(gastos);
+    expect(r.map(x => x.concepto)).toEqual(['A', 'C', 'B']);
   });
 
 });

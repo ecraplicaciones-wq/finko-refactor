@@ -24,6 +24,52 @@ function _getPct() {
 }
 
 /**
+ * Top N hormigas del período: agrupa los gastos hormiga por descripción
+ * (case + tilde insensitive), suma sus montos y devuelve los más caros.
+ *
+ * El "concepto canónico" devuelto es la primera variante encontrada del
+ * grupo (ej. si hay "Café", "café" y "Cafe", se reporta como apareció el
+ * primero, conservando estilo).
+ *
+ * Esta pura es la base del widget "Top 3 hormigas del mes" en el dashboard.
+ *
+ * @param {Array<{fecha?:string, desc?:string, monto:number, montoTotal?:number,
+ *                tipo?:string, hormiga?:boolean}>} gastos — S.gastos.
+ * @param {string|null} [mesYYYYMM] — filtra a 'YYYY-MM' por g.fecha. null = todos.
+ * @param {number} [limit=3]       — cuántas devolver.
+ * @returns {Array<{ concepto: string, total: number, count: number }>}
+ *     Ordenado por total DESC. Vacío si no hay hormigas.
+ */
+export function calcularTopHormigas(gastos, mesYYYYMM = null, limit = 3) {
+  if (!Array.isArray(gastos) || gastos.length === 0) return [];
+
+  const norm = s => String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .trim();
+
+  const mapa = new Map();   // key normalizada → { concepto, total, count }
+  for (const g of gastos) {
+    if (!(g?.tipo === 'hormiga' || g?.hormiga === true)) continue;
+    if (mesYYYYMM && !String(g.fecha || '').startsWith(mesYYYYMM)) continue;
+
+    const desc = (g.desc || '').trim() || 'Sin descripción';
+    const key  = norm(desc);
+    const monto = g.montoTotal || g.monto || 0;
+    if (!mapa.has(key)) {
+      mapa.set(key, { concepto: desc, total: 0, count: 0 });
+    }
+    const entry = mapa.get(key);
+    entry.total += monto;
+    entry.count += 1;
+  }
+
+  return Array.from(mapa.values())
+    .sort((a, b) => b.total - a.total)
+    .slice(0, Math.max(0, limit));
+}
+
+/**
  * Suma de cuotas del período activo (S.tipoPeriodo).
  * • mensual → quincenales × 2 + mensuales
  * • q1      → quincenales + mensuales
@@ -335,6 +381,51 @@ export function renderGastos() {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─── TOP 3 HORMIGAS DEL MES (auditoría v5: insight accionable) ───────────────
+function _renderTopHormigas() {
+  const el = document.getElementById('d-top-hormigas');
+  if (!el) return;
+  const mes = mesStr();   // 'YYYY-MM' del mes actual
+  const top = calcularTopHormigas(S.gastos || [], mes, 3);
+
+  if (top.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const max = top[0].total;
+  const filas = top.map((h, i) => {
+    const ancho = max > 0 ? Math.round((h.total / max) * 100) : 0;
+    const medalla = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+    return `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;margin-bottom:3px;">
+          <span style="font-weight:700;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
+            ${medalla} ${he(h.concepto)}
+            <span style="color:var(--t3);font-weight:500;font-size:10px;">×${h.count}</span>
+          </span>
+          <span class="mono" style="font-weight:700;color:#a1887f;flex-shrink:0;">${f(h.total)}</span>
+        </div>
+        <div style="height:4px;background:rgba(121,85,72,.15);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;border-radius:999px;background:#a1887f;width:${ancho}%;transition:width .4s ease;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+      🎯 Top 3 hormigas de este mes
+    </div>
+    ${filas}
+    <div style="margin-top:8px;font-size:10px;color:var(--t3);line-height:1.5;">
+      💡 Atacá estas tres y vas a ver el cambio en la próxima quincena.
+    </div>
+  `;
+}
+
 // ─── RENDER DE CUENTAS EN DASH ───────────────────────────────────────────────
 export function renderDashCuentas() {
   const el = document.getElementById('d-cuentas');
@@ -389,6 +480,9 @@ export function updateDash() {
   setEl('d-phc', `${pctHormiga}% del ingreso`);
   const horBarra = document.getElementById('d-hor-barra');
   if (horBarra) horBarra.style.width = `${pctHormiga}%`;
+
+  // Top 3 hormigas del mes — insight accionable
+  _renderTopHormigas();
 
   updSaldo();
 

@@ -1,0 +1,32 @@
+# CI mínimo: corre vitest en cada push y PR.
+# Evita la clase de bugs bloqueantes detectados en la auditoría v5
+# (ej: SyntaxError por export duplicado, ReferenceError por imports faltantes).
+
+name: tests
+
+on:
+  push:
+    branches: [main, master, refactor/**]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Run vitest
+        run: npm test
