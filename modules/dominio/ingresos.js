@@ -24,6 +24,45 @@ function _getPct() {
 }
 
 /**
+ * Compara métricas de la quincena actual vs la anterior. Para cada métrica
+ * devuelve delta absoluto, % de variación y un "estado" interpretable según
+ * la dirección deseada (gasto/hormiga: menos es mejor; ahorro/ingreso: más).
+ *
+ * @param {{gastado:number, ahorro:number, hormiga:number, ingreso:number}} actual
+ * @param {{gastado:number, ahorro:number, hormiga:number, ingreso:number} | null} anterior
+ *     Suele ser S.historial[0]. Si es null, retorna null (no hay con qué comparar).
+ * @returns {null | {
+ *   gastado:  { delta:number, pct:number, estado:'mejor'|'peor'|'igual' },
+ *   ahorro:   { delta:number, pct:number, estado:'mejor'|'peor'|'igual' },
+ *   hormiga:  { delta:number, pct:number, estado:'mejor'|'peor'|'igual' },
+ *   ingreso:  { delta:number, pct:number, estado:'mejor'|'peor'|'igual' }
+ * }}
+ */
+export function calcularComparacionQuincenas(actual, anterior) {
+  if (!anterior || typeof anterior !== 'object') return null;
+  if (!actual   || typeof actual   !== 'object') return null;
+
+  const compara = (act, prev, menosEsMejor) => {
+    const a = +act  || 0;
+    const p = +prev || 0;
+    const delta = a - p;
+    const pct   = p > 0 ? Math.round((delta / p) * 100) : (a > 0 ? 100 : 0);
+    let estado;
+    if (Math.abs(pct) < 1)    estado = 'igual';
+    else if (menosEsMejor)    estado = delta < 0 ? 'mejor' : 'peor';
+    else                      estado = delta > 0 ? 'mejor' : 'peor';
+    return { delta, pct, estado };
+  };
+
+  return {
+    gastado: compara(actual.gastado, anterior.gastado, true),
+    ahorro:  compara(actual.ahorro,  anterior.ahorro,  false),
+    hormiga: compara(actual.hormiga, anterior.hormiga, true),
+    ingreso: compara(actual.ingreso, anterior.ingreso, false),
+  };
+}
+
+/**
  * Top N hormigas del período: agrupa los gastos hormiga por descripción
  * (case + tilde insensitive), suma sus montos y devuelve los más caros.
  *
@@ -381,6 +420,55 @@ export function renderGastos() {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─── vs QUINCENA PASADA (auditoría v5: comparación semanal) ──────────────────
+function _renderComparacionQuincena(actual) {
+  const el = document.getElementById('d-vs-quincena');
+  if (!el) return;
+  const prev = (S.historial && S.historial[0]) || null;
+  const r    = calcularComparacionQuincenas(actual, prev);
+
+  if (!r) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const fila = (label, emoji, m, menosEsMejor) => {
+    let flecha, color;
+    if (m.estado === 'igual') { flecha = '➡️'; color = 'var(--t3)'; }
+    else if (m.estado === 'mejor') {
+      flecha = menosEsMejor ? '⬇️' : '⬆️';
+      color = 'var(--a1)';
+    } else {
+      flecha = menosEsMejor ? '⬆️' : '⬇️';
+      color = 'var(--dan)';
+    }
+    const signo = m.pct > 0 ? '+' : '';
+    const txt   = m.estado === 'igual'
+      ? '~ igual'
+      : `${signo}${m.pct}% (${signo}${f(Math.abs(m.delta) * (m.pct < 0 ? -1 : 1))})`;
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:11px;">
+        <span style="color:var(--t2);font-weight:600;">${emoji} ${label}</span>
+        <span style="color:${color};font-weight:700;">${flecha} ${txt}</span>
+      </div>
+    `;
+  };
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="padding:12px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        📊 vs quincena pasada (${he(prev.periodo || prev.mes || 'anterior')})
+      </div>
+      ${fila('Gastos',  '💸', r.gastado, true)}
+      ${fila('Ahorro',  '💰', r.ahorro,  false)}
+      ${fila('Hormiga', '🐜', r.hormiga, true)}
+      ${fila('Ingreso', '💵', r.ingreso, false)}
+    </div>
+  `;
+}
+
 // ─── TOP 3 HORMIGAS DEL MES (auditoría v5: insight accionable) ───────────────
 function _renderTopHormigas() {
   const el = document.getElementById('d-top-hormigas');
@@ -483,6 +571,9 @@ export function updateDash() {
 
   // Top 3 hormigas del mes — insight accionable
   _renderTopHormigas();
+
+  // Comparación con quincena anterior
+  _renderComparacionQuincena({ gastado: tG, ahorro: tA, hormiga: tH, ingreso: S.ingreso });
 
   updSaldo();
 

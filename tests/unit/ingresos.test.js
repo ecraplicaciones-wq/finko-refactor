@@ -20,6 +20,7 @@ import {
   generarConsejo,
   calcularScoreFinanciero,
   calcularTopHormigas,
+  calcularComparacionQuincenas,
 } from '../../modules/dominio/ingresos.js';
 
 // ─── cuotasPeriodo ───────────────────────────────────────────────────────────
@@ -567,6 +568,117 @@ describe('calcularTopHormigas()', () => {
     ];
     const r = calcularTopHormigas(gastos);
     expect(r.map(x => x.concepto)).toEqual(['A', 'C', 'B']);
+  });
+
+});
+
+// ─── calcularComparacionQuincenas ────────────────────────────────────────────
+
+describe('calcularComparacionQuincenas()', () => {
+
+  it('sin quincena anterior → null (no hay con qué comparar)', () => {
+    expect(calcularComparacionQuincenas({ gastado: 100, ahorro: 50, hormiga: 10, ingreso: 200 }, null)).toBeNull();
+    expect(calcularComparacionQuincenas({ gastado: 100, ahorro: 50, hormiga: 10, ingreso: 200 }, undefined)).toBeNull();
+  });
+
+  it('sin actual → null', () => {
+    expect(calcularComparacionQuincenas(null, { gastado: 100 })).toBeNull();
+  });
+
+  it('gastos: bajaron → estado "mejor" (menos es mejor)', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 800_000, ahorro: 0, hormiga: 0, ingreso: 0 },
+      { gastado: 1_000_000, ahorro: 0, hormiga: 0, ingreso: 0 }
+    );
+    expect(r.gastado.delta).toBe(-200_000);
+    expect(r.gastado.pct).toBe(-20);
+    expect(r.gastado.estado).toBe('mejor');
+  });
+
+  it('gastos: subieron → estado "peor"', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 1_200_000, ahorro: 0, hormiga: 0, ingreso: 0 },
+      { gastado: 1_000_000, ahorro: 0, hormiga: 0, ingreso: 0 }
+    );
+    expect(r.gastado.delta).toBe(200_000);
+    expect(r.gastado.pct).toBe(20);
+    expect(r.gastado.estado).toBe('peor');
+  });
+
+  it('ahorro: subió → estado "mejor" (más es mejor)', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 0, ahorro: 300_000, hormiga: 0, ingreso: 0 },
+      { gastado: 0, ahorro: 200_000, hormiga: 0, ingreso: 0 }
+    );
+    expect(r.ahorro.delta).toBe(100_000);
+    expect(r.ahorro.pct).toBe(50);
+    expect(r.ahorro.estado).toBe('mejor');
+  });
+
+  it('ahorro: bajó → estado "peor"', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 0, ahorro: 100_000, hormiga: 0, ingreso: 0 },
+      { gastado: 0, ahorro: 200_000, hormiga: 0, ingreso: 0 }
+    );
+    expect(r.ahorro.estado).toBe('peor');
+  });
+
+  it('hormiga: bajaron → mejor (las hormigas pequeñas son malas)', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 0, ahorro: 0, hormiga: 50_000, ingreso: 0 },
+      { gastado: 0, ahorro: 0, hormiga: 80_000, ingreso: 0 }
+    );
+    expect(r.hormiga.estado).toBe('mejor');
+  });
+
+  it('cambios <1% se reportan como "igual"', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 1_000_000, ahorro: 200_000, hormiga: 50_000, ingreso: 2_000_000 },
+      { gastado: 1_001_000, ahorro: 200_500, hormiga: 50_100, ingreso: 2_002_000 }
+    );
+    expect(r.gastado.estado).toBe('igual');
+    expect(r.ahorro.estado).toBe('igual');
+    expect(r.hormiga.estado).toBe('igual');
+    expect(r.ingreso.estado).toBe('igual');
+  });
+
+  it('quincena anterior con métrica en 0: pct = 100 si actual > 0', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 0, ahorro: 100_000, hormiga: 0, ingreso: 0 },
+      { gastado: 0, ahorro: 0,       hormiga: 0, ingreso: 0 }
+    );
+    expect(r.ahorro.pct).toBe(100);
+    expect(r.ahorro.estado).toBe('mejor');
+  });
+
+  it('ambas quincenas en 0: pct = 0, estado "igual"', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 0, ahorro: 0, hormiga: 0, ingreso: 0 },
+      { gastado: 0, ahorro: 0, hormiga: 0, ingreso: 0 }
+    );
+    expect(r.gastado.pct).toBe(0);
+    expect(r.gastado.estado).toBe('igual');
+  });
+
+  it('reporta deltas independientes en las 4 métricas a la vez', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: 800_000,  ahorro: 200_000, hormiga: 30_000, ingreso: 1_500_000 },
+      { gastado: 1_000_000, ahorro: 100_000, hormiga: 50_000, ingreso: 1_500_000 }
+    );
+    expect(r.gastado.estado).toBe('mejor');
+    expect(r.ahorro.estado).toBe('mejor');
+    expect(r.hormiga.estado).toBe('mejor');
+    expect(r.ingreso.estado).toBe('igual');
+  });
+
+  it('valores undefined / no-numéricos se tratan como 0', () => {
+    const r = calcularComparacionQuincenas(
+      { gastado: undefined, ahorro: 'abc',     hormiga: NaN, ingreso: null },
+      { gastado: 100_000,   ahorro: 50_000,    hormiga: 10_000, ingreso: 0 }
+    );
+    expect(r.gastado.delta).toBe(-100_000);
+    expect(r.ahorro.delta).toBe(-50_000);
+    expect(r.hormiga.delta).toBe(-10_000);
   });
 
 });
