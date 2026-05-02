@@ -1,5 +1,5 @@
 import { S }    from '../core/state.js';
-import { save, CURRENT_VERSION, medirUso } from '../core/storage.js';
+import { save, CURRENT_VERSION, medirUso, guardarUndoSnapshot, mostrarBannerUndo } from '../core/storage.js';
 import { f, he, hoy } from '../infra/utils.js';
 import { CATS, GMF_TASA } from '../core/constants.js';
 import { registerAction } from '../ui/actions.js';
@@ -131,6 +131,11 @@ export function importarDatos(e) {
         return;
       }
 
+      // Snapshot de undo ANTES de pisar el estado. Captura S completo tal cual
+      // estaba: si el usuario importa el archivo equivocado, "Deshacer" lo trae
+      // de vuelta. Best-effort — si no hay espacio para el undo, igual procede.
+      guardarUndoSnapshot('Importación de respaldo');
+
       // Fusión segura: copiar claves del backup sobre el estado
       Object.keys(d).forEach(key => { S[key] = d[key]; });
 
@@ -167,6 +172,8 @@ export function importarDatos(e) {
         `✅ Todos tus registros han sido restaurados${fechaBackup}. ¡Bienvenido de vuelta!`,
         'Importación exitosa'
       );
+      // Banner de undo después del alert para no competir visualmente.
+      mostrarBannerUndo('📥 Importación aplicada — ¿deshacer?');
     } catch (err) {
       window.showAlert?.(
         'No se pudo leer el archivo. Asegúrate de que sea un backup válido de Finko Pro (.json).',

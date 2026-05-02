@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npm test *)",
+      "Bash(python -m http.server 8080)",
+      "Bash(npx @lhci/cli@latest autorun --config=./)",
+      "Bash(npx lighthouse *)",
+      "Bash(python3 -c \" import json, sys data = json.load\\(sys.stdin\\) issues = [\\(k, v['title'], v.get\\('score', 0\\), v.get\\('description', ''\\)\\) for k, v in data['audits'].items\\(\\) if v.get\\('score'\\) is not None and v.get\\('score'\\) < 1] issues.sort\\(key=lambda x: x[2]\\) for i, \\(k, title, score, desc\\) in enumerate\\(issues[:10], 1\\): print\\(f'{i}. {title} \\(score: {score:.0%}\\)'\\) if desc: print\\(f' {desc[:120]}...'\\) \")",
+      "Bash(pkill -f \"python -m http.server\")",
+      "Bash(git tag *)",
+      "Bash(git push *)",
+      "Bash(mkdir -p modules/core)",
+      "Bash(git mv *)",
+      "Bash(node --check modules/core/constants.js)",
+      "Bash(node --check modules/core/state.js)",
+      "Bash(node --check modules/core/storage.js)",
+      "Bash(node --check modules/infra/utils.js)",
+      "Bash(node --check modules/infra/render.js)",
+      "Bash(node --check modules/dominio/ingresos.js)",
+      "Bash(node --check modules/infra/a11y.js)",
+      "Bash(node --check modules/calculadoras.js)",
+      "Bash(node -e \"const t=5000000; const ea=0.24; const tm=Math.pow\\(1+ea,1/12\\)-1; const c=t*tm*Math.pow\\(1+tm,12\\)/\\(Math.pow\\(1+tm,12\\)-1\\); console.log\\('cuota:', c, 'round:', Math.round\\(c\\)\\); console.log\\('totalPagado:', c*12, 'round:', Math.round\\(c*12\\)\\); console.log\\('interes:', c*12-t, 'round:', Math.round\\(c*12-t\\)\\);\")",
+      "Bash(git restore *)",
+      "Bash(xxd)",
+      "Bash(git stash *)",
+      "Bash(node --check modules/ui/shell.js)",
+      "Bash(node --check modules/dominio/exports.js)",
+      "Bash(node --check modules/dominio/tesoreria.js)",
+      "Bash(node --check modules/dominio/analisis.js)",
+      "Bash(node --check modules/dominio/compromisos.js)",
+      "Bash(node --check modules/ui/events.js)",
+      "Bash(node --check modules/dominio/metas.js)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

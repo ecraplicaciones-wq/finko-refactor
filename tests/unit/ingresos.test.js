@@ -21,6 +21,8 @@ import {
   calcularScoreFinanciero,
   calcularTopHormigas,
   calcularComparacionQuincenas,
+  detectarDuplicadoGasto,
+  detectarGastoAtipico,
 } from '../../modules/dominio/ingresos.js';
 
 // ─── cuotasPeriodo ───────────────────────────────────────────────────────────
@@ -681,4 +683,627 @@ describe('calcularComparacionQuincenas()', () => {
     expect(r.hormiga.delta).toBe(-10_000);
   });
 
+});
+
+// ─── detectarDuplicadoGasto ──────────────────────────────────────────────────
+//
+// Función pura: candidato + lista → match o null. Sin S, sin DOM, sin Date.now.
+// Siempre pasamos `ahora` explícito en tests para no depender del reloj.
+
+describe('detectarDuplicadoGasto()', () => {
+
+  // Helper: arma un gasto válido con id-timestamp explícito.
+  const G = (id, extra = {}) => ({
+    id, desc: 'Café', monto: 5000, cat: 'comida', tipo: 'deseo', ...extra,
+  });
+  const C = (extra = {}) => ({ desc: 'Café', monto: 5000, cat: 'comida', ...extra });
+
+  // ── BLOQUE: ENTRADAS QUE NO SE INTENTAN ──────────────────────────────────
+  describe('entradas inválidas', () => {
+    it('candidato null → null', () => {
+      expect(detectarDuplicadoGasto(null, [G(1000)], 1000)).toBe(null);
+    });
+    it('candidato undefined → null', () => {
+      expect(detectarDuplicadoGasto(undefined, [G(1000)], 1000)).toBe(null);
+    });
+    it('candidato no-objeto → null', () => {
+      expect(detectarDuplicadoGasto('café', [G(1000)], 1000)).toBe(null);
+      expect(detectarDuplicadoGasto(42, [G(1000)], 1000)).toBe(null);
+    });
+    it('gastos no-array → null', () => {
+      expect(detectarDuplicadoGasto(C(), null, 1000)).toBe(null);
+      expect(detectarDuplicadoGasto(C(), 'no soy array', 1000)).toBe(null);
+      expect(detectarDuplicadoGasto(C(), {}, 1000)).toBe(null);
+    });
+    it('gastos vacío → null', () => {
+      expect(detectarDuplicadoGasto(C(), [], 1000)).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: CANDIDATO CON DATOS FALTANTES ────────────────────────────────
+  describe('candidato incompleto', () => {
+    it('sin monto → null', () => {
+      expect(detectarDuplicadoGasto(C({ monto: undefined }), [G(1000)], 1000)).toBe(null);
+    });
+    it('monto cero → null (no se considera gasto)', () => {
+      expect(detectarDuplicadoGasto(C({ monto: 0 }), [G(1000, { monto: 0 })], 1000)).toBe(null);
+    });
+    it('monto negativo → null', () => {
+      expect(detectarDuplicadoGasto(C({ monto: -100 }), [G(1000)], 1000)).toBe(null);
+    });
+    it('monto NaN → null', () => {
+      expect(detectarDuplicadoGasto(C({ monto: NaN }), [G(1000)], 1000)).toBe(null);
+    });
+    it('desc vacía → null', () => {
+      expect(detectarDuplicadoGasto(C({ desc: '' }), [G(1000)], 1000)).toBe(null);
+    });
+    it('desc solo espacios → null', () => {
+      expect(detectarDuplicadoGasto(C({ desc: '   ' }), [G(1000)], 1000)).toBe(null);
+    });
+    it('cat vacía → null', () => {
+      expect(detectarDuplicadoGasto(C({ cat: '' }), [G(1000)], 1000)).toBe(null);
+    });
+    it('cat undefined → null', () => {
+      expect(detectarDuplicadoGasto(C({ cat: undefined }), [G(1000)], 1000)).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: GASTOS CON SHAPE INVÁLIDA ────────────────────────────────────
+  describe('gastos basura en la lista', () => {
+    it('items null/undefined ignorados', () => {
+      expect(detectarDuplicadoGasto(C(), [null, undefined, null], 1000)).toBe(null);
+    });
+    it('items sin id ignorados', () => {
+      expect(detectarDuplicadoGasto(
+        C(),
+        [{ desc: 'Café', monto: 5000, cat: 'comida' }],   // sin id
+        1000
+      )).toBe(null);
+    });
+    it('items con id no-numérico ignorados', () => {
+      expect(detectarDuplicadoGasto(
+        C(),
+        [{ id: 'abc', desc: 'Café', monto: 5000, cat: 'comida' }],
+        1000
+      )).toBe(null);
+    });
+    it('mezcla: encuentra el válido aunque haya basura', () => {
+      const r = detectarDuplicadoGasto(C(), [
+        null,
+        { id: 'no-num', desc: 'Café', monto: 5000, cat: 'comida' },
+        G(900),                                            // válido, hace 100ms
+      ], 1000);
+      expect(r).not.toBe(null);
+      expect(r.duplicado.id).toBe(900);
+    });
+  });
+
+  // ── BLOQUE: VENTANA TEMPORAL ─────────────────────────────────────────────
+  describe('respeta la ventana temporal', () => {
+    it('gasto de hace 30 seg → match', () => {
+      const r = detectarDuplicadoGasto(C(), [G(1_000_000 - 30_000)], 1_000_000);
+      expect(r).not.toBe(null);
+      expect(r.segundos).toBe(30);
+    });
+    it('gasto de hace 4:59 min → match (justo dentro)', () => {
+      const ahora = 10_000_000;
+      const r = detectarDuplicadoGasto(C(), [G(ahora - (5 * 60_000) + 1)], ahora);
+      expect(r).not.toBe(null);
+    });
+    it('gasto de hace exactamente 5 min → match (límite incluyente)', () => {
+      const ahora = 10_000_000;
+      const r = detectarDuplicadoGasto(C(), [G(ahora - 5 * 60_000)], ahora);
+      expect(r).not.toBe(null);
+    });
+    it('gasto de hace 5:01 min → null (fuera)', () => {
+      const ahora = 10_000_000;
+      const r = detectarDuplicadoGasto(C(), [G(ahora - (5 * 60_000) - 1000)], ahora);
+      expect(r).toBe(null);
+    });
+    it('gasto en el futuro (id > ahora) → null', () => {
+      const r = detectarDuplicadoGasto(C(), [G(2_000_000)], 1_000_000);
+      expect(r).toBe(null);
+    });
+    it('ventana custom: 1 min', () => {
+      const ahora = 10_000_000;
+      const r1 = detectarDuplicadoGasto(C(), [G(ahora - 30_000)], ahora, 60_000);
+      const r2 = detectarDuplicadoGasto(C(), [G(ahora - 90_000)], ahora, 60_000);
+      expect(r1).not.toBe(null);
+      expect(r2).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: COMPARACIÓN DE CAMPOS ────────────────────────────────────────
+  describe('coincidencia de campos', () => {
+    it('todo igual → match', () => {
+      const r = detectarDuplicadoGasto(C(), [G(900)], 1000);
+      expect(r).not.toBe(null);
+    });
+    it('cat distinta → null', () => {
+      const r = detectarDuplicadoGasto(C(), [G(900, { cat: 'transporte' })], 1000);
+      expect(r).toBe(null);
+    });
+    it('monto distinto → null', () => {
+      const r = detectarDuplicadoGasto(C(), [G(900, { monto: 6000 })], 1000);
+      expect(r).toBe(null);
+    });
+    it('desc distinta → null', () => {
+      const r = detectarDuplicadoGasto(C(), [G(900, { desc: 'Té' })], 1000);
+      expect(r).toBe(null);
+    });
+    it('desc con espacios extras → match (trim)', () => {
+      const r = detectarDuplicadoGasto(C({ desc: '  Café  ' }), [G(900)], 1000);
+      expect(r).not.toBe(null);
+    });
+    it('desc con mayúsculas distintas → match (toLowerCase)', () => {
+      const r = detectarDuplicadoGasto(C({ desc: 'CAFÉ' }), [G(900)], 1000);
+      expect(r).not.toBe(null);
+    });
+    it('monto string vs number coercionado → match', () => {
+      // Tanto candidato como gasto pasan por Number()
+      const r = detectarDuplicadoGasto(
+        C({ monto: '5000' }),
+        [G(900, { monto: 5000 })],
+        1000
+      );
+      expect(r).not.toBe(null);
+    });
+  });
+
+  // ── BLOQUE: SELECCIÓN ENTRE MÚLTIPLES ────────────────────────────────────
+  describe('múltiples candidatos en lista', () => {
+    it('devuelve el primero que matchea (orden de la lista)', () => {
+      // Como S.gastos usa unshift(), el más reciente está al frente.
+      const r = detectarDuplicadoGasto(C(), [
+        G(950, { desc: 'Café' }),                          // hace 50ms
+        G(800, { desc: 'Café' }),                          // hace 200ms
+      ], 1000);
+      expect(r.duplicado.id).toBe(950);
+    });
+    it('ignora los que no matchean y encuentra el válido', () => {
+      const r = detectarDuplicadoGasto(C(), [
+        G(950, { cat: 'transporte' }),                     // cat distinta
+        G(900, { monto: 9999 }),                           // monto distinto
+        G(850),                                            // ✅ match
+      ], 1000);
+      expect(r.duplicado.id).toBe(850);
+    });
+    it('todos fuera de ventana → null', () => {
+      const r = detectarDuplicadoGasto(C(), [
+        G(100), G(50), G(0),                               // hace ≥900ms cada uno → ok
+      ], 1000, 500);                                       // ventana 500ms
+      expect(r).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: FORMA DEL VALOR DE RETORNO ───────────────────────────────────
+  describe('forma del retorno', () => {
+    it('match incluye duplicado y segundos', () => {
+      const r = detectarDuplicadoGasto(C(), [G(700)], 1000);
+      expect(r).toHaveProperty('duplicado');
+      expect(r).toHaveProperty('segundos');
+    });
+    it('duplicado es el objeto original (referencia)', () => {
+      const original = G(700);
+      const r = detectarDuplicadoGasto(C(), [original], 1000);
+      expect(r.duplicado).toBe(original);
+    });
+    it('segundos = (ahora - id) / 1000 redondeado', () => {
+      const r = detectarDuplicadoGasto(C(), [G(40_000)], 100_000);
+      expect(r.segundos).toBe(60);                         // 60 seg exactos
+    });
+    it('segundos = 0 cuando id = ahora', () => {
+      const r = detectarDuplicadoGasto(C(), [G(1000)], 1000);
+      expect(r.segundos).toBe(0);
+    });
+  });
+});
+
+// ─── detectarGastoAtipico ────────────────────────────────────────────────────
+//
+// Función pura: candidato + lista + config → { promedio, factor, muestras } o null.
+// Sin S, sin DOM. Pasamos `ahora` explícito en cada test para no depender del reloj.
+//
+// Defaults a recordar:
+//   diasVentana = 30, factor = 4, minMuestras = 3.
+
+describe('detectarGastoAtipico()', () => {
+
+  // Reloj fijo para todos los tests: 2026-04-27 a las 12:00 UTC.
+  const AHORA = new Date('2026-04-27T12:00:00Z').getTime();
+
+  // Helper: gasto válido en el baseline. Por default fecha 5 días atrás.
+  const G = (monto, extra = {}) => ({
+    id: AHORA - 5 * 86_400_000,
+    desc: 'Almuerzo',
+    monto,
+    cat: 'comida',
+    tipo: 'necesidad',
+    fecha: '2026-04-22',                                // 5 días antes
+    ...extra,
+  });
+
+  // Helper: candidato. Default cat = 'comida'.
+  const C = (monto, extra = {}) => ({ monto, cat: 'comida', ...extra });
+
+  // Helper: config con `ahora` fijo + overrides opcionales.
+  const cfg = (extra = {}) => ({ ahora: AHORA, ...extra });
+
+  // Helper: arma N gastos del baseline con monto promedio dado y misma cat.
+  const baseline = (n, monto, extra = {}) =>
+    Array.from({ length: n }, (_, i) => G(monto, {
+      id: AHORA - (i + 1) * 86_400_000,                 // 1..N días atrás
+      fecha: new Date(AHORA - (i + 1) * 86_400_000).toISOString().slice(0, 10),
+      ...extra,
+    }));
+
+  // ── BLOQUE: ENTRADAS INVÁLIDAS ───────────────────────────────────────────
+  describe('entradas que ni se intentan', () => {
+    it('candidato null → null', () => {
+      expect(detectarGastoAtipico(null, baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('candidato undefined → null', () => {
+      expect(detectarGastoAtipico(undefined, baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('candidato no-objeto (string) → null', () => {
+      expect(detectarGastoAtipico('mucho', baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('candidato no-objeto (number) → null', () => {
+      expect(detectarGastoAtipico(50_000, baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('gastos no-array (null) → null', () => {
+      expect(detectarGastoAtipico(C(50_000), null, cfg())).toBe(null);
+    });
+    it('gastos no-array (string) → null', () => {
+      expect(detectarGastoAtipico(C(50_000), 'no soy array', cfg())).toBe(null);
+    });
+    it('gastos vacío → null (no hay baseline)', () => {
+      expect(detectarGastoAtipico(C(50_000), [], cfg())).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: CANDIDATO INCOMPLETO ─────────────────────────────────────────
+  describe('candidato incompleto', () => {
+    it('sin monto → null', () => {
+      expect(detectarGastoAtipico({ cat: 'comida' }, baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto undefined → null', () => {
+      expect(detectarGastoAtipico(C(undefined), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto cero → null', () => {
+      expect(detectarGastoAtipico(C(0), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto negativo → null', () => {
+      expect(detectarGastoAtipico(C(-50_000), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto NaN → null', () => {
+      expect(detectarGastoAtipico(C(NaN), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto Infinity → null', () => {
+      expect(detectarGastoAtipico(C(Infinity), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('monto string no-numérico → null', () => {
+      expect(detectarGastoAtipico(C('quinientos'), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('cat ausente → null', () => {
+      expect(detectarGastoAtipico({ monto: 50_000 }, baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('cat vacía → null', () => {
+      expect(detectarGastoAtipico(C(50_000, { cat: '' }), baseline(5, 10_000), cfg())).toBe(null);
+    });
+    it('cat undefined → null', () => {
+      expect(detectarGastoAtipico(C(50_000, { cat: undefined }), baseline(5, 10_000), cfg())).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: CONFIG INVÁLIDO O LÍMITE ─────────────────────────────────────
+  describe('config inválido cae a defaults o devuelve null', () => {
+    it('factor ≤ 1 → null (no aplica)', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ factor: 1 }))).toBe(null);
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ factor: 0 }))).toBe(null);
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ factor: -1 }))).toBe(null);
+    });
+    it('diasVentana 0 → null', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ diasVentana: 0 }))).toBe(null);
+    });
+    it('diasVentana negativo → null', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ diasVentana: -10 }))).toBe(null);
+    });
+    it('minMuestras < 1 → null', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ minMuestras: 0 }))).toBe(null);
+    });
+    it('config null → usa defaults', () => {
+      // Con baseline de 5 gastos a 10k y candidato 50k (=5×) sigue siendo atípico.
+      // Usamos `ahora` default → para evitar dependencia del reloj fijamos
+      // ids con Date.now y verificamos que no se rompe.
+      const ahoraReal = Date.now();
+      const recientes = Array.from({ length: 5 }, (_, i) => ({
+        id: ahoraReal - (i + 1) * 86_400_000,
+        monto: 10_000, cat: 'comida',
+        fecha: new Date(ahoraReal - (i + 1) * 86_400_000).toISOString().slice(0, 10),
+      }));
+      const r = detectarGastoAtipico(C(50_000), recientes, null);
+      expect(r).not.toBe(null);
+    });
+    it('config no-objeto (string) → usa defaults', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(5, 10_000), 'lo que sea');
+      // Sin `ahora` explícito, baseline construido con AHORA fijo cae fuera de la
+      // ventana real → null. El test valida que no crashea, no el resultado exacto.
+      expect(r === null || (r && typeof r === 'object')).toBe(true);
+    });
+  });
+
+  // ── BLOQUE: FILTRADO POR CATEGORÍA ───────────────────────────────────────
+  describe('aísla baseline por categoría', () => {
+    it('mezcla cat: solo cuenta la del candidato', () => {
+      const gastos = [
+        ...baseline(3, 10_000, { cat: 'comida' }),
+        ...baseline(3, 200_000, { cat: 'transporte' }),    // ruido en otra cat
+      ];
+      const r = detectarGastoAtipico(C(50_000, { cat: 'comida' }), gastos, cfg());
+      expect(r).not.toBe(null);
+      expect(r.muestras).toBe(3);
+      expect(r.promedio).toBe(10_000);
+    });
+    it('cat sin gastos previos → null por minMuestras', () => {
+      const gastos = baseline(5, 10_000, { cat: 'comida' });
+      expect(detectarGastoAtipico(C(50_000, { cat: 'transporte' }), gastos, cfg())).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: VENTANA TEMPORAL ─────────────────────────────────────────────
+  describe('respeta la ventana temporal', () => {
+    it('todos dentro de la ventana de 30d → cuenta todos', () => {
+      const gastos = baseline(5, 10_000);                   // 1..5 días atrás
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(5);
+    });
+    it('mezcla dentro/fuera: solo cuenta los de adentro', () => {
+      const gastos = [
+        ...baseline(3, 10_000),                              // 1..3 días atrás
+        G(10_000, {
+          id: AHORA - 60 * 86_400_000,
+          fecha: '2026-02-26',                               // 60 días atrás
+        }),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);
+    });
+    it('todos fuera de la ventana → null', () => {
+      const viejo = G(10_000, {
+        id: AHORA - 100 * 86_400_000,
+        fecha: '2026-01-17',
+      });
+      expect(detectarGastoAtipico(C(50_000), [viejo, viejo, viejo, viejo], cfg())).toBe(null);
+    });
+    it('gasto en el futuro (fecha posterior a ahora) → ignorado', () => {
+      const gastos = [
+        ...baseline(3, 10_000),
+        G(10_000, {
+          id: AHORA + 5 * 86_400_000,
+          fecha: '2026-05-02',                               // 5 días en el futuro
+        }),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);                            // futuro no cuenta
+    });
+    it('ventana custom de 7 días', () => {
+      const gastos = [
+        ...baseline(3, 10_000),                              // 1..3 días atrás
+        G(10_000, {
+          id: AHORA - 15 * 86_400_000,
+          fecha: '2026-04-12',                               // 15 días atrás
+        }),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg({ diasVentana: 7 }));
+      expect(r.muestras).toBe(3);                            // el de 15d queda fuera
+    });
+  });
+
+  // ── BLOQUE: GASTOS BASURA EN LA LISTA ────────────────────────────────────
+  describe('robustez frente a gastos basura', () => {
+    it('null/undefined ignorados', () => {
+      const gastos = [null, undefined, ...baseline(3, 10_000), null];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);
+    });
+    it('items no-objeto ignorados', () => {
+      const gastos = ['string', 42, true, ...baseline(3, 10_000)];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);
+    });
+    it('items con monto no-numérico ignorados', () => {
+      const gastos = [
+        G('mucho'),
+        G(NaN),
+        G(0),
+        G(-100),
+        ...baseline(3, 10_000),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);
+    });
+    it('items sin fecha ni id ignorados', () => {
+      const gastos = [
+        { monto: 10_000, cat: 'comida' },                    // sin fecha, sin id
+        ...baseline(3, 10_000),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(3);
+    });
+    it('fecha malformada cae a id (fallback)', () => {
+      const gastos = [
+        G(10_000, { fecha: 'no-soy-fecha' }),                // fecha rota, id válido
+        ...baseline(3, 10_000),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(4);                            // el de fecha rota cuenta vía id
+    });
+    it('sin fecha pero con id válido → cuenta', () => {
+      const gastos = [
+        { id: AHORA - 2 * 86_400_000, monto: 10_000, cat: 'comida' },  // sin fecha
+        ...baseline(3, 10_000),
+      ];
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r.muestras).toBe(4);
+    });
+    it('monto string-numérico coercionado correctamente', () => {
+      const gastos = baseline(3, 10_000).map(g => ({ ...g, monto: '10000' }));
+      const r = detectarGastoAtipico(C(50_000), gastos, cfg());
+      expect(r).not.toBe(null);
+      expect(r.promedio).toBe(10_000);
+    });
+  });
+
+  // ── BLOQUE: MÍNIMO DE MUESTRAS ───────────────────────────────────────────
+  describe('exige minMuestras antes de disparar', () => {
+    it('1 gasto previo → null (sin baseline)', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(1, 10_000), cfg())).toBe(null);
+    });
+    it('2 gastos previos → null', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(2, 10_000), cfg())).toBe(null);
+    });
+    it('3 gastos previos → dispara (umbral exacto)', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(3, 10_000), cfg());
+      expect(r).not.toBe(null);
+      expect(r.muestras).toBe(3);
+    });
+    it('minMuestras custom = 5', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(4, 10_000), cfg({ minMuestras: 5 }))).toBe(null);
+      const r = detectarGastoAtipico(C(50_000), baseline(5, 10_000), cfg({ minMuestras: 5 }));
+      expect(r).not.toBe(null);
+    });
+    it('minMuestras = 1: con un solo gasto ya alcanza', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(1, 10_000), cfg({ minMuestras: 1 }));
+      expect(r).not.toBe(null);
+      expect(r.muestras).toBe(1);
+    });
+  });
+
+  // ── BLOQUE: THRESHOLD DEL FACTOR ─────────────────────────────────────────
+  describe('threshold del factor', () => {
+    it('monto = promedio × 4 → dispara (límite incluyente)', () => {
+      const r = detectarGastoAtipico(C(40_000), baseline(3, 10_000), cfg());
+      expect(r).not.toBe(null);
+      expect(r.factor).toBe(4);
+    });
+    it('monto justo debajo de 4× → null', () => {
+      const r = detectarGastoAtipico(C(39_999), baseline(3, 10_000), cfg());
+      expect(r).toBe(null);
+    });
+    it('monto justo encima de 4× → dispara', () => {
+      const r = detectarGastoAtipico(C(40_001), baseline(3, 10_000), cfg());
+      expect(r).not.toBe(null);
+    });
+    it('monto = promedio × 10 → dispara con factor 10', () => {
+      const r = detectarGastoAtipico(C(100_000), baseline(3, 10_000), cfg());
+      expect(r.factor).toBe(10);
+    });
+    it('factor custom = 2 dispara más fácil', () => {
+      const r = detectarGastoAtipico(C(20_000), baseline(3, 10_000), cfg({ factor: 2 }));
+      expect(r).not.toBe(null);
+      expect(r.factor).toBe(2);
+    });
+    it('factor custom = 10 dispara solo con typos brutales', () => {
+      expect(detectarGastoAtipico(C(50_000), baseline(3, 10_000), cfg({ factor: 10 }))).toBe(null);
+      const r = detectarGastoAtipico(C(150_000), baseline(3, 10_000), cfg({ factor: 10 }));
+      expect(r).not.toBe(null);
+    });
+  });
+
+  // ── BLOQUE: FORMA DEL VALOR DE RETORNO ───────────────────────────────────
+  describe('forma del retorno', () => {
+    it('match incluye promedio, factor y muestras', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(3, 10_000), cfg());
+      expect(r).toHaveProperty('promedio');
+      expect(r).toHaveProperty('factor');
+      expect(r).toHaveProperty('muestras');
+    });
+    it('promedio = mean simple del baseline', () => {
+      // 3 gastos: 10k, 20k, 30k → promedio 20k
+      const gastos = [
+        G(10_000, { id: AHORA - 1 * 86_400_000, fecha: '2026-04-26' }),
+        G(20_000, { id: AHORA - 2 * 86_400_000, fecha: '2026-04-25' }),
+        G(30_000, { id: AHORA - 3 * 86_400_000, fecha: '2026-04-24' }),
+      ];
+      const r = detectarGastoAtipico(C(100_000), gastos, cfg());
+      expect(r.promedio).toBe(20_000);
+    });
+    it('factor = monto / promedio (puede no ser entero)', () => {
+      const gastos = [
+        G(10_000, { id: AHORA - 1 * 86_400_000, fecha: '2026-04-26' }),
+        G(20_000, { id: AHORA - 2 * 86_400_000, fecha: '2026-04-25' }),
+        G(30_000, { id: AHORA - 3 * 86_400_000, fecha: '2026-04-24' }),
+      ];
+      const r = detectarGastoAtipico(C(90_000), gastos, cfg());
+      expect(r.factor).toBe(4.5);
+    });
+    it('muestras es entero positivo', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(7, 10_000), cfg());
+      expect(Number.isInteger(r.muestras)).toBe(true);
+      expect(r.muestras).toBe(7);
+    });
+    it('todos los campos son numéricos', () => {
+      const r = detectarGastoAtipico(C(50_000), baseline(3, 10_000), cfg());
+      expect(typeof r.promedio).toBe('number');
+      expect(typeof r.factor).toBe('number');
+      expect(typeof r.muestras).toBe('number');
+    });
+  });
+
+  // ── BLOQUE: CASOS REALES (HISTORIA DE USO) ───────────────────────────────
+  describe('casos de uso reales', () => {
+    it('typo del usuario: 50k café diario, escribe 5M → atípico (100×)', () => {
+      const cafes = baseline(15, 5_000, { desc: 'Café' });
+      const r = detectarGastoAtipico(C(500_000, { cat: 'comida' }), cafes, cfg());
+      expect(r).not.toBe(null);
+      expect(Math.round(r.factor)).toBe(100);
+    });
+    it('gasto legítimo no muy lejos del promedio → no dispara', () => {
+      // Promedio almuerzo 25k, hoy almuerzo de 80k (3.2×) — bajo del threshold
+      const r = detectarGastoAtipico(C(80_000), baseline(10, 25_000), cfg());
+      expect(r).toBe(null);
+    });
+    it('gasto raro pero coherente (4.5×) → dispara para confirmar', () => {
+      const r = detectarGastoAtipico(C(112_500), baseline(10, 25_000), cfg());
+      expect(r).not.toBe(null);
+    });
+    it('primera compra en una categoría nueva → no avisa (sin baseline)', () => {
+      // Usuario gasta en "salud" por primera vez con un monto alto. Sin
+      // historial, no podemos comparar — esperamos null.
+      const otrasCats = baseline(20, 10_000, { cat: 'comida' });
+      const r = detectarGastoAtipico(C(500_000, { cat: 'salud' }), otrasCats, cfg());
+      expect(r).toBe(null);
+    });
+  });
+
+  // ── BLOQUE: ROBUSTEZ TOTAL ───────────────────────────────────────────────
+  describe('robustez total', () => {
+    it('mezcla con todas las variantes de basura → encuentra el patrón', () => {
+      const r = detectarGastoAtipico(C(50_000), [
+        null,
+        undefined,
+        'string-suelto',
+        42,
+        { /* objeto vacío */ },
+        { id: 'no-num', monto: 10_000, cat: 'comida' },
+        { id: AHORA, monto: 'no-num', cat: 'comida' },
+        { id: AHORA, monto: 10_000 /* sin cat */ },
+        ...baseline(3, 10_000),
+      ], cfg());
+      expect(r).not.toBe(null);
+      expect(r.muestras).toBe(3);
+    });
+    it('1000 gastos en el baseline → procesa sin colgarse', () => {
+      // Ventana grande para que TODOS los 1000 días entren en el cálculo.
+      const r = detectarGastoAtipico(
+        C(50_000),
+        baseline(1000, 10_000),
+        cfg({ diasVentana: 5000 })
+      );
+      expect(r).not.toBe(null);
+      expect(r.muestras).toBe(1000);
+      expect(r.promedio).toBe(10_000);
+    });
+  });
 });

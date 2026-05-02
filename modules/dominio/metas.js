@@ -128,6 +128,403 @@ export function calcularRendimientoInversion(inv) {
   };
 }
 
+// ─── DETECTOR DE OBJETIVOS SIN PROGRESO ──────────────────────────────────────
+// Cierra el set de detectores defensivos: ya tenemos para gastos (atípicos +
+// duplicados), deudas (durmiendo), fijos (sin pagar), bolsillos (olvidados +
+// fuga), hormigas (acumuladas). Faltaba el caso del objetivo abandonado: el
+// usuario crea "Viaje Diciembre $3M", abona dos veces y se olvida.
+//
+// Por qué importa: un objetivo sin progreso es un compromiso fantasma que
+// distorsiona la sensación de planificación. El usuario "tiene" 4 metas pero
+// realmente solo está alimentando 1 — mejor reconocerlo y replantear.
+//
+// Fuente del último aporte (orden de prioridad, similar a deudas durmiendo):
+//   1. obj.fechaUltimoAporte — preferido (set por ejecutarAccionObjetivo).
+//   2. gastos[metaId === obj.id, tipo === 'ahorro'] — fallback (se pierde tras cerrarQ).
+//   3. obj.id como Date.now() ms — fecha de creación.
+
+const _RX_FECHA_OBJ = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** Diferencia en días entre dos fechas YYYY-MM-DD. null si malformadas. UTC anti-DST. */
+function _diffDiasObj(desdeISO, hastaISO) {
+  const a = _RX_FECHA_OBJ.exec(desdeISO);
+  const b = _RX_FECHA_OBJ.exec(hastaISO);
+  if (!a || !b) return null;
+  const dA = Date.UTC(+a[1], +a[2] - 1, +a[3]);
+  const dB = Date.UTC(+b[1], +b[2] - 1, +b[3]);
+  return Math.floor((dB - dA) / 86_400_000);
+}
+
+/**
+ * Pure: detecta objetivos vivos (no completados) sin aportes hace N+ meses.
+ *
+ * @param {Array<{
+ *   id:number, nombre?:string, tipo?:string, icono?:string,
+ *   objetivoAhorro?:number, ahorrado?:number,
+ *   fechaUltimoAporte?:string
+ * }>} objetivos
+ * @param {Array<{metaId?:number|null|string, tipo?:string, fecha?:string}>} gastos
+ * @param {string} hoyISO 'YYYY-MM-DD'.
+ * @param {{mesesUmbral?:number}} [config]
+ *   - mesesUmbral (default 2): meses sin aporte para considerar el objetivo abandonado.
+ * @returns {Array<{
+ *   id:number, nombre:string, tipo:string, icono:string,
+ *   objetivoAhorro:number, ahorrado:number, faltante:number, pctProgreso:number,
+ *   ultimoAporte:string|null, fuenteUltimoAporte:'fechaUltimoAporte'|'gasto'|'creacion',
+ *   diasSinAporte:number, mesesSinAporte:number,
+ *   severidad:'alta'|'media'|'baja',
+ *   sugerencia:'eliminar'|'replantear'
+ * }>}
+ */
+export function detectarObjetivosSinProgreso(objetivos, gastos, hoyISO, config = {}) {
+  if (!Array.isArray(objetivos) || objetivos.length === 0)         return [];
+  if (typeof hoyISO !== 'string' || !_RX_FECHA_OBJ.test(hoyISO))   return [];
+
+  const cfg = (config && typeof config === 'object') ? config : {};
+  const umbral = (Number.isFinite(+cfg.mesesUmbral) && +cfg.mesesUmbral > 0)
+    ? Math.floor(+cfg.mesesUmbral) : 2;
+
+  // Index del último aporte por metaId. Solo gastos tipo 'ahorro' cuentan
+  // como aporte (los gastos tipo 'deseo' de objetivos evento son retiros).
+  const ultimoAportePorMeta = new Map();
+  if (Array.isArray(gastos)) {
+    for (const g of gastos) {
+      if (!g || typeof g !== 'object')                       continue;
+      if (g.tipo !== 'ahorro')                               continue;
+      if (g.metaId == null || g.metaId === '')               continue;
+      if (typeof g.fecha !== 'string' || !_RX_FECHA_OBJ.test(g.fecha)) continue;
+      // metaId puede venir como number o string — normalizamos a number.
+      const mid = Number(g.metaId);
+      if (!Number.isFinite(mid))                             continue;
+      const prev = ultimoAportePorMeta.get(mid);
+      if (!prev || g.fecha > prev) ultimoAportePorMeta.set(mid, g.fecha);
+    }
+  }
+
+  const out = [];
+
+  for (const obj of objetivos) {
+    if (!obj || typeof obj !== 'object')               continue;
+    if (typeof obj.id !== 'number' || obj.id <= 0)     continue;
+
+    const meta     = Number(obj.objetivoAhorro) || 0;
+    const ahorrado = Number(obj.ahorrado)       || 0;
+    if (meta <= 0)                                     continue;  // sin meta no se puede juzgar
+    if (ahorrado >= meta)                              continue;  // completado, no es "sin progreso"
+
+    // Fuente del último aporte
+    let ultimoAporte = null;
+    let fuente = 'creacion';
+    if (typeof obj.fechaUltimoAporte === 'string' && _RX_FECHA_OBJ.test(obj.fechaUltimoAporte)) {
+      ultimoAporte = obj.fechaUltimoAporte.slice(0, 10);
+      fuente = 'fechaUltimoAporte';
+    } else if (ultimoAportePorMeta.has(obj.id)) {
+      ultimoAporte = ultimoAportePorMeta.get(obj.id).slice(0, 10);
+      fuente = 'gasto';
+    } else {
+      const ms = +obj.id;
+      if (Number.isFinite(ms) && ms > 0) {
+        const dt = new Date(ms);
+        const yyyy = dt.getUTCFullYear();
+        const mm   = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        const dd   = String(dt.getUTCDate()).padStart(2, '0');
+        ultimoAporte = `${yyyy}-${mm}-${dd}`;
+        fuente = 'creacion';
+      }
+    }
+    if (!ultimoAporte)                                  continue;
+
+    const dias = _diffDiasObj(ultimoAporte, hoyISO);
+    if (dias === null || dias < 0)                     continue;
+    const meses = Math.floor(dias / 30);
+    if (meses < umbral)                                continue;
+
+    let severidad;
+    if (meses >= 6)      severidad = 'alta';
+    else if (meses >= 3) severidad = 'media';
+    else                 severidad = 'baja';
+
+    // Sugerencia: si nunca aportaste nada, mejor borrar y replantear desde cero.
+    // Si ya hay progreso, sugerir replantear (cambiar plazo, monto o eliminar).
+    const sugerencia = (ahorrado <= 0) ? 'eliminar' : 'replantear';
+
+    const faltante    = Math.max(0, meta - ahorrado);
+    const pctProgreso = +(ahorrado / meta * 100).toFixed(1);
+
+    out.push({
+      id:                 obj.id,
+      nombre:             (typeof obj.nombre === 'string' && obj.nombre.length > 0) ? obj.nombre : 'Sin nombre',
+      tipo:               (typeof obj.tipo   === 'string' && obj.tipo.length   > 0) ? obj.tipo   : 'ahorro',
+      icono:              (typeof obj.icono  === 'string' && obj.icono.length  > 0) ? obj.icono  : '🎯',
+      objetivoAhorro:     meta,
+      ahorrado,
+      faltante,
+      pctProgreso,
+      ultimoAporte,
+      fuenteUltimoAporte: fuente,
+      diasSinAporte:      dias,
+      mesesSinAporte:     meses,
+      severidad,
+      sugerencia,
+    });
+  }
+
+  // Orden: alta → media → baja. Dentro, mayor faltante primero (más plata
+  // pendiente). Empate → menor id (determinístico).
+  const rank = { alta: 0, media: 1, baja: 2 };
+  out.sort((a, b) => {
+    const r = rank[a.severidad] - rank[b.severidad];
+    if (r !== 0) return r;
+    const df = b.faltante - a.faltante;
+    if (df !== 0) return df;
+    return a.id - b.id;
+  });
+
+  return out;
+}
+
+/**
+ * Renderiza la tarjeta de "objetivos sin progreso" en el dashboard. Muestra
+ * los 3 peor parados con CTA según sugerencia: replantear → abrir el modal
+ * de aportar; eliminar → llevar a la sección de objetivos para gestionarlo.
+ */
+export function renderObjetivosSinProgreso() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-objetivos-sin-progreso');
+  if (!el) return;
+
+  const sinProg = detectarObjetivosSinProgreso(S.objetivos || [], S.gastos || [], hoy());
+  if (sinProg.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const top = sinProg.slice(0, 3);
+
+  const filas = top.map(o => {
+    const labelMeses = o.mesesSinAporte === 1 ? '1 mes' : `${o.mesesSinAporte} meses`;
+    const ctaTxt = o.sugerencia === 'eliminar' ? 'Revisar' : 'Aportar';
+    // Para 'eliminar' enviamos a la sección de metas; para 'replantear' abrimos
+    // el modal de acción directamente.
+    const cta = o.sugerencia === 'eliminar'
+      ? `<button class="btn bg bsm" data-action="go" data-arg-sec="metas" aria-label="Revisar el objetivo ${he(o.nombre)} en su sección">Revisar</button>`
+      : `<button class="btn bbl bsm" data-action="abrirAccionObj" data-arg-id="${o.id}" data-arg-accion="abonar" aria-label="Aportar al objetivo ${he(o.nombre)} para retomar el progreso">Aportar</button>`;
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b1);">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:22px;flex-shrink:0;" aria-hidden="true">${he(o.icono)}</span>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${he(o.nombre)}">${he(o.nombre)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            Sin aporte hace <strong>${labelMeses}</strong> · ${o.pctProgreso}% (${f(o.ahorrado)} de ${f(o.objetivoAhorro)})
+          </div>
+        </div>
+      </div>
+      ${cta}
+    </div>`;
+  }).join('');
+
+  const titulo = sinProg.length === 1
+    ? 'Un objetivo lleva tiempo sin progreso'
+    : `${sinProg.length} objetivos llevan tiempo sin progreso`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(0,180,200,.35);background:rgba(0,180,200,.05);">
+      <div style="font-size:11px;font-weight:800;color:#00b4c8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        🎯 ${he(titulo)}
+      </div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:4px;">
+        Los objetivos sin movimiento son compromisos fantasma. Aportá algo para retomar el ritmo o replanteálos si el plan cambió.
+      </div>
+      ${filas}
+    </div>
+  `;
+}
+
+// ─── DETECTOR DE INVERSIONES SIN ACTUALIZAR ──────────────────────────────────
+// El usuario registra CDT, fondos, acciones, etc. pero los olvida en el dashboard.
+// Sin actualización del rendimiento hace N+ meses, no hay visibilidad de cambios:
+// ¿rinde?, ¿se redactó?, ¿cambió de condiciones?
+//
+// Diferencia con renderInversiones() ("state snapshot"): ese es inventario de
+// posiciones. Este es "call to action" — informa dónde hay oportunidades para
+// sincronizar tracking o rebalancear.
+//
+// Fuente de fecha: sin campo `fechaUltimaActualizacion` (agregado post-v17),
+// usamos `inversion.id` (Date.now()) como proxy de última vez que se conoció
+// la inversión. Post-v17, guardarRendimiento() puede setear el campo explícito.
+
+const _RX_FECHA_INV = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** Diferencia en días entre dos fechas YYYY-MM-DD. null si malformadas. UTC anti-DST. */
+function _diffDiasInv(desdeISO, hastaISO) {
+  const a = _RX_FECHA_INV.exec(desdeISO);
+  const b = _RX_FECHA_INV.exec(hastaISO);
+  if (!a || !b) return null;
+  const dA = Date.UTC(+a[1], +a[2] - 1, +a[3]);
+  const dB = Date.UTC(+b[1], +b[2] - 1, +b[3]);
+  return Math.floor((dB - dA) / 86_400_000);
+}
+
+/**
+ * Pure: detecta inversiones sin actualización hace N+ meses.
+ *
+ * @param {Array<{
+ *   id:number, nombre?:string, plataforma?:string, capital?:number,
+ *   rendimiento?:number, tasa?:number, fechaUltimaActualizacion?:string
+ * }>} inversiones
+ * @param {string} hoyISO 'YYYY-MM-DD'.
+ * @param {{mesesUmbral?:number}} [config]
+ *   - mesesUmbral (default 2): meses sin actualizar para incluir en el detector.
+ * @returns {Array<{
+ *   id:number, nombre:string, plataforma:string, capital:number,
+ *   rendimiento:number, ultimaActualizacion:string|null,
+ *   diasSinActualizar:number, mesesSinActualizar:number,
+ *   severidad:'alta'|'media'|'baja',
+ *   sugerencia:'actualizar'|'revisar', mensaje:string
+ * }>}
+ */
+export function detectarInversionesSinActualizar(inversiones, hoyISO, config = {}) {
+  if (!Array.isArray(inversiones) || inversiones.length === 0)      return [];
+  if (typeof hoyISO !== 'string' || !_RX_FECHA_INV.test(hoyISO))    return [];
+
+  const cfg = (config && typeof config === 'object') ? config : {};
+  const umbral = (Number.isFinite(+cfg.mesesUmbral) && +cfg.mesesUmbral > 0)
+    ? Math.floor(+cfg.mesesUmbral) : 2;
+
+  const out = [];
+
+  for (const inv of inversiones) {
+    if (!inv || typeof inv !== 'object')              continue;
+    if (typeof inv.id !== 'number' || inv.id <= 0)   continue;
+
+    // Fecha de última actualización
+    let ultimaActualizacion = null;
+    if (typeof inv.fechaUltimaActualizacion === 'string' && _RX_FECHA_INV.test(inv.fechaUltimaActualizacion)) {
+      ultimaActualizacion = inv.fechaUltimaActualizacion.slice(0, 10);
+    } else {
+      // Fallback: convertir id (Date.now() en ms) a YYYY-MM-DD
+      const ms = +inv.id;
+      if (Number.isFinite(ms) && ms > 0) {
+        const dt = new Date(ms);
+        const yyyy = dt.getUTCFullYear();
+        const mm   = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        const dd   = String(dt.getUTCDate()).padStart(2, '0');
+        ultimaActualizacion = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    if (!ultimaActualizacion)                          continue;
+
+    const dias = _diffDiasInv(ultimaActualizacion, hoyISO);
+    if (dias === null || dias < 0)                     continue;
+    const meses = Math.floor(dias / 30);
+    if (meses < umbral)                                continue;
+
+    let severidad;
+    if (meses >= 6)      severidad = 'alta';
+    else if (meses >= 3) severidad = 'media';
+    else                 severidad = 'baja';
+
+    // Sugerencia contextual: capital grande → 'actualizar' (importante),
+    // capital pequeño → 'revisar' (posible prueba o inversión menor).
+    const capital    = Number(inv.capital) || 0;
+    const sugerencia = capital > 10_000_000 ? 'actualizar' : 'revisar';
+
+    const rendimiento = Number(inv.rendimiento) || 0;
+    const labelMeses = meses === 1 ? '1 mes' : `${meses} meses`;
+    const mensaje = `Sin actualizar hace ${labelMeses}`;
+
+    out.push({
+      id:                   inv.id,
+      nombre:               (typeof inv.nombre === 'string' && inv.nombre.length > 0) ? inv.nombre : 'Sin nombre',
+      plataforma:           (typeof inv.plataforma === 'string' && inv.plataforma.length > 0) ? inv.plataforma : 'Desconocida',
+      capital,
+      rendimiento,
+      ultimaActualizacion,
+      diasSinActualizar:    dias,
+      mesesSinActualizar:   meses,
+      severidad,
+      sugerencia,
+      mensaje,
+    });
+  }
+
+  // Orden: alta → media → baja. Dentro, mayor meses primero (más vieja).
+  // Empate → menor id (determinístico).
+  const rank = { alta: 0, media: 1, baja: 2 };
+  out.sort((a, b) => {
+    const r = rank[a.severidad] - rank[b.severidad];
+    if (r !== 0) return r;
+    const dm = b.mesesSinActualizar - a.mesesSinActualizar;
+    if (dm !== 0) return dm;
+    return a.id - b.id;
+  });
+
+  return out;
+}
+
+/**
+ * Renderiza la tarjeta de "inversiones sin actualizar" en el dashboard.
+ * Muestra los 3 más antiguos con CTA "Actualizar" (abre el modal de rendimiento).
+ */
+export function renderInversionesSinActualizar() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-inversiones-sin-actualizar');
+  if (!el) return;
+
+  const sinAct = detectarInversionesSinActualizar(S.inversiones || [], hoy());
+  // Solo mostrar si hay al menos una con severidad alta o media
+  const relevantes = sinAct.filter(i => i.severidad === 'alta' || i.severidad === 'media');
+  if (relevantes.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const top = sinAct.slice(0, 3);
+
+  const filas = top.map(i => {
+    const pctRendimiento = i.capital > 0 ? ((i.rendimiento / i.capital) * 100).toFixed(1) : '0.0';
+    const signo = i.rendimiento >= 0 ? '+' : '';
+    const colorRendimiento = i.rendimiento >= 0 ? 'var(--a1)' : 'var(--dan)';
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b1);">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <div style="font-size:24px;flex-shrink:0;" aria-hidden="true">📈</div>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${he(i.nombre)}">${he(i.nombre)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            ${he(i.plataforma)} • ${f(i.capital)} · <span style="color:${colorRendimiento};">${signo}${f(i.rendimiento)} (${signo}${pctRendimiento}%)</span>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            ${i.mensaje}
+          </div>
+        </div>
+      </div>
+      <button class="btn bbl bsm" data-action="openRendimiento" data-arg-id="${i.id}" aria-label="Actualizar rendimiento de ${he(i.nombre)}">Actualizar</button>
+    </div>`;
+  }).join('');
+
+  const titulo = relevantes.length === 1
+    ? 'Una inversión sin actualizar'
+    : `${relevantes.length} inversiones sin actualizar`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(255,140,0,.35);background:rgba(255,140,0,.06);">
+      <div style="font-size:11px;font-weight:800;color:#ff8c00;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        📈 ${he(titulo)}
+      </div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:4px;">
+        Invertiste sin verlas crecer. Actualizá los valores para sincronizar tu vista de lo invertido.
+      </div>
+      ${filas}
+    </div>
+  `;
+}
+
 // ═══ OBJETIVOS ════════════════════════════════════════════════════════════════
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
@@ -187,14 +584,14 @@ export function renderObjetivos() {
     let html = `<article class="pcard">
       <div class="pcard-header">
         <div><div class="pname">${o.icono} ${he(o.nombre)} <span class="pill ${o.tipo === 'evento' ? 'pb' : 'pp'}">${o.tipo === 'evento' ? 'Evento' : 'Ahorro'}</span></div></div>
-        <button class="btn bd bsm" onclick="delObjetivo(${o.id})">×</button>
+        <button class="btn bd bsm" data-action="delObjetivo" data-arg-id="${o.id}">×</button>
       </div>`;
 
     html += `
       <div class="pcard-meta" style="margin-bottom:${o.tipo === 'evento' ? '12px' : '0'}">
         <div class="pcard-section-title">
           <span style="color:var(--a4)">💰 FASE DE AHORRO</span>
-          <button class="btn bbl bsm" onclick="abrirAccionObj(${o.id},'abonar')">+ Abonar</button>
+          <button class="btn bbl bsm" data-action="abrirAccionObj" data-arg-id="${o.id}" data-arg-accion="abonar">+ Abonar</button>
         </div>
         <div class="ga">
           <span class="tm">Meta: <strong>${f(o.objetivoAhorro)}</strong></span>
@@ -211,7 +608,7 @@ export function renderObjetivos() {
         <div class="pcard-budget">
           <div class="pcard-section-title">
             <span style="color:var(--a1)">📦 PRESUPUESTO DE GASTOS</span>
-            <button class="btn bp bsm" onclick="abrirAccionObj(${o.id},'gastar')">+ Gastar</button>
+            <button class="btn bp bsm" data-action="abrirAccionObj" data-arg-id="${o.id}" data-arg-accion="gastar">+ Gastar</button>
           </div>
           <div class="ga">
             <span class="tm">Presupuesto: <strong>${f(o.presupuesto)}</strong></span>
@@ -332,6 +729,10 @@ export async function ejecutarAccionObjetivo() {
 
   if (accion === 'abonar') {
     obj.ahorrado = Math.min(obj.ahorrado + monto, obj.objetivoAhorro);
+    // Persistir la fecha del último aporte en el objetivo mismo — sobrevive a
+    // cerrarQ() (que vacía S.gastos). Es la fuente principal del detector
+    // detectarObjetivosSinProgreso. Set-and-forget, sin migración.
+    obj.fechaUltimoAporte = hoy();
     descontarFondo(fondo, monto);
     S.gastos.unshift({ id: Date.now(), desc: `🎯 Ahorro: ${obj.nombre}`, monto, montoTotal: monto, cat: 'ahorro', tipo: 'ahorro', fondo, hormiga: false, cuatroXMil: false, fecha: hoy(), metaId: id, autoFijo: false });
   } else {
@@ -476,8 +877,8 @@ export function renderInversiones() {
       </div>
 
       <div style="padding:12px 20px; display:flex; justify-content:flex-end; gap:8px;">
-        <button class="btn bg bsm" onclick="openRendimiento(${i.id})" data-name="${he(i.nombre).replace(/'/g, '&#39;')}" aria-label="Actualizar valor de ${he(i.nombre)}">📊 Actualizar valor</button>
-        <button class="btn-eliminar-deu" onclick="delInversion(${i.id})" style="padding:6px 12px;" aria-label="Eliminar ${he(i.nombre)}">🗑️</button>
+        <button class="btn bg bsm" data-action="openRendimiento" data-arg-id="${i.id}" data-name="${he(i.nombre).replace(/'/g, '&#39;')}" aria-label="Actualizar valor de ${he(i.nombre)}">📊 Actualizar valor</button>
+        <button class="btn-eliminar-deu" data-action="delInversion" data-arg-id="${i.id}" style="padding:6px 12px;" aria-label="Eliminar ${he(i.nombre)}">🗑️</button>
       </div>
     </article>`;
   }).join('');
@@ -535,7 +936,9 @@ registerAction('guardarObjetivo',         () => guardarObjetivo());
 registerAction('toggleTipoObjetivo',      ({ tipo }) => toggleTipoObjetivo(tipo));
 registerAction('openNuevoObjetivo',       () => openNuevoObjetivo());
 registerAction('renderObjetivos',         () => renderObjetivos());
-registerAction('abrirAccionObj',          ({ id }) => abrirAccionObj(id));
+// data-arg-* siempre llega como string. abrirAccionObj usa `find(x => x.id === id)`
+// con comparación estricta — coerce a number para que coincida con S.objetivos[].id.
+registerAction('abrirAccionObj',          ({ id, accion }) => abrirAccionObj(+id, accion));
 registerAction('evaluarGastoEvento',      () => evaluarGastoEvento());
 registerAction('ejecutarAccionObjetivo',  ({ id }) => ejecutarAccionObjetivo(id));
 registerAction('delObjetivo',             ({ id }) => delObjetivo(id));
@@ -546,6 +949,8 @@ registerAction('renderInversiones',       () => renderInversiones());
 registerAction('openRendimiento',         ({ id }) => openRendimiento(id));
 registerAction('guardarRendimiento',      () => guardarRendimiento());
 registerAction('delInversion',            ({ id }) => delInversion(id));
+registerAction('renderObjetivosSinProgreso', () => renderObjetivosSinProgreso());
+registerAction('renderInversionesSinActualizar', () => renderInversionesSinActualizar());
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // guardarObjetivo, openNuevoObjetivo, ejecutarAccionObjetivo,
@@ -562,4 +967,6 @@ if (typeof window !== 'undefined') {
   window.renderInversiones       = renderInversiones;        // llamado desde JS
   window.openRendimiento         = openRendimiento;          // HTML dinámico
   window.delInversion            = delInversion;             // HTML dinámico
+  window.renderObjetivosSinProgreso = renderObjetivosSinProgreso; // updateDash
+  window.renderInversionesSinActualizar = renderInversionesSinActualizar; // updateDash
 }

@@ -5,6 +5,7 @@ import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfi
 import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, TOPE_DIAN, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
+import { validarTipoPeriodo, detectarAlertasFinancieras, calcularChecklistSalud } from './analisis.js';
 
 let _filtroGasto = '';
 
@@ -246,6 +247,140 @@ export function prev4k() {
   }
 }
 
+// ─── DETECTOR DE DUPLICADOS ──────────────────────────────────────────────────
+// "Hormiga de hormigas": el caso más común de basura en S.gastos no es el bug
+// del dev, es el doble-tap del usuario o el "no sé si guardó → relog". Si en
+// los últimos 5 min ya entró un gasto con MISMO desc + monto + cat, le
+// avisamos antes de duplicar. Se queda en función pura para test directo.
+//
+// El campo `id` del gasto sirve como timestamp porque siempre se crea con
+// Date.now() en el mismo agregarGasto() y en todos los unshift del proyecto.
+//
+// @param {object} candidato - { desc, monto, cat } al menos
+// @param {Array}  gastos    - lista de gastos existentes (S.gastos)
+// @param {number} [ahora]   - timestamp de referencia (default: Date.now())
+// @param {number} [ventanaMs] - ventana en ms (default: 5 min)
+// @returns {{ duplicado: object, segundos: number } | null}
+export function detectarDuplicadoGasto(
+  candidato,
+  gastos,
+  ahora = Date.now(),
+  ventanaMs = 5 * 60_000
+) {
+  if (!candidato || typeof candidato !== 'object') return null;
+  if (!Array.isArray(gastos)) return null;
+
+  const monto = Number(candidato.monto);
+  if (!Number.isFinite(monto) || monto <= 0) return null;
+
+  const desc = String(candidato.desc || '').trim().toLowerCase();
+  if (!desc) return null;
+
+  const cat = candidato.cat;
+  if (!cat) return null;
+
+  for (const g of gastos) {
+    if (!g || typeof g.id !== 'number') continue;
+    const dt = ahora - g.id;
+    if (dt < 0 || dt > ventanaMs) continue;        // fuera de ventana o futuro
+    if (g.cat !== cat) continue;
+    if (Number(g.monto) !== monto) continue;
+    const gDesc = String(g.desc || '').trim().toLowerCase();
+    if (gDesc !== desc) continue;
+    return { duplicado: g, segundos: Math.round(dt / 1000) };
+  }
+  return null;
+}
+
+// ─── DETECTOR DE GASTOS ATÍPICOS ─────────────────────────────────────────────
+// El otro caso real de "anti-typo": el usuario quiso 50.000, escribió 5.000.000.
+// El form valida que sea un número, pero no que sea coherente con su historial.
+// Si el monto es ≥ factor × promedio de la misma categoría en los últimos
+// `diasVentana` días, le avisamos antes de insertar.
+//
+// Por qué factor 4× (no 3×): con 3× casi cualquier gasto un poco más caro que
+// el promedio dispara la alerta. Con 4× la alerta se reserva a typos reales
+// (50k → 500k = 10×) y excepciones genuinamente raras. Trade-off explícito:
+// preferimos un falso negativo ocasional a molestar al usuario con cada
+// almuerzo más caro de lo normal.
+//
+// Por qué minMuestras 3: con 1–2 gastos previos en la categoría el promedio
+// no es estadísticamente útil. Sin baseline confiable, mejor callar.
+//
+// Por qué 30 días: rolling window estable. Usar mes calendario rompería los
+// primeros días del mes (sin baseline). Usamos `g.fecha` (la fecha lógica
+// que el usuario eligió) y caemos a `g.id` solo si la fecha está rota.
+//
+// @param {object} candidato     - { monto, cat } al menos
+// @param {Array}  gastos        - lista de gastos existentes (S.gastos)
+// @param {object} [config]
+// @param {number} [config.ahora]       - timestamp de referencia (default Date.now())
+// @param {number} [config.diasVentana] - ventana en días (default 30)
+// @param {number} [config.factor]      - multiplicador requerido (default 4)
+// @param {number} [config.minMuestras] - muestras mínimas (default 3)
+// @returns {{ promedio:number, factor:number, muestras:number } | null}
+export function detectarGastoAtipico(candidato, gastos, config = {}) {
+  if (!candidato || typeof candidato !== 'object') return null;
+  if (!Array.isArray(gastos)) return null;
+
+  const monto = Number(candidato.monto);
+  if (!Number.isFinite(monto) || monto <= 0) return null;
+
+  const cat = candidato.cat;
+  if (!cat) return null;
+
+  const cfg          = (config && typeof config === 'object') ? config : {};
+  const ahora        = Number.isFinite(cfg.ahora)       ? cfg.ahora       : Date.now();
+  const diasVentana  = Number.isFinite(cfg.diasVentana) ? cfg.diasVentana : 30;
+  const factor       = Number.isFinite(cfg.factor)      ? cfg.factor      : 4;
+  const minMuestras  = Number.isFinite(cfg.minMuestras) ? cfg.minMuestras : 3;
+
+  if (factor      <= 1) return null;   // factor ≤ 1 = casi todo dispararía
+  if (diasVentana <= 0) return null;
+  if (minMuestras <  1) return null;
+
+  const desdeMs = ahora - diasVentana * 86_400_000;
+
+  let suma = 0;
+  let n    = 0;
+  for (const g of gastos) {
+    if (!g || typeof g !== 'object') continue;
+    if (g.cat !== cat) continue;
+    const m = Number(g.monto);
+    if (!Number.isFinite(m) || m <= 0) continue;
+
+    // Preferimos g.fecha (la fecha lógica que el usuario eligió). Si está
+    // ausente o malformada, caemos al id (timestamp de creación).
+    let ts = NaN;
+    if (typeof g.fecha === 'string' && g.fecha) {
+      const t = new Date(g.fecha).getTime();
+      if (Number.isFinite(t)) ts = t;
+    }
+    if (!Number.isFinite(ts) && typeof g.id === 'number') {
+      ts = g.id;
+    }
+    if (!Number.isFinite(ts)) continue;
+    if (ts > ahora)   continue;          // gastos futuros: ignorar
+    if (ts < desdeMs) continue;          // fuera de la ventana
+
+    suma += m;
+    n    += 1;
+  }
+
+  if (n < minMuestras) return null;
+
+  const promedio = suma / n;
+  if (promedio <= 0) return null;
+
+  if (monto < promedio * factor) return null;
+
+  return {
+    promedio,
+    factor: monto / promedio,
+    muestras: n,
+  };
+}
+
 // ─── AGREGAR GASTO ────────────────────────────────────────────────────────────
 export async function agregarGasto() {
   const de = document.getElementById('g-de').value.trim();
@@ -273,6 +408,42 @@ export async function agregarGasto() {
       const ok = await showConfirm(`⚠️ En esa fuente solo hay ${f(disp)} y este gasto vale ${f(montoTotal)}.\n\n¿Querés anotarlo de todas formas? El saldo quedará en negativo.`, 'Saldo insuficiente');
       if (!ok) return;
     }
+  }
+
+  // ── Defensa anti-duplicado: doble-tap o relog ────────────────────────────
+  // Si el usuario YA registró este gasto en los últimos 5 min, mostramos el
+  // confirm. OK = anotarlo aparte (gasto recurrente legítimo). Cancel = era
+  // el mismo, no dupliques. La cancelación es el default seguro: si el
+  // usuario presionó Escape sin pensar, no creamos basura en el historial.
+  const dup = detectarDuplicadoGasto(
+    { desc: de, monto: mo, cat: ca },
+    S.gastos
+  );
+  if (dup) {
+    const seg = dup.segundos;
+    const cuando = seg < 60
+      ? `hace ${seg} segundo${seg === 1 ? '' : 's'}`
+      : `hace ${Math.round(seg / 60)} min`;
+    const ok = await showConfirm(
+      `Ya registraste «${dup.duplicado.desc}» por ${f(dup.duplicado.monto)} ${cuando}.\n\n¿Querés anotarlo otra vez? Si fue solo un doble-clic, dale Cancelar.`,
+      'Posible duplicado'
+    );
+    if (!ok) return;
+  }
+
+  // ── Defensa anti-typo: monto fuera del patrón histórico ─────────────────
+  // Si el monto es ≥4× el promedio de gastos previos en la misma categoría
+  // (últimos 30 días, con al menos 3 muestras), avisamos antes de insertar.
+  // Caso típico: usuario escribió 5.000.000 cuando quiso 50.000. Default-safe
+  // = Cancelar (Escape no debe crear basura por accidente).
+  const atipico = detectarGastoAtipico({ monto: mo, cat: ca }, S.gastos);
+  if (atipico) {
+    const xVeces = Math.round(atipico.factor);
+    const ok = await showConfirm(
+      `Anotaste ${f(mo)} en «${ca}», pero tu promedio en esa categoría es ~${f(atipico.promedio)} (basado en ${atipico.muestras} gastos del último mes). Esto es ${xVeces}× más.\n\n¿Le erraste a un cero? Dale Cancelar para corregir el monto.`,
+      'Eso parece mucho'
+    );
+    if (!ok) return;
   }
 
   S.gastos.unshift({
@@ -404,8 +575,8 @@ export function renderGastos() {
       <td>${g.cuatroXMil ? '<span class="pill pt">✓</span>' : '—'}</td>
       <td class="ac mono" style="color:${g.tipo === 'ahorro' ? 'var(--a1)' : 'var(--a3)'};font-weight:600">${f(g.montoTotal || g.monto)}</td>
       <td style="display:flex;gap:4px">
-        <button class="btn bg bsm" onclick="abrirEditarGasto(${g.id})">✏️</button>
-        <button class="btn bd bsm" onclick="delGasto(${g.id})">×</button>
+        <button class="btn bg bsm" data-action="abrirEditarGasto" data-arg-id="${g.id}">✏️</button>
+        <button class="btn bd bsm" data-action="delGasto" data-arg-id="${g.id}">×</button>
       </td>
     </tr>`;
   }).join('');
@@ -533,8 +704,8 @@ export function renderDashCuentas() {
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="mono" style="color:var(--a1); font-weight:600; font-size:13px;">${f(c.saldo)}</span>
-          <button class="btn bg bsm" onclick="editSaldoCuentaDash(${c.id})" style="padding:3px 8px; border-radius:6px; font-size:11px;" title="Editar saldo">✏️</button>
-          <button class="btn bd bsm" onclick="delCuenta(${c.id})" style="padding:3px 8px; border-radius:6px; font-size:12px; font-weight:bold;" title="Eliminar cuenta">×</button>
+          <button class="btn bg bsm" data-action="editSaldoCuentaDash" data-arg-id="${c.id}" style="padding:3px 8px; border-radius:6px; font-size:11px;" title="Editar saldo">✏️</button>
+          <button class="btn bd bsm" data-action="delCuenta" data-arg-id="${c.id}" style="padding:3px 8px; border-radius:6px; font-size:12px; font-weight:bold;" title="Eliminar cuenta">×</button>
         </div>
       </div>
       <div class="pw" style="height:4px; margin-top:0; background:var(--s3); border-radius:4px;">
@@ -551,6 +722,14 @@ export function renderDashCuentas() {
 
 // ─── UPDATE DASH ─────────────────────────────────────────────────────────────
 export function updateDash() {
+  // Validar tipoPeriodo: auto-corrección defensiva una vez por sesión
+  const validacion = validarTipoPeriodo(hoy(), S.tipoPeriodo);
+  if (!validacion.valido) {
+    console.debug('[Finko] Sincronizando tipoPeriodo:', validacion.motivo);
+    S.tipoPeriodo = validacion.tipoPeriodo;
+    save();
+  }
+
   let tG = 0, tA = 0, tH = 0;
   for (let i = 0; i < S.gastos.length; i++) {
     const g = S.gastos[i];
@@ -575,10 +754,36 @@ export function updateDash() {
   // Comparación con quincena anterior
   _renderComparacionQuincena({ gastado: tG, ahorro: tA, hormiga: tH, ingreso: S.ingreso });
 
-  // Nudges defensivos: respaldo cada 30 días + bolsillos olvidados (15d sin aporte)
+  // Nudges defensivos en orden de severidad descendente:
+  //   1. Saldos incoherentes (integridad de datos — invalida los demás)
+  //   2. Bolsillos sobre-asignados (Σ bolsillos > saldo real, auto-fix)
+  //   3. Fijos sin pagar (recargos inmediatos)
+  //   4. Meses sin cerrar (gastos huérfanos por abandono)
+  //   5. Deudas durmiendo (intereses acumulando sin pago hace 2+ meses)
+  //   6. Hormigas acumuladas (death by 1000 cuts del mes corriente)
+  //   7. Objetivos sin progreso (compromisos fantasma sin aporte hace 2+m)
+  //   8. Backup pendiente (respaldo cada 30 días)
+  //   9. Bolsillos en fuga (3 meses solo retiros)
+  //  10. Bolsillos olvidados (15d sin aporte)
+  //  11. Salud financiera (banner positivo, solo si score >= 70)
   if (typeof window !== 'undefined') {
+    window.renderAlertasUrgentes?.();           // Tanda 19: saldo negativo, evento excedido, sin registros
+    window.renderIncoherenciaSaldos?.();
+    window.renderRebalanceoBolsillos?.();
+    window.renderFijosSinPagar?.();
+    window.renderMesesSinCerrar?.();
+    window.renderDeudasDurmiendo?.();
+    window.renderHormigaAcumulada?.();
+    window.renderPrediccionFinPeriodo?.();
+    window.renderObjetivosSinProgreso?.();
     window.renderBackupNudge?.();
+    window.renderBolsillosEnFuga?.();
     window.renderBolsillosOlvidados?.();
+    window.renderComparacionCategorias?.();
+    window.renderPatronGastoSemanal?.();    // Tanda 23: patrón días de la semana
+    window.renderTendencias?.();
+    window.renderInversionesSinActualizar?.();
+    window.renderSaludFinanciera?.();
   }
 
   updSaldo();
@@ -685,7 +890,7 @@ export function updateDash() {
 
   const mesActual = new Date().getMonth() + 1;
   if (mesActual === 6 || mesActual === 12) {
-    al.push(`<div class="al alg" style="align-items:center; border-width:2px;"><span class=\"al-icon\" style=\"font-size:24px;\" aria-hidden=\"true\">🎉</span><div style="flex:1"><strong>¡Es época de Prima/Bono!</strong> Si recibiste este dinero extra, regístralo aquí para simular su distribución inteligente.</div><button class="btn bp bsm" onclick="openM('m-prima')" style="white-space:nowrap; padding:8px 12px; font-size:12px;">+ Registrar Prima</button></div>`);
+    al.push(`<div class="al alg" style="align-items:center; border-width:2px;"><span class=\"al-icon\" style=\"font-size:24px;\" aria-hidden=\"true\">🎉</span><div style="flex:1"><strong>¡Es época de Prima/Bono!</strong> Si recibiste este dinero extra, regístralo aquí para simular su distribución inteligente.</div><button class="btn bp bsm" data-action="openM" data-arg-id="m-prima" style="white-space:nowrap; padding:8px 12px; font-size:12px;">+ Registrar Prima</button></div>`);
   }
 
   // ── Cesantías e intereses sobre cesantías (Ley 50/1990 + Decreto 116/76) ──
@@ -715,31 +920,19 @@ export function updateDash() {
     al.push(`<div class="al alw"><span class=\"al-icon\" aria-hidden=\"true\">🏛️</span><div><strong>Aviso DIAN:</strong> Llevas <strong>${f(ingresosAnio)}</strong> este año. Estás próximo al tope legal para declarar renta (aprox. ${f(TOPE_DIAN)}). Ve reuniendo tus soportes.</div></div>`);
   }
 
-  if (S.saldos.efectivo === 0 && S.saldos.banco === 0 && S.ingreso > 0) {
-    al.push(`<div class="al alb"><span class=\"al-icon\" aria-hidden=\"true\">💡</span><div>Saldos en $0. Ve a <strong>Quincena</strong> y configura cuánto tienes en efectivo y banco.</div></div>`);
-  }
-
-  if (tG > S.ingreso * 0.9 && S.ingreso > 0) {
-    al.push(`<div class="al ald"><span class=\"al-icon\" aria-hidden=\"true\">🚨</span><div>Gastas más del 90% de tu ingreso esta quincena. Revisa tus finanzas urgente.</div></div>`);
-  }
-
-  if (tH > S.ingreso * 0.15 && S.ingreso > 0) {
-    const pctH = Math.round((tH / S.ingreso) * 100);
-    al.push(`<div class="al alw"><span class=\"al-icon\" aria-hidden=\"true\">🐜</span><div>Tus gastos hormiga ya representan el <strong>${pctH}%</strong> de tu ingreso (${f(tH)}). ¡Es una fuga de capital muy alta!</div></div>`);
-  }
-
-  if (tA === 0 && S.gastos.length > 3) {
-    al.push(`<div class="al alw"><span class=\"al-icon\" aria-hidden=\"true\">💰</span><div>No has registrado ningún ahorro esta quincena. ¡Págate a ti primero!</div></div>`);
-  }
-
-  if (cPer > S.ingreso * 0.3 && S.ingreso > 0) {
-    al.push(`<div class="al ald"><span class=\"al-icon\" aria-hidden=\"true\">💳</span><div>Las cuotas de tus deudas (${f(cPer)}) superan el 30% de tu ingreso. Estás en zona de riesgo financiero.</div></div>`);
-  }
-
-  const fijNP = S.gastosFijos.filter(g => !(g.pagadoEn || []).includes(mes));
-  if (fijNP.length) {
-    al.push(`<div class="al alb"><span class=\"al-icon\" aria-hidden=\"true\">📌</span><div><strong>${fijNP.length}</strong> gasto(s) fijo(s) sin pagar este mes: ${fijNP.map(g => g.nombre).join(', ')}.</div></div>`);
-  }
+  // Tanda 20: condiciones de salud financiera extraídas a función pura testeable.
+  const alertasFinancieras = detectarAlertasFinancieras({
+    totalGastos:   tG,
+    totalAhorro:   tA,
+    totalHormiga:  tH,
+    numGastos:     S.gastos.length,
+    ingreso:       S.ingreso,
+    cuotasPeriodo: cPer,
+    saldos:        S.saldos,
+    gastosFijos:   S.gastosFijos,
+    mesActual:     mes,
+  });
+  alertasFinancieras.forEach(a => al.push(a.html));
 
   setHtml('d-alr', al.join(''));
 }
@@ -815,16 +1008,26 @@ export function calcScore() {
   elLabel.textContent = frase;
   elLabel.style.cssText = 'color:var(--t3); text-transform:none; font-weight:500; font-size:12px;';
 
-  const ok  = (txt) => `<div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="color:var(--a1); font-size:13px;">✅</span><span style="color:var(--a1); font-size:13px;">${txt}</span></div>`;
-  const bad = (txt) => `<div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="font-size:13px;">❌</span><span style="color:var(--t3); font-size:13px;">${txt}</span></div>`;
-  const inf = (icon, txt) => `<div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;"><span style="font-size:13px;">${icon}</span><span style="color:var(--a1); font-size:13px;">${txt}</span></div>`;
-
-  const checklist = [];
-  checklist.push(S.ingreso > 0 && tG > S.ingreso * 0.9 ? bad('Gastos exceden el 90%') : ok('Gastos bajo control'));
-  checklist.push(tA > 0 ? ok('Ahorro constante') : bad('Sin ahorro registrado'));
-  checklist.push(S.ingreso > 0 && tH > S.ingreso * 0.15 ? bad('Fuga hormiga alta') : ok('Hormiga controlada'));
-  if (cPer > 0) checklist.push(cPer > S.ingreso * 0.3 ? inf('💳', 'Deudas >30% del ingreso') : ok('Deudas bajo control'));
-  if (S.objetivos && S.objetivos.length > 0) checklist.push(inf('🎯', 'Metas de ahorro activas'));
+  // Tanda 21: checklist generado por función pura (mismos umbrales que
+  // detectarAlertasFinancieras, centralizados en un solo lugar).
+  const ICONO = { ok: '✅', mal: '❌', info: '🎯' };
+  const COLOR = { ok: 'var(--a1)', mal: 'var(--t3)', info: 'var(--a1)' };
+  const checkItems = calcularChecklistSalud({
+    totalGastos:    tG,
+    totalAhorro:    tA,
+    totalHormiga:   tH,
+    ingreso:        S.ingreso,
+    cuotasPeriodo:  cPer,
+    tieneObjetivos: !!(S.objetivos && S.objetivos.length > 0),
+  });
+  // Icono especial para deudas (info con 💳) vs metas (info con 🎯)
+  const iconoItem = (item) => item.tipo === 'deudas' && item.estado === 'info' ? '💳' : ICONO[item.estado];
+  const checklist = checkItems.map(item =>
+    `<div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">` +
+    `<span style="font-size:13px;">${iconoItem(item)}</span>` +
+    `<span style="color:${COLOR[item.estado]}; font-size:13px;">${item.etiqueta}</span>` +
+    `</div>`
+  );
 
   elMsg.className = 'score-checklist';
   elMsg.innerHTML = checklist.join('');
@@ -1262,7 +1465,7 @@ export function renderHistorial() {
             <div style="font-size:11px; color:var(--t3); margin-top:2px;">Balance: <span style="font-family:var(--fm); font-weight:700; color:${colorBal};">${signoBal}${f(balance)}</span></div>
           </div>
         </div>
-        <button class="btn-eliminar-deu" onclick="delHistorial(${hx.id})" style="padding:6px 12px;" aria-label="Eliminar historial ${hx.periodo}">🗑️</button>
+        <button class="btn-eliminar-deu" data-action="delHistorial" data-arg-id="${hx.id}" style="padding:6px 12px;" aria-label="Eliminar historial ${hx.periodo}">🗑️</button>
       </div>
 
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--b1);">

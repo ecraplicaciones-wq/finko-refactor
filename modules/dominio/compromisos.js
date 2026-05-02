@@ -210,6 +210,447 @@ export function calcularCuotaSugerida({ total, tasaEA = 0, plazoMeses, periodici
   return { cuota, totalPagado, totalInteres, nPeriodos, tasaPeriodo: i };
 }
 
+// ─── DETECTOR DE DEUDAS DURMIENDO ────────────────────────────────────────────
+// Distinto de `calcularDiasMora` (atraso del mes corriente):
+//   - Mora = "no pagaste lo del mes pasado"
+//   - Durmiendo = "hace 3+ meses que no le ponés nada — ¿la abandonaste?"
+//
+// Por qué importa: una deuda con tasa de usura sigue creciendo aunque vos no
+// le hagas seguimiento. Las pequeñas (cuota chica olvidada) se vuelven grandes,
+// y las grandes terminan en Datacrédito sin que el usuario lo dimensione.
+//
+// Fuente del "último pago" en orden de prioridad:
+//   1. `deuda.fechaUltimoPago` — set por `confPagarCuota` (preferido).
+//   2. Búsqueda en `gastos` por `deudaId === d.id` (fallback para usuarios
+//      pre-fechaUltimoPago, mientras la quincena en curso conserve los gastos).
+//   3. Fecha de creación derivada de `id` (Date.now() ms) — el peor caso útil.
+
+const _MES_RX_DEUDA = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** Diferencia en días entre dos fechas YYYY-MM-DD. null si malformadas. */
+function _diffDias(desdeISO, hastaISO) {
+  const a = _MES_RX_DEUDA.exec(desdeISO);
+  const b = _MES_RX_DEUDA.exec(hastaISO);
+  if (!a || !b) return null;
+  // Date.UTC evita drift por DST entre fechas en distintos meses.
+  const dA = Date.UTC(+a[1], +a[2] - 1, +a[3]);
+  const dB = Date.UTC(+b[1], +b[2] - 1, +b[3]);
+  return Math.floor((dB - dA) / 86_400_000);
+}
+
+/**
+ * Pure: detecta deudas vivas (pendiente > 0) sin pago reciente. Devuelve un
+ * array ordenado por severidad (peor caso primero).
+ *
+ * @param {Array<{
+ *   id:number, nombre?:string, total?:number, pagado?:number, cuota?:number,
+ *   tipo?:string, fechaUltimoPago?:string
+ * }>} deudas
+ * @param {Array<{deudaId?:number|null, fecha?:string}>} gastos — para fallback
+ *   cuando la deuda no tiene `fechaUltimoPago` aún.
+ * @param {string} hoyISO 'YYYY-MM-DD'.
+ * @param {{mesesUmbral?:number}} [config]
+ *   - mesesUmbral (default 2): meses sin pago para considerar la deuda durmiendo.
+ * @returns {Array<{
+ *   id:number, nombre:string, tipo:string,
+ *   totalPendiente:number, cuota:number,
+ *   ultimoPago:string|null, diasSinPago:number, mesesSinPago:number,
+ *   fuenteUltimoPago:'fechaUltimoPago'|'gasto'|'creacion',
+ *   severidad:'alta'|'media'|'baja',
+ *   sugerencia:'liquidar'|'retomar'
+ * }>}
+ */
+export function detectarDeudasDurmiendo(deudas, gastos, hoyISO, config = {}) {
+  if (!Array.isArray(deudas) || deudas.length === 0)         return [];
+  if (typeof hoyISO !== 'string' || !_MES_RX_DEUDA.test(hoyISO)) return [];
+
+  const cfg = (config && typeof config === 'object') ? config : {};
+  const umbral = (Number.isFinite(+cfg.mesesUmbral) && +cfg.mesesUmbral > 0)
+    ? Math.floor(+cfg.mesesUmbral) : 2;
+
+  // Index gastos por deudaId para O(1) lookup. Solo el más reciente importa.
+  const ultimoGastoPorDeuda = new Map();
+  if (Array.isArray(gastos)) {
+    for (const g of gastos) {
+      if (!g || typeof g !== 'object') continue;
+      if (g.deudaId == null) continue;
+      if (typeof g.fecha !== 'string' || !_MES_RX_DEUDA.test(g.fecha)) continue;
+      const prev = ultimoGastoPorDeuda.get(g.deudaId);
+      if (!prev || g.fecha > prev) ultimoGastoPorDeuda.set(g.deudaId, g.fecha);
+    }
+  }
+
+  const out = [];
+
+  for (const d of deudas) {
+    if (!d || typeof d !== 'object')               continue;
+    if (typeof d.id !== 'number' || d.id <= 0)     continue;
+
+    const total  = Number(d.total)  || 0;
+    const pagado = Number(d.pagado) || 0;
+    const pendiente = total - pagado;
+    if (pendiente <= 0) continue;     // deuda liquidada → no es "durmiendo"
+
+    // Fuente del último pago — orden de prioridad
+    let ultimoPago = null;
+    let fuente = 'creacion';
+    if (typeof d.fechaUltimoPago === 'string' && _MES_RX_DEUDA.test(d.fechaUltimoPago)) {
+      ultimoPago = d.fechaUltimoPago.slice(0, 10);
+      fuente = 'fechaUltimoPago';
+    } else if (ultimoGastoPorDeuda.has(d.id)) {
+      ultimoPago = ultimoGastoPorDeuda.get(d.id).slice(0, 10);
+      fuente = 'gasto';
+    } else {
+      // Derivar de `id` = Date.now() en ms. Ojo: si el id viene de un import o
+      // es manualmente bajo (no Date.now), el cálculo puede salir raro — por
+      // eso el ISO se construye via UTC para no depender del timezone del host.
+      const ms = +d.id;
+      if (Number.isFinite(ms) && ms > 0) {
+        const dt = new Date(ms);
+        const yyyy = dt.getUTCFullYear();
+        const mm   = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        const dd   = String(dt.getUTCDate()).padStart(2, '0');
+        ultimoPago = `${yyyy}-${mm}-${dd}`;
+        fuente = 'creacion';
+      }
+    }
+    if (!ultimoPago) continue;        // sin fuente válida → no podemos juzgar
+
+    const dias = _diffDias(ultimoPago, hoyISO);
+    if (dias === null || dias < 0) continue;
+    const meses = Math.floor(dias / 30);
+    if (meses < umbral) continue;     // dentro de tolerancia → no es durmiendo
+
+    let severidad;
+    if (meses >= 6)      severidad = 'alta';
+    else if (meses >= 3) severidad = 'media';
+    else                 severidad = 'baja';
+
+    const cuota = Number(d.cuota) || 0;
+    const sugerencia = (cuota > 0 && pendiente <= cuota) ? 'liquidar' : 'retomar';
+
+    out.push({
+      id:               d.id,
+      nombre:           (typeof d.nombre === 'string' && d.nombre.length > 0) ? d.nombre : 'Sin nombre',
+      tipo:             (typeof d.tipo   === 'string' && d.tipo.length   > 0) ? d.tipo   : 'otro',
+      totalPendiente:   pendiente,
+      cuota,
+      ultimoPago,
+      diasSinPago:      dias,
+      mesesSinPago:     meses,
+      fuenteUltimoPago: fuente,
+      severidad,
+      sugerencia,
+    });
+  }
+
+  // Orden: alta → media → baja. Dentro de cada nivel, mayor pendiente primero
+  // (más plata acumulando intereses). Empate → menor id (determinístico).
+  const rank = { alta: 0, media: 1, baja: 2 };
+  out.sort((a, b) => {
+    const r = rank[a.severidad] - rank[b.severidad];
+    if (r !== 0) return r;
+    const dp = b.totalPendiente - a.totalPendiente;
+    if (dp !== 0) return dp;
+    return a.id - b.id;
+  });
+
+  return out;
+}
+
+// ─── DETECTOR DE FIJOS SIN PAGAR DEL MES CORRIENTE ───────────────────────────
+// Caso de uso: el usuario tiene gastos fijos (arriendo, internet, servicios)
+// con día de pago definido. Si el día ya pasó y el mes actual no aparece en
+// `pagadoEn`, se trata de un olvido — los fijos no pagados a tiempo generan
+// recargos, intereses moratorios o cortes de servicio.
+//
+// Para quincenales (raros, pero existen — ej. arriendos divididos): se espera
+// el día `dia` y `dia+15`. Conteo por ocurrencias del mes en `pagadoEn`.
+//
+// Distinto de:
+//   - calcularDiasMora (deudas) — esto es para gastos fijos, no cuotas.
+//   - _renderFijosEnDeudas — ese muestra TODOS los pendientes del mes (incluso
+//     los del futuro). Este detector es solo para los YA atrasados.
+
+const _RX_FECHA_FIJO = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** Último día calendario de un mes dado (1-12). 28-31. */
+function _lastDayOfMonth(year, month1to12) {
+  // Mes 0 = enero. month1to12 - 1 + 1 = month1to12 → da el día 0 del mes
+  // siguiente, que es el último del actual. Funciona para febrero bisiesto.
+  return new Date(Date.UTC(year, month1to12, 0)).getUTCDate();
+}
+
+/**
+ * Pure: detecta gastos fijos con día de pago ya pasado este mes que no han
+ * sido marcados como pagados (mes actual no está en `pagadoEn`).
+ *
+ * @param {Array<{
+ *   id:number, nombre?:string, cat?:string, dia?:number,
+ *   periodicidad?:'mensual'|'quincenal',
+ *   monto?:number, montoTotal?:number, fondo?:string,
+ *   pagadoEn?:string[]
+ * }>} gastosFijos
+ * @param {string} hoyISO 'YYYY-MM-DD'.
+ * @param {{umbralDiasAtraso?:number}} [config]
+ *   - umbralDiasAtraso (default 0): solo flag si diasAtraso >= umbral.
+ *     Default 0 = avisa el mismo día del vencimiento.
+ * @returns {Array<{
+ *   id:number, nombre:string, cat:string, dia:number,
+ *   periodicidad:string, monto:number, montoTotal:number, fondo:string,
+ *   diaEsperado:number, diasAtraso:number,
+ *   pagosEsperados:number, pagosRealizados:number,
+ *   severidad:'leve'|'moderada'|'urgente',
+ *   tipoFalta:'mensual'|'quincenal-q1'|'quincenal-q2'|'quincenal-ambos'
+ * }>}
+ */
+export function detectarFijosSinPagarEsteMes(gastosFijos, hoyISO, config = {}) {
+  if (!Array.isArray(gastosFijos) || gastosFijos.length === 0)   return [];
+  if (typeof hoyISO !== 'string')                                return [];
+  const mh = _RX_FECHA_FIJO.exec(hoyISO);
+  if (!mh)                                                       return [];
+
+  const year  = +mh[1];
+  const month = +mh[2];
+  const day   = +mh[3];
+  if (month < 1 || month > 12 || day < 1 || day > 31)            return [];
+
+  const cfg = (config && typeof config === 'object') ? config : {};
+  const umbral = (Number.isFinite(+cfg.umbralDiasAtraso) && +cfg.umbralDiasAtraso >= 0)
+    ? Math.floor(+cfg.umbralDiasAtraso)
+    : 0;
+
+  const lastDay = _lastDayOfMonth(year, month);
+  const mesActual = `${mh[1]}-${mh[2]}`;
+
+  const out = [];
+
+  for (const fx of gastosFijos) {
+    if (!fx || typeof fx !== 'object')           continue;
+    if (typeof fx.id !== 'number' || fx.id <= 0) continue;
+
+    // Día de pago. Sin dia → asumimos día 1.
+    const diaRaw = Number(fx.dia) || 1;
+    if (diaRaw < 1 || diaRaw > 31)               continue;
+
+    const periodicidad = (fx.periodicidad === 'quincenal') ? 'quincenal' : 'mensual';
+    const dia1 = Math.min(diaRaw, lastDay);
+    // Para quincenales, el segundo pago va ~15 días después, clampeado al
+    // último día del mes (si dia=20 y febrero tiene 28, dia2=28 no 35).
+    const dia2 = (periodicidad === 'quincenal') ? Math.min(diaRaw + 15, lastDay) : null;
+
+    // Cuenta cuántas veces el mes actual aparece en pagadoEn.
+    const pagosRealizados = Array.isArray(fx.pagadoEn)
+      ? fx.pagadoEn.filter(m => m === mesActual).length
+      : 0;
+
+    // Determinar pagos esperados según los checkpoints que ya pasaron.
+    let pagosEsperados;
+    let diaEsperado;
+    if (periodicidad === 'quincenal') {
+      if (day >= dia2) {
+        pagosEsperados = 2;
+        diaEsperado    = dia2;
+      } else if (day >= dia1) {
+        pagosEsperados = 1;
+        diaEsperado    = dia1;
+      } else {
+        pagosEsperados = 0;
+        diaEsperado    = dia1;
+      }
+    } else {
+      if (day >= dia1) {
+        pagosEsperados = 1;
+        diaEsperado    = dia1;
+      } else {
+        pagosEsperados = 0;
+        diaEsperado    = dia1;
+      }
+    }
+
+    // No hay nada esperado todavía → no es atraso.
+    if (pagosEsperados === 0)                     continue;
+    if (pagosRealizados >= pagosEsperados)        continue;
+
+    const diasAtraso = day - diaEsperado;
+    if (diasAtraso < umbral)                       continue;
+
+    let severidad;
+    if (diasAtraso <= 3)       severidad = 'leve';
+    else if (diasAtraso <= 10) severidad = 'moderada';
+    else                       severidad = 'urgente';
+
+    let tipoFalta;
+    if (periodicidad === 'mensual') {
+      tipoFalta = 'mensual';
+    } else if (pagosRealizados === 0 && pagosEsperados === 2) {
+      tipoFalta = 'quincenal-ambos';
+    } else if (pagosRealizados === 0 && pagosEsperados === 1) {
+      tipoFalta = 'quincenal-q1';
+    } else {
+      // pagosEsperados === 2 && pagosRealizados === 1
+      tipoFalta = 'quincenal-q2';
+    }
+
+    const monto      = Number(fx.monto)      || 0;
+    const montoTotal = Number(fx.montoTotal) || monto;
+
+    out.push({
+      id:              fx.id,
+      nombre:          (typeof fx.nombre === 'string' && fx.nombre.length > 0) ? fx.nombre : 'Sin nombre',
+      cat:             (typeof fx.cat    === 'string' && fx.cat.length    > 0) ? fx.cat    : 'otros',
+      dia:             diaRaw,
+      periodicidad,
+      monto,
+      montoTotal,
+      fondo:           (typeof fx.fondo === 'string' && fx.fondo.length > 0) ? fx.fondo : 'banco',
+      diaEsperado,
+      diasAtraso,
+      pagosEsperados,
+      pagosRealizados,
+      severidad,
+      tipoFalta,
+    });
+  }
+
+  // Orden: urgente → moderada → leve. Dentro, mayor monto primero (impacto
+  // financiero). Empate → menor id (determinístico para tests).
+  const rank = { urgente: 0, moderada: 1, leve: 2 };
+  out.sort((a, b) => {
+    const r = rank[a.severidad] - rank[b.severidad];
+    if (r !== 0) return r;
+    const dm = b.montoTotal - a.montoTotal;
+    if (dm !== 0) return dm;
+    return a.id - b.id;
+  });
+
+  return out;
+}
+
+/**
+ * Renderiza la tarjeta de "fijos sin pagar este mes" en el dashboard.
+ * CTA por fila → `abrirModalFijo` (reusa el modal existente m-pagar-fijo).
+ */
+export function renderFijosSinPagar() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-fijos-sin-pagar');
+  if (!el) return;
+
+  const sinPagar = detectarFijosSinPagarEsteMes(S.gastosFijos || [], hoy());
+  if (sinPagar.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const top = sinPagar.slice(0, 3);
+  const totalAtraso = sinPagar.reduce((s, f) => s + (f.montoTotal || f.monto), 0);
+
+  const filas = top.map(fx => {
+    const labelDias = fx.diasAtraso === 0
+      ? 'Vence hoy'
+      : fx.diasAtraso === 1
+        ? '1 día atrasado'
+        : `${fx.diasAtraso} días atrasado`;
+    const sufijoQ = fx.tipoFalta === 'quincenal-q2'
+      ? ' (2do pago)'
+      : fx.tipoFalta === 'quincenal-ambos'
+        ? ' (los 2 pagos)'
+        : fx.tipoFalta === 'quincenal-q1' && fx.periodicidad === 'quincenal'
+          ? ' (1er pago)'
+          : '';
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b1);">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:22px;flex-shrink:0;" aria-hidden="true">📌</span>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${he(fx.nombre)}">${he(fx.nombre)}${he(sufijoQ)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            <strong>${he(labelDias)}</strong> · ${f(fx.montoTotal)}
+          </div>
+        </div>
+      </div>
+      <button class="btn bbl bsm" data-action="abrirModalFijo" data-arg-id="${fx.id}" aria-label="Pagar el fijo ${he(fx.nombre)}">Pagar</button>
+    </div>`;
+  }).join('');
+
+  const titulo = sinPagar.length === 1
+    ? '1 fijo sin pagar este mes'
+    : `${sinPagar.length} fijos sin pagar este mes`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(255,68,68,.35);background:rgba(255,68,68,.05);">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:800;color:#ff4444;text-transform:uppercase;letter-spacing:.5px;">
+          ⏰ ${he(titulo)}
+        </div>
+        <div class="mono" style="font-size:11px;color:var(--t3);">Total atraso: <strong style="color:var(--t2);">${f(totalAtraso)}</strong></div>
+      </div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:4px;">
+        Fijos no pagados a tiempo te cuestan recargos. Marcalos pagados o paga ahora.
+      </div>
+      ${filas}
+    </div>
+  `;
+}
+
+/**
+ * Renderiza la tarjeta de "deudas durmiendo" en el dashboard. Si no hay
+ * detectadas, oculta el contenedor. Muestra los 3 peor parados, con CTA
+ * según la sugerencia: liquidar (un pago la cierra) o retomar (varios pagos).
+ */
+export function renderDeudasDurmiendo() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('d-deudas-durmiendo');
+  if (!el) return;
+
+  const durmiendo = detectarDeudasDurmiendo(S.deudas || [], S.gastos || [], hoy());
+  if (durmiendo.length === 0) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  const top = durmiendo.slice(0, 3);
+
+  const filas = top.map(d => {
+    const labelMeses = d.mesesSinPago === 1 ? '1 mes' : `${d.mesesSinPago} meses`;
+    const ctaTxt = d.sugerencia === 'liquidar' ? 'Liquidar' : 'Pagar cuota';
+    const cta = `<button class="btn bbl bsm" data-action="abrirPagarCuota" data-arg-id="${d.id}" aria-label="${ctaTxt} de la deuda ${he(d.nombre)}">${ctaTxt}</button>`;
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--b1);">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:22px;flex-shrink:0;" aria-hidden="true">💤</span>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:13px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${he(d.nombre)}">${he(d.nombre)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">
+            Sin pago hace <strong>${labelMeses}</strong> · Pendiente: ${f(d.totalPendiente)}
+          </div>
+        </div>
+      </div>
+      ${cta}
+    </div>`;
+  }).join('');
+
+  const titulo = durmiendo.length === 1
+    ? 'Una deuda lleva tiempo sin movimiento'
+    : `${durmiendo.length} deudas llevan tiempo sin movimiento`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="card mb" style="border-color:rgba(180,80,255,.35);background:rgba(180,80,255,.05);">
+      <div style="font-size:11px;font-weight:800;color:#b450ff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        💤 ${he(titulo)}
+      </div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:4px;">
+        Las deudas no pagadas siguen acumulando intereses aunque vos no las mires. Retomalas o liquidalas si una cuota las cierra.
+      </div>
+      ${filas}
+    </div>
+  `;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // GASTOS FIJOS RECURRENTES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -325,9 +766,9 @@ export function renderFijos() {
              </div>`}
         <div style="display:flex; gap:8px; margin-left:auto; align-items:center;">
           ${paid
-            ? `<button class="btn bsm" onclick="desmFijo(${g.id})" style="color:var(--t3); background:transparent; border:1px solid var(--b2); font-size:11px; padding:5px 10px; border-radius:6px;" aria-label="Revertir pago de ${he(g.nombre)}">↩ Revertir</button>`
-            : `<button class="btn bp bsm" onclick="abrirModalFijo(${g.id})" aria-label="Marcar como pagado ${he(g.nombre)}">✓ Pagar</button>`}
-          <button class="btn-eliminar-deu" onclick="delFijo(${g.id})" style="padding:6px 12px;" aria-label="Eliminar ${he(g.nombre)}">🗑️</button>
+            ? `<button class="btn bsm" data-action="desmFijo" data-arg-id="${g.id}" style="color:var(--t3); background:transparent; border:1px solid var(--b2); font-size:11px; padding:5px 10px; border-radius:6px;" aria-label="Revertir pago de ${he(g.nombre)}">↩ Revertir</button>`
+            : `<button class="btn bp bsm" data-action="abrirModalFijo" data-arg-id="${g.id}" aria-label="Marcar como pagado ${he(g.nombre)}">✓ Pagar</button>`}
+          <button class="btn-eliminar-deu" data-action="delFijo" data-arg-id="${g.id}" style="padding:6px 12px;" aria-label="Eliminar ${he(g.nombre)}">🗑️</button>
         </div>
       </div>
     </article>`;
@@ -444,7 +885,7 @@ function _renderFijosEnDeudas() {
     </div>
     ${filas}
     <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-      <button class="btn bg bsm" onclick="go('gast')" style="font-size:11px;">Ver todos los fijos →</button>
+      <button class="btn bg bsm" data-action="go" data-arg-sec="gast" style="font-size:11px;">Ver todos los fijos →</button>
     </div>`;
 }
 
@@ -557,8 +998,8 @@ export function renderCal() {
       class="cal-day-box${isToday ? ' today' : ''}"
       role="button" tabindex="0"
       aria-label="Día ${day}${ev ? ', tiene compromisos' : ''}"
-      onclick="showDayDetails(${day}, this)"
-      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showDayDetails(${day},this)}"
+      data-action="showDayDetails" data-arg-day="${day}"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"
       style="padding:6px 0; border-radius:8px; text-align:center; font-size:13px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:48px; cursor:pointer; transition:all 0.2s; background:${baseBg}; border:2px solid transparent; ${color}"
     >${daySpan}${dots}</div>`;
   }
@@ -828,8 +1269,8 @@ export function renderPagos() {
             <span style="font-size:12px; font-weight:700; color:${colorEstado};">${textoEstado}</span>
           </div>
           <div style="display:flex; gap:8px; margin-left:auto;">
-            <button class="btn bp bsm" onclick="marcarPagado(${p.id})" style="padding:8px 16px;" aria-label="Pagar ${he(p.desc)}">✓ Pagar</button>
-            <button class="btn-eliminar-deu" onclick="delPago(${p.id})" style="padding:6px 12px;" aria-label="Eliminar ${he(p.desc)}">🗑️</button>
+            <button class="btn bp bsm" data-action="marcarPagado" data-arg-id="${p.id}" style="padding:8px 16px;" aria-label="Pagar ${he(p.desc)}">✓ Pagar</button>
+            <button class="btn-eliminar-deu" data-action="delPago" data-arg-id="${p.id}" style="padding:6px 12px;" aria-label="Eliminar ${he(p.desc)}">🗑️</button>
           </div>
         </div>
       </article>`;
@@ -1144,7 +1585,13 @@ export function renderDeudas() {
     }
 
     const alertaMora    = _obtenerAlertaMora(d);
-    const consejoAbierto = esPrioridad && consejoTexto;
+    // ⚠️ Boolean() obligatorio: si dejamos `esPrioridad && consejoTexto`, JS
+    // devuelve el ÚLTIMO operando truthy (el string del consejo entero), no un
+    // booleano. Eso se inyecta más abajo en `aria-expanded="${consejoAbierto}"`
+    // y la primera comilla doble del consejo (ej. credito: <strong>"abono…"</strong>)
+    // cierra el atributo prematuramente, dejando el resto del HTML del botón
+    // como texto visible. Bug visual reportado el 2026-04-26.
+    const consejoAbierto = Boolean(esPrioridad && consejoTexto);
 
     return `
     <article class="deuda-card-animada gc"
@@ -1192,8 +1639,8 @@ export function renderDeudas() {
       <div style="padding:14px 20px;">
         ${consejoTexto ? `
         <div style="margin-bottom:12px;">
-          <button id="btn-consejo-${d.id}" aria-expanded="${consejoAbierto}" aria-controls="consejo-${d.id}"
-            onclick="const c=document.getElementById('consejo-${d.id}');const btn=document.getElementById('btn-consejo-${d.id}');const ab=c.style.display==='block';c.style.display=ab?'none':'block';btn.setAttribute('aria-expanded',ab?'false':'true');btn.querySelector('.consejo-txt').textContent=ab?'💡 Ver consejo':'💡 Ocultar consejo';"
+          <button id="btn-consejo-${d.id}" aria-expanded="${consejoAbierto ? 'true' : 'false'}" aria-controls="consejo-${d.id}"
+            data-action="toggleConsejoDeuda" data-arg-id="${d.id}"
             style="background:none; border:none; color:var(--a4); font-size:12px; font-weight:600; cursor:pointer; padding:0; display:flex; align-items:center; gap:6px;">
             <span class="consejo-txt">${consejoAbierto ? '💡 Ocultar consejo' : '💡 Ver consejo'}</span>
           </button>
@@ -1203,13 +1650,29 @@ export function renderDeudas() {
           </div>
         </div>` : ''}
         <div class="deu-card-footer">
-          <button class="btn bg bsm" onclick="abrirEditarDeuda(${d.id})" aria-label="Editar ${he(d.nombre)}">✏️ Editar</button>
-          <button class="btn-eliminar-deu" onclick="delDeu(${d.id})" aria-label="Eliminar ${he(d.nombre)}">🗑️ Borrar</button>
-          <button class="btn bp btn-pagar-cuota" onclick="abrirPagarCuota(${d.id})" aria-label="Pagar cuota de ${he(d.nombre)}">Registrar Pago →</button>
+          <button class="btn bg bsm" data-action="abrirEditarDeuda" data-arg-id="${d.id}" aria-label="Editar ${he(d.nombre)}">✏️ Editar</button>
+          <button class="btn-eliminar-deu" data-action="delDeu" data-arg-id="${d.id}" aria-label="Eliminar ${he(d.nombre)}">🗑️ Borrar</button>
+          <button class="btn bp btn-pagar-cuota" data-action="abrirPagarCuota" data-arg-id="${d.id}" aria-label="Pagar cuota de ${he(d.nombre)}">Registrar Pago →</button>
         </div>
       </div>
     </article>`;
   }).join('');
+}
+
+// ─── TOGGLE CONSEJO DEUDA ────────────────────────────────────────────────────
+// Helper UI para expandir/contraer el bloque de "💡 consejo" de cada deuda.
+// Antes vivía como un onclick inline gigante en el botón; extraído aquí para
+// participar en la delegación data-action (sin duplicación de lógica DOM).
+export function toggleConsejoDeuda(id) {
+  if (typeof document === 'undefined') return;
+  const c   = document.getElementById(`consejo-${id}`);
+  const btn = document.getElementById(`btn-consejo-${id}`);
+  if (!c || !btn) return;
+  const abierto = c.style.display === 'block';
+  c.style.display = abierto ? 'none' : 'block';
+  btn.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+  const txt = btn.querySelector('.consejo-txt');
+  if (txt) txt.textContent = abierto ? '💡 Ver consejo' : '💡 Ocultar consejo';
 }
 
 // ─── PAGAR CUOTA ─────────────────────────────────────────────────────────────
@@ -1248,6 +1711,10 @@ export async function confPagarCuota() {
 
   descontarFondo(fo, d.cuota);
   d.pagado = Math.min(d.pagado + d.cuota, d.total);
+  // Persistir la fecha del último pago en la deuda misma — sobrevive a
+  // cerrarQ() (que vacía S.gastos). Es la fuente principal del detector
+  // detectarDeudasDurmiendo. Set-and-forget, sin migración.
+  d.fechaUltimoPago = hoy();
   S.gastos.unshift({
     id: Date.now(), desc: `💳 Cuota: ${d.nombre}`, monto: d.cuota, montoTotal: d.cuota,
     cat: 'deudas', tipo: 'necesidad', fondo: fo, hormiga: false, cuatroXMil: false,
@@ -1451,7 +1918,7 @@ function _renderAvisosDeudas(pct, totD) {
 // fijos
 registerAction('guardarFijo',      () => guardarFijo());
 registerAction('renderFijos',      () => renderFijos());
-registerAction('abrirModalFijo',   () => abrirModalFijo());
+registerAction('abrirModalFijo',   ({ id }) => abrirModalFijo(id != null ? +id : undefined));
 registerAction('cerrarModalFijo',  () => cerrarModalFijo());
 registerAction('ejecutarPagoFijo', ({ id }) => ejecutarPagoFijo(id));
 registerAction('desmFijo',         ({ id }) => desmFijo(id));
@@ -1460,15 +1927,17 @@ registerAction('delFijo',          ({ id }) => delFijo(id));
 registerAction('renderCal',              () => renderCal());
 registerAction('prevMonth',              () => prevMonth());
 registerAction('nextMonth',              () => nextMonth());
-registerAction('showDayDetails',         ({ fecha }) => showDayDetails(fecha));
+registerAction('showDayDetails',         ({ day }, el) => showDayDetails(+day, el));
 registerAction('guardarPago',            () => guardarPago());
 registerAction('marcarPagado',           ({ id }) => marcarPagado(id));
 registerAction('ejecutarPagoAgendado',   ({ id }) => ejecutarPagoAgendado(id));
 registerAction('delPago',                ({ id }) => delPago(id));
 registerAction('renderPagos',            () => renderPagos());
 // deudas
-registerAction('guardarDeuda',       () => guardarDeuda());
-registerAction('renderDeudas',       () => renderDeudas());
+registerAction('guardarDeuda',          () => guardarDeuda());
+registerAction('renderDeudas',          () => renderDeudas());
+registerAction('renderDeudasDurmiendo', () => renderDeudasDurmiendo());
+registerAction('renderFijosSinPagar',   () => renderFijosSinPagar());
 registerAction('setModoDeuda',       ({ modo }) => setModoDeuda(modo));
 registerAction('abrirPagarCuota',    ({ id }) => abrirPagarCuota(id));
 registerAction('confPagarCuota',     () => confPagarCuota());
@@ -1481,6 +1950,7 @@ registerAction('selFrecDeuda',       ({ frec }) => selFrecDeuda(frec));
 registerAction('selFrecDeudaEdit',   ({ frec }) => selFrecDeudaEdit(frec));
 registerAction('toggleAutoCuota',    () => toggleAutoCuota());
 registerAction('calcularCuotaAuto',  () => calcularCuotaAuto());
+registerAction('toggleConsejoDeuda', ({ id }) => toggleConsejoDeuda(id));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPOSICIÓN GLOBAL (onclick desde HTML)
@@ -1501,8 +1971,10 @@ if (typeof window !== 'undefined') {
   window.renderPagos     = renderPagos;
 
   // deudas — solo los usados en HTML dinámico (abrirPagarCuota, abrirEditarDeuda, delDeu)
-  window.renderDeudas     = renderDeudas;
-  window.abrirPagarCuota  = abrirPagarCuota;
-  window.abrirEditarDeuda = abrirEditarDeuda;
+  window.renderDeudas          = renderDeudas;
+  window.renderDeudasDurmiendo = renderDeudasDurmiendo;  // updateDash
+  window.renderFijosSinPagar   = renderFijosSinPagar;    // updateDash
+  window.abrirPagarCuota       = abrirPagarCuota;
+  window.abrirEditarDeuda      = abrirEditarDeuda;
   window.delDeu           = delDeu;
 }

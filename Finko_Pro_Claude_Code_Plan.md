@@ -1,358 +1,438 @@
-# 🛠️ Finko Pro — Plan de ejecución en Claude Code
+# 🔍 PROMPT DE AUDITORÍA EXHAUSTIVA PARA FINKO PRO
 
-> Basado en: `Finko_Pro_Auditoria_v5_Reorganizacion.md`
-> Destino: ejecutar la auditoría usando **Claude Code** (CLI).
-> Estrategia: **un modelo por fase** para optimizar costo y calidad.
+**Instrucción para Opus:** Este es un prompt de auditoría para revisar la PWA Finko Pro de finanzas personales para Colombia. Necesito que hagas un análisis **EXHAUSTIVO Y SIN PIEDAD** de todos los aspectos: código, diseño, UX, accesibilidad, precisión financiera colombiana, responsividad, y experiencia del usuario. Señala TODO lo que esté mal, falta, o pueda mejorar. Propón soluciones concretas.
 
 ---
 
-## 1. ¿Qué modelo usar?
+## 📋 CONTEXTO DE LA APP
 
-Claude Code deja cambiar de modelo con `/model`. La recomendación por fase:
+**Finko Pro** es una PWA (Progressive Web App) de finanzas personales diseñada específicamente para colombianos que quieren aprender a gestionar su dinero desde cero. No es un app para inversores sofisticados, es para gente común que necesita:
+- Registrar gastos e ingresos
+- Entender dónde va su dinero
+- Planificar meses adelante
+- Pagar deudas de forma inteligente
+- Ahorrar sin sacrificarse
+- Aprender finanzas mientras la usan
 
-| Fase | Tipo de trabajo | Modelo recomendado | Por qué |
-|---|---|---|---|
-| **Fase 0** — Bugs bloqueantes | 2 ediciones puntuales, 7 minutos | **Haiku 4.5** | Cambios triviales y bien localizados. Rápido y barato. |
-| **Fase 1** — Limpieza + tests + a11y top 10 | Correcciones dispersas, leer varios archivos | **Sonnet 4.6** | Mejor relación calidad/costo para refactor de código normal. |
-| **Fase 2** — Reorganización física (28→13 archivos) | Refactor arquitectónico grande, muchas decisiones | **Opus 4.6** | Es la fase más delicada: mover módulos sin romper imports, respetando `S` global y `window.*`. Vale la pena el modelo más fuerte. |
-| **Fase 3** — Migración a `data-action` | Trabajo sistemático repetitivo | **Sonnet 4.6** | Patrón claro, ejecutable en lotes. |
-| **Fase 4** — Feature work (backup automático, Web Components, etc.) | Diseño + código | **Sonnet 4.6** (o **Opus** si es arquitectónico) | Depende de la feature. |
+**Stack técnico:**
+- Vanilla JavaScript (sin frameworks)
+- HTML5 semántico
+- CSS3 con variables y Flexbox/Grid
+- PWA completa: manifest.json + service worker
+- LocalStorage para persistencia
+- Mobile-first responsive design
 
-> **Si sólo podés elegir un modelo para todo el refactor:** andate con **Sonnet 4.6**. Cubre el 90% del trabajo bien y barato. Sólo subí a Opus en Fase 2 si sentís que Sonnet está tomando decisiones dudosas sobre la estructura de carpetas.
+**Secciones implementadas:**
+- Dashboard (resumen del estado financiero)
+- Planificar (presupuestos y proyecciones)
+- Gastos (registro diario y categorizado)
+- Fijos (suscripciones y gastos recurrentes)
+- Objetivos (metas de ahorro con gamificación)
+- Inversiones (simulaciones de rentabilidad)
+- Deudas (Avalancha + Bola de Nieve + alertas legales colombianas)
+- Agenda (calendario de eventos financieros importantes)
+- Estadísticas (gráficos mensuales y anuales)
+- Historial (búsqueda y auditoría de transacciones)
+
+**Pendiente:** Sección "Me Deben 🤝" (deudas personales entre amigos/familia)
 
 ---
 
-## 2. Preparación (una sola vez)
+## 🎯 CRITERIOS DE AUDITORÍA
 
-Antes de pegar el primer prompt, dejá el proyecto listo:
+### A. ACCESIBILIDAD (WCAG 2.1 AA) - CRÍTICO
 
-```bash
-# 1. Clonar o abrir el repo en el directorio de Finko
-cd ruta/a/finko-pro
+**Revisar y reportar:**
 
-# 2. Crear rama de trabajo — NO trabajar en main
-git checkout -b refactor/v5-reorganizacion
+1. **Contraste de colores:**
+   - [ ] Medir contraste en todos los textos (mínimo 4.5:1 para normal, 3:1 para texto grande) en AMBOS temas (claro y oscuro)
+   - [ ] Revisar si los colores verdes, amarillos, azules cumplen en contraste
+   - [ ] Verificar que los estados "deshabilitados" sean claramente visibles
+   - [ ] Probar con simulador de daltonismo (rojo-verde es el más común)
 
-# 3. Asegurarse de que los tests existentes corran
-npm install
-npm test
+2. **Navegación por teclado:**
+   - [ ] ¿Se puede tabular por toda la app con Tab/Shift+Tab sin quedarse atrapado?
+   - [ ] ¿Existen focus traps innecesarios en modales?
+   - [ ] ¿Escape cierra los modales siempre?
+   - [ ] ¿Los botones son accesibles con Enter y los checkboxes con Space?
+   - [ ] ¿Los selects (dropdowns) usan las flechas arriba/abajo para navegar?
 
-# 4. Abrir Claude Code en esa carpeta
-claude
+3. **ARIA y roles semánticos:**
+   - [ ] ¿Todos los botones tienes aria-label o texto visible descriptivo?
+   - [ ] ¿Los inputs tienen <label> o aria-label ligados correctamente?
+   - [ ] ¿Los modales tienen role="dialog" y aria-modal="true"?
+   - [ ] ¿Las alertas/errores tienen role="alert" para lectores de pantalla?
+   - [ ] ¿Los elementos decorativos (emojis bonitos) tienen aria-hidden="true"?
+   - [ ] ¿Los expanders/acordeones tienen aria-expanded correctamente?
+   - [ ] ¿Las tablas (si las hay) tienen <thead>, <tbody>, headers correctos?
+
+4. **Lectores de pantalla:**
+   - [ ] ¿Un usuario ciego podría entender qué hace cada botón sin ver el icono?
+   - [ ] ¿Se anuncia cuando un saldo cambia (aria-live)?
+   - [ ] ¿Se anuncia el error en el formulario antes de que el usuario navegue?
+   - [ ] ¿Las transacciones se describen de forma clara: "Gasto en alimentos: $50.000"?
+
+5. **Responsive y táctil:**
+   - [ ] ¿Los botones/targets táctiles tienen mínimo 44x44px en móvil?
+   - [ ] ¿Hay suficiente espacio entre botones para evitar clics accidentales?
+   - [ ] ¿Los inputs numéricos abren el teclado correcto (type="number")?
+   - [ ] ¿Las fechas tienen date picker en vez de escribir?
+
+---
+
+### B. RESPONSIVIDAD Y ADAPTACIÓN DE DISPOSITIVOS - CRÍTICO
+
+**Revisar en breakpoints reales (no solo pantalla ancha):**
+
+1. **Móvil pequeño (375px - iPhone SE):**
+   - [ ] ¿Cabe todo sin scroll horizontal? (Es el pecado mortal)
+   - [ ] ¿El menú lateral se convierte en bottom bar o hamburguesa?
+   - [ ] ¿Las tablas tienen scroll horizontal elegante o se reorganizan?
+   - [ ] ¿Las columnas de dos elementos se apilan en columna única?
+   - [ ] ¿Los textos son legibles sin zoom (mínimo 14px)?
+   - [ ] ¿Los números de pesos se ven completos ($1.500.000)?
+   - [ ] ¿Los gráficos se adaptan manteniendo legibilidad?
+   - [ ] ¿Los modales se comportan como bottom sheets sin cobertura excesiva?
+
+2. **Móvil grande (820px - iPad mini o Android tablet):**
+   - [ ] ¿Se aprecha más contenido sin saturar?
+   - [ ] ¿El menú sigue siendo bottom bar o pasa a sidebar?
+   - [ ] ¿Hay dos columnas donde tiene sentido (gastos + categorías)?
+
+3. **Tablet (1024px+):**
+   - [ ] ¿El menú es sidebar vertical a la izquierda?
+   - [ ] ¿Las tarjetas se distribuyen en 2-3 columnas?
+   - [ ] ¿Los gráficos usan más espacio aprovechado?
+
+4. **Escritorio (1920px+):**
+   - [ ] ¿El contenido está restringido a max-width (no 100% en una línea)?
+   - [ ] ¿La simetría visual es buena?
+
+5. **Comportamientos específicos de dispositivos:**
+   - [ ] ¿El app respeta el safe area en notches de iPhones (padding-top)?
+   - [ ] ¿El color de la barra de estado (theme-color) se adapta al tema?
+   - [ ] ¿El teclado virtual de Android no oculta inputs críticos?
+   - [ ] ¿Los date pickers abren el selector nativo de cada SO?
+
+---
+
+### C. DISEÑO Y UX - IMPORTANTE
+
+1. **Coherencia visual:**
+   - [ ] ¿La paleta de colores es consistente en todos lados?
+   - [ ] ¿Los tonos de verde (ingresos), rojo (deudas), amarillo (alertas) están claros?
+   - [ ] ¿El modo oscuro es legible y atractivo, no sale del "gris sucio"?
+   - [ ] ¿El modo claro tiene suficiente contraste sin ser cegador?
+   - [ ] ¿Hay coherencia en espaciados (padding, margins) en toda la app?
+
+2. **Tipografía:**
+   - [ ] ¿Se usa Inter para textos (fácil de leer)?
+   - [ ] ¿Se usa DM Mono o monoespaciado para números grandes ($1.500.000)?
+   - [ ] ¿Los tamaños de texto tienen jerarquía clara?
+   - [ ] ¿Hay suficiente line-height (1.5-1.6) para legibilidad?
+   - [ ] ¿Las fuentes se cargan rápido o hay fallback legible?
+
+3. **Animaciones:**
+   - [ ] ¿Las transiciones son rápidas (0.3s) o quedan lentas?
+   - [ ] ¿Los easing son naturales (cubic-bezier) o robóticos?
+   - [ ] ¿Las animaciones aportan información o son solo ruido?
+   - [ ] ¿Respetan prefers-reduced-motion para usuarios sensibles?
+
+4. **Microinteracciones:**
+   - [ ] ¿Los botones tienen feedback visual (hover, active)?
+   - [ ] ¿Las tarjetas suben o cambian al pasar el mouse/toque?
+   - [ ] ¿Los inputs tienen focus ring visible y diseñado?
+   - [ ] ¿Los checkboxes y radios tienen estados claros (checked, unchecked, disabled)?
+   - [ ] ¿Las transacciones tienen animación suave al insertarse?
+
+5. **Mensajería y tono:**
+   - [ ] ¿El lenguaje es amigable o suena como manual bancario?
+   - [ ] ¿Se usa "tú" (informal) y no "usted"?
+   - [ ] ¿Los mensajes de error dicen QUÉ hacer, no qué salió mal?
+   - [ ] ¿Hay celebraciones cuando el usuario logra algo (paga deuda, ahorra)?
+   - [ ] ¿Los tips y consejos son concretos (con ejemplos locales)?
+
+6. **Estados vacíos:**
+   - [ ] ¿Hay un estado vacío bonito cuando no hay datos?
+   - [ ] ¿Se invita al usuario a crear el primer gasto/ingreso?
+   - [ ] ¿Hay onboarding sutil para nuevos usuarios?
+
+7. **Errores y validaciones:**
+   - [ ] ¿Los errores aparecen en rojo y con texto claro?
+   - [ ] ¿Se previenen con validación client-side inteligente?
+   - [ ] ¿No hay errores silenciosos en console?
+
+---
+
+### D. PRECISIÓN FINANCIERA COLOMBIANA - CRÍTICO
+
+**ANTES de cualquier análisis, verificar que esto sea correcto:**
+
+1. **Modelo de períodos de nómina:**
+   - [ ] ¿Se reconocen correctamente quincenas: 1-15 y 16-31?
+   - [ ] ¿Las fechas de corte están correctas?
+   - [ ] ¿Los ingresos quincenales se proyectan correctamente?
+
+2. **Primas legales:**
+   - [ ] ¿Se incluyen en los cálculos de ahorro?
+   - [ ] ¿Se avisa que en junio y diciembre se reciben?
+   - [ ] ¿Se enseña a segregarlas (prima es para emergencias)?
+
+3. **Cesantías y prestaciones sociales:**
+   - [ ] ¿Se incluyen en el flujo de caja anual?
+   - [ ] ¿Se explica que son dinero que "ya ganaste"?
+   - [ ] ¿Se propone como colchón de emergencia?
+
+4. **GMF (4×1000):**
+   - [ ] ¿Se aplica correctamente (0.4% sobre transacciones)?
+   - [ ] ¿Se excluyen ingresos (sueldos, giros)?
+   - [ ] ¿Se suma automáticamente en proyecciones?
+   - [ ] ¿Se avisa al usuario que existe?
+
+5. **Tasas de interés:**
+   - [ ] ¿Se muestra siempre en E.A. (Efectivo Anual)?
+   - [ ] ¿Se aclara que nunca es nominal?
+   - [ ] ¿Se dan rangos reales del mercado colombiano?
+   - [ ] ¿Se calcula correctamente la capitalización?
+
+6. **Deudas y mora:**
+   - [ ] ¿Mora >90 días activa reporte negativo (Ley 1266)?
+   - [ ] ¿Se avisa con 20 días de anticipación?
+   - [ ] ¿El reporte negativo dura máximo 4 años?
+   - [ ] ¿Se explica compra de cartera como alternativa?
+   - [ ] ¿Se calcula correctamente el interés moratorio?
+   - [ ] ¿Hay opción de pagar en Avalancha (más interés primero)?
+   - [ ] ¿Hay opción de pagar en Bola de Nieve (deuda más pequeña primero)?
+
+7. **Bancos y neobancos colombianos:**
+   - [ ] ¿Se menciona Bancolombia, Davivienda, Nequi, Nubank, Lulo, BBVA?
+   - [ ] ¿Se reconocen las comisiones típicas?
+   - [ ] ¿Se comparan tasas reales vs advertidas?
+
+8. **Centrales de riesgo:**
+   - [ ] ¿Se menciona Datacrédito y TransUnión?
+   - [ ] ¿Se explica cómo funciona el score (1-900)?
+   - [ ] ¿Se enseña a consultar el reporte gratis (Ley 1266)?
+
+9. **DIAN y declaración de renta:**
+   - [ ] ¿Se menciona el umbral anual actualizado?
+   - [ ] ¿Se reconocen deducibles colombianos?
+   - [ ] ¿Se previene sobre multas de no declarar?
+
+10. **Método de ahorro:**
+    - [ ] ¿Se enseña el 50/30/20 (Superfinanciera)?
+    - [ ] 50% necesidades (arriendo, servicios, comida)
+    - [ ] 30% deudas/ahorros (según prioridad del usuario)
+    - [ ] 20% lujos (entretenimiento, salidas)
+    - [ ] ¿Se adapta a realidad colombiana (no todos ganan $5M)?
+
+---
+
+### E. FUNCIONALIDAD Y BUGS - IMPORTANTE
+
+**Por cada sección:**
+
+1. **Dashboard:**
+   - [ ] ¿Muestra saldos correctos (ingresos - gastos)?
+   - [ ] ¿Se actualiza en tiempo real al agregar transacciones?
+   - [ ] ¿Los gráficos se renderizan rápido?
+   - [ ] ¿Hay indicadores de salud financiera claros?
+
+2. **Gastos:**
+   - [ ] ¿Se pueden agregar con fecha, monto, categoría?
+   - [ ] ¿Las categorías son lógicas y colombianas?
+   - [ ] ¿Se pueden editar/eliminar transacciones?
+   - [ ] ¿Hay filtro por rango de fechas?
+   - [ ] ¿Hay búsqueda por concepto?
+
+3. **Ingresos:**
+   - [ ] ¿Se diferencian de gastos visualmente?
+   - [ ] ¿Se pueden registrar quincenales?
+   - [ ] ¿Se proyectan correctamente para el mes?
+
+4. **Deudas:**
+   - [ ] ¿Se puede crear deuda con monto, tasa, plazo?
+   - [ ] ¿Se calcula la cuota correctamente?
+   - [ ] ¿Se permite cambiar el método (Avalancha/Bola de Nieve)?
+   - [ ] ¿Se muestra progreso visual?
+   - [ ] ¿Se advierte sobre mora próxima?
+
+5. **Fijos:**
+   - [ ] ¿Se pueden crear suscripciones recurrentes?
+   - [ ] ¿Se diferencian en el presupuesto?
+   - [ ] ¿Se pueden marcar como pagadas?
+
+6. **Objetivos:**
+   - [ ] ¿Se pueden crear metas con monto y plazo?
+   - [ ] ¿Se muestra progreso (% completado)?
+   - [ ] ¿Hay notificaciones de cumplimiento?
+
+7. **Inversiones:**
+   - [ ] ¿Se pueden simular rentabilidades?
+   - [ ] ¿Los cálculos de capitalización son correctos?
+   - [ ] ¿Se explica la diferencia entre rendimiento simple y compuesto?
+
+8. **Estadísticas:**
+   - [ ] ¿Los gráficos son legibles en móvil?
+   - [ ] ¿Se pueden filtrar por mes/año?
+   - [ ] ¿Hay desglose por categoría?
+
+9. **Historial:**
+   - [ ] ¿Se pueden buscar transacciones antiguas?
+   - [ ] ¿Hay paginación o scroll infinito eficiente?
+   - [ ] ¿Se puede filtrar por tipo (gasto/ingreso)?
+
+---
+
+### F. RENDIMIENTO Y PWA - IMPORTANTE
+
+1. **Velocidad:**
+   - [ ] ¿La app carga en <2s en 4G?
+   - [ ] ¿Las transiciones entre secciones son instantáneas?
+   - [ ] ¿No hay lag en inputs de texto?
+   - [ ] ¿Los gráficos se renderizan sin bloquear UI?
+
+2. **PWA completa:**
+   - [ ] ¿Hay manifest.json con todos los campos?
+   - [ ] ¿Se puede instalar en Android e iOS?
+   - [ ] ¿Funciona offline sin conexión?
+   - [ ] ¿Los datos se sincronizan al volver online?
+   - [ ] ¿Hay un service worker que cachea los assets?
+   - [ ] ¿El icono de instalación es claro y atractivo?
+
+3. **Almacenamiento:**
+   - [ ] ¿LocalStorage se usa correctamente?
+   - [ ] ¿No hay límite artificial de transacciones?
+   - [ ] ¿Se avisa cuando el almacenamiento está lleno?
+   - [ ] ¿Hay opción de exportar datos?
+   - [ ] ¿Hay opción de importar datos (backup)?
+
+4. **SEO (aunque sea app):**
+   - [ ] ¿Hay meta tags correctos en index.html?
+   - [ ] ¿La descripción atrae a nuevos usuarios?
+   - [ ] ¿Hay Open Graph para compartir?
+
+---
+
+### G. SEGURIDAD Y PRIVACIDAD - IMPORTANTE
+
+1. **Datos del usuario:**
+   - [ ] ¿Se guardan SOLO en el dispositivo (nunca en servidor)?
+   - [ ] ¿No hay tracking ni analytics invasivos?
+   - [ ] ¿Se avisa claramente sobre privacidad?
+
+2. **Validaciones:**
+   - [ ] ¿No hay inyecciones de HTML en inputs?
+   - [ ] ¿Los montos se validan (no negativos)?
+   - [ ] ¿Las fechas se validan correctamente?
+
+3. **Backup:**
+   - [ ] ¿El usuario puede exportar datos como JSON/CSV?
+   - [ ] ¿Hay advertencia sobre borrar datos?
+   - [ ] ¿Hay opción de resetear la app sin perder datos por error?
+
+---
+
+### H. PERSONALIDAD Y COLOMBIANIDAD - IMPORTANTE
+
+**La app debe sentirse "hecha para mí", no como un clónico gringo:**
+
+1. **Lenguaje:**
+   - [ ] ¿Se usa "quincena" en vez de "paycheck"?
+   - [ ] ¿Se menciona "arriendo" en ves de "rent"?
+   - [ ] ¿Los ejemplos son colombianos (mercado, servicios, Netflix)?
+   - [ ] ¿Se evita "amortización" y se usa "pago del préstamo"?
+   - [ ] ¿Hay expresiones naturales ("vea", "mire", "quiere decir")?
+
+2. **Contexto financiero:**
+   - [ ] ¿Se enseña sobre primas en junio/diciembre?
+   - [ ] ¿Se menciona GMF sin hacer pánico?
+   - [ ] ¿Se reconoce la realidad de sueldos en COP?
+   - [ ] ¿Se proponen ahorros realistas (no "ahorre $1M al mes")?
+   - [ ] ¿Se enseña a comprar cartera (deuda)?
+   - [ ] ¿Se sabe que los créditos colombianos son caros (18-35% E.A.)?
+
+3. **Iconografía y emojis:**
+   - [ ] ¿Se usan emojis naturalmente (💰, 📊, 🎯)?
+   - [ ] ¿No hay emojis raros o fuera de contexto?
+
+4. **Colores culturales:**
+   - [ ] ¿El verde es verde esperanza (no neón)?
+   - [ ] ¿El rojo es rojo deuda (no "warning orange")?
+
+---
+
+### I. ACCESIBILIDAD PARA PRINCIPIANTES - CRÍTICO
+
+**La app DEBE ser guía para gente que NO sabe nada:**
+
+1. **Onboarding:**
+   - [ ] ¿Hay un tour visual para nuevos usuarios?
+   - [ ] ¿Se explica cada sección antes de entrar?
+   - [ ] ¿Hay un "primer gasto" guiado paso a paso?
+
+2. **Tooltips y ayuda:**
+   - [ ] ¿Hay puntos de ayuda (?) en conceptos complejos?
+   - [ ] ¿Los tooltips explican sin tecnicismos?
+   - [ ] ¿Se usa "¿Necesitas ayuda?" en secciones confusas?
+
+3. **Educación en contexto:**
+   - [ ] ¿Al crear deuda se explica qué es una "tasa"?
+   - [ ] ¿Al crear objetivo se explica "fondo de emergencia"?
+   - [ ] ¿Se recomiendan montos iniciales realistas?
+
+4. **Ejemplos y plantillas:**
+   - [ ] ¿Hay categorías de gastos sugeridas?
+   - [ ] ¿Hay objetivos "predefinidos" (fondo de emergencia, vacaciones)?
+   - [ ] ¿Se importan automáticamente para ahorrar clicks?
+
+5. **Validación inteligente:**
+   - [ ] ¿Se previene gastos >ingresos del mes?
+   - [ ] ¿Se avisa si una deuda es "cara" (>25% E.A.)?
+   - [ ] ¿Se sugiere consolidación si hay muchas deudas pequeñas?
+
+---
+
+## 📊 FORMATO DE REPORTE
+
+Por favor, estructura tu análisis así:
+
+```
+## 🔴 CRÍTICO (Bloquea uso):
+- [ ] Problema 1
+  Descripción: ...
+  Impacto: ...
+  Solución: ...
+
+## 🟠 IMPORTANTE (Degradación UX):
+- [ ] Problema 2
+  ...
+
+## 🟡 RECOMENDACIÓN (Mejora futura):
+- [ ] Problema 3
+  ...
+
+## 🟢 BIEN HECHO ✅:
+- Lista de cosas que funcionan bien
+
+## 📋 RESUMEN EJECUTIVO:
+- Calificación general: X/10
+- Listos para producción: Sí/No
+- Prioridades inmediatas: 1, 2, 3
 ```
 
-Dentro de Claude Code, como **primer mensaje** del chat, pegá el **Prompt 0** (de abajo). Le da contexto y reglas del proyecto para toda la sesión.
+---
+
+## 🎬 ACCIÓN FINAL
+
+**Después del análisis, te pido:**
+
+1. Una lista de **top 5 cambios críticos** que debo hacer ahora
+2. Una lista de **top 5 mejoras** que no bloquean pero hacen grande la app
+3. Un **checklist** de cosas a verificar manualmente (screenshots en móvil/tablet/escritorio)
+4. **Ejemplos de código** para cada problema (no solo descripción)
+5. Una **priorización clara**: ¿Qué hago primero para que sea perfecta?
 
 ---
 
-## 3. Prompts por fase
-
-### Prompt 0 — Contexto del proyecto (pegá esto primero)
-
-```text
-Sos un Co-Desarrollador Senior trabajando en Finko Pro, una app web de finanzas personales en Colombia (v4.2.0). Stack: vanilla JS con ES Modules, sin build step, PWA, 28 módulos en /modules, estado global S con localStorage, tests con Vitest + happy-dom.
-
-REGLAS DEL PROYECTO (no negociables):
-1. ADN colombiano: todo texto visible para el usuario en español colombiano cálido. Nada de tecnicismos bancarios secos.
-2. Accesibilidad WCAG 2.1: todo elemento interactivo nuevo con aria-label. Anunciar cambios importantes con sr().
-3. Persistencia: cualquier cambio en S debe llamar save() (con debounce).
-4. Arquitectura: respetar la estructura de módulos. No introducir dependencias nuevas sin avisarme.
-5. Iconos: sistema de símbolos SVG.
-
-REGLAS DE TRABAJO:
-- Antes de editar un archivo, leélo completo para no perder contexto.
-- Después de cada cambio significativo, corré npm test y mostrame el resultado.
-- Commits atómicos con mensajes descriptivos en español: `fix:`, `refactor:`, `feat:`, `chore:`, `test:`.
-- Si una decisión afecta varios archivos, explicame el plan ANTES de ejecutar.
-- Nunca borres historial de git ni hagás force push.
-
-Tengo un reporte de auditoría en `Finko_Pro_Auditoria_v5_Reorganizacion.md` (si no está en el repo, te lo paso). Vamos a ejecutarlo por fases. Cuando te diga "Fase N", seguís el plan de esa fase paso a paso, confirmando commits conmigo.
-
-¿Listo? Empezamos con Fase 0.
-```
-
----
-
-### Prompt 1 — Fase 0: apagar los dos incendios
-
-```text
-FASE 0 — Bugs bloqueantes (la app no carga hoy).
-
-Hacé exactamente esto, en este orden:
-
-BUG A — storage.js tiene dos `export function save()` declaradas (líneas ~200 y ~232).
-- Abrí modules/storage.js
-- Borrá la versión vieja (la que NO tiene debounce, la primera de las dos).
-- Conservá la versión con `_savePendiente` y `_saveTimer`.
-- Verificá que `_flushSave` y las funciones auxiliares queden intactas.
-
-BUG B — events.js tiene referencias a funciones no importadas (líneas ~206–217).
-- Abrí modules/events.js
-- Borrá todo el bloque `// calculadoras` que asigna window.cCDT, window.cCre, window.cIC, window.cMeta, window.cMetaAporte, window.cPila, window.cInf, window.cR72, window.toggleCalc, window.calcPrima, window.guardarPrima.
-- Las calculadoras se cargan lazy desde sections.js, ya está bien así.
-
-Después:
-1. Mostrame un diff resumido de los dos archivos.
-2. Corré `npm test`.
-3. Abrí manualmente mentalmente el flujo: si alguien hace `import { save } from './storage.js'` ¿qué obtiene? ¿Y si alguien llama `window.cCDT` desde un onclick del HTML?
-4. Si hay onclick="cCDT(...)" en index.html que apuntan a window.cCDT, identificá en qué sección están y avisame (puede que necesiten eager-load o un listener específico).
-5. Cuando todo esté verde, commit: `fix: bloqueantes de carga (save duplicada, refs zombi a calculadoras)`.
-
-No avances a Fase 1 sin mi confirmación.
-```
-
----
-
-### Prompt 2 — Fase 1: limpieza + tests + accesibilidad top 10
-
-```text
-FASE 1 — Saneamiento básico.
-
-Ejecutá estos ítems como tareas separadas (commit por tarea):
-
-1. DUPLICACIÓN updateBadge
-   - Buscá todas las definiciones de `updateBadge` (debería estar en render.js y ui-components.js).
-   - Dejá UNA sola en render.js. Borrá la de ui-components.js.
-   - Asegurate que ui-components.js la importe si la usa.
-   - Commit: `refactor: unificar updateBadge en render.js`.
-
-2. he() ESCAPA APÓSTROFES
-   - Abrí modules/utils.js, buscá la función `he()`.
-   - Agregá el reemplazo de `'` a `&#39;`.
-   - Agregá un test en tests/unit/utils.test.js que verifique los 5 caracteres: <, >, &, ", '.
-   - Commit: `fix: he() escapa apóstrofes para evitar romper aria-label`.
-
-3. TESTS DE MIGRACIONES
-   - Mirá modules/storage.js y la lógica de migraciones.
-   - Creá tests/unit/migrations.test.js con al menos 3 casos:
-     a) Estado v3 → v4 (lo que haya cambiado).
-     b) Estado v4 → v5.
-     c) Estado sin _version (legacy) → CURRENT_VERSION.
-   - Mockeá S con estructuras representativas.
-   - Commit: `test: cubrir migraciones v3→v4→v5`.
-
-4. ACCESIBILIDAD TOP 10
-   - Corré `npx lighthouse --only-categories=accessibility --quiet --chrome-flags="--headless" file://$(pwd)/index.html` (o abrilo manual con Lighthouse en Chrome).
-   - Mostrame las top 10 violaciones.
-   - Arreglá las 10, una por una, commit por cada una o agrupadas si son el mismo tipo.
-   - Enfoque: contrastes, aria-label faltantes en botones ícono, labels en inputs.
-
-5. BACKUP DE SEGURIDAD ANTES DE FASE 2
-   - `git tag pre-refactor-v5`
-   - Empujá el tag: `git push origin pre-refactor-v5`.
-
-Al terminar, mostrame un resumen: qué se corrigió, qué tests se agregaron, qué score de accesibilidad quedó. Esperá confirmación antes de Fase 2.
-```
-
----
-
-### Prompt 3 — Fase 2: reorganización de carpetas (aquí es donde subo a Opus)
-
-```text
-FASE 2 — Reorganización física: 28 archivos → 13 archivos en /modules.
-
-IMPORTANTE: esta es la fase más delicada. Trabajá en PASOS, no en un solo commit gigante. Entre pasos, corré tests y verificá que la app abre.
-
-ESTRUCTURA OBJETIVO:
-modules/
-├─ core/
-│  ├─ state.js
-│  ├─ constants.js
-│  └─ storage.js
-├─ infra/
-│  ├─ utils.js
-│  ├─ render.js
-│  └─ a11y.js          (extraer sr() y focus traps de utils.js)
-├─ ui/
-│  ├─ shell.js         (sections.js + ui-components.js fusionados)
-│  └─ events.js
-├─ dominio/
-│  ├─ tesoreria.js     (cuentas + fondo + ahorrado)
-│  ├─ compromisos.js   (fijos + agenda + deudas)
-│  ├─ ingresos.js      (gastos + dashboard + resumen + historial)
-│  ├─ metas.js         (objetivos + inversiones)
-│  ├─ analisis.js      (stats + logros)
-│  └─ exports.js
-└─ calculadoras.js
-
-PROCESO OBLIGATORIO:
-
-PASO A — Crear carpetas y mover sin fusionar aún.
-- Creá core/, infra/, ui/, dominio/ en modules/.
-- Movimiento 1 a 1, actualizando rutas de imports.
-- Corré `npm test` después de cada archivo movido.
-- Si algo se rompe, revertí ese movimiento y avisame.
-- Commit al final del PASO A: `refactor: reorganizar modules en core/infra/ui/dominio (sin fusión)`.
-
-PASO B — Fusionar dominio/tesoreria.js.
-- Copiar contenido de cuentas.js + fondo.js + ahorrado.js a un nuevo tesoreria.js.
-- Estructura interna:
-  // === API PÚBLICA ===
-  // === LÓGICA PURA (testeable, sin DOM) ===
-  // === ADAPTADORES UI ===
-- Exports: los mismos que los 3 archivos tenían, para no romper events.js.
-- Actualizar events.js para importar todo desde tesoreria.js.
-- Borrar los 3 archivos viejos.
-- Correr tests + smoke test manual (abrir la app, agregar cuenta, crear bolsillo, ver fondo).
-- Commit: `refactor: fusionar cuentas + fondo + ahorrado en tesoreria.js`.
-
-PASO C — Fusionar dominio/compromisos.js (fijos + agenda + deudas). Mismo patrón.
-
-PASO D — Fusionar dominio/ingresos.js (gastos + dashboard + resumen + historial). Mismo patrón. Este es el más grande, tené paciencia.
-
-PASO E — Fusionar dominio/metas.js (objetivos + inversiones).
-
-PASO F — Fusionar dominio/analisis.js (stats + logros).
-
-PASO G — Fusionar ui/shell.js (sections + ui-components).
-
-Después de cada PASO, PARÁ y mostrame:
-- Archivos tocados
-- Resultado de npm test
-- Tamaño del archivo nuevo vs la suma de los viejos
-
-Esperá mi OK antes del siguiente PASO. No te adelantes.
-```
-
----
-
-### Prompt 4 — Fase 3: migrar onclick → data-action
-
-```text
-FASE 3 — Eliminar los 142 onclick="" inline del HTML y reducir las 277 asignaciones a window.*.
-
-ESTRATEGIA:
-- Crear un único listener en ui/events.js que escuche clicks a nivel document.
-- Cada botón con lógica usa data-action="nombreAccion" y, si necesita argumentos, data-arg-*.
-- El listener mapea data-action → función (importada localmente, ya no en window).
-
-PASO A — Crear el sistema de delegación.
-- En ui/events.js, definí:
-  const ACTIONS = new Map();
-  export function registerAction(name, fn) { ACTIONS.set(name, fn); }
-  document.addEventListener('click', (e) => {
-    const el = e.target.closest('[data-action]');
-    if (!el) return;
-    const action = el.dataset.action;
-    const fn = ACTIONS.get(action);
-    if (!fn) return console.warn('Acción no registrada:', action);
-    const args = extractArgs(el.dataset); // data-arg-* → objeto
-    fn(args, el, e);
-  });
-- Cada módulo de dominio llama registerAction('agregarGasto', agregarGasto) en su init.
-- Commit: `feat: sistema de delegación con data-action`.
-
-PASO B — Migrar por pantalla, una por una.
-- Empezá con dashboard (menos botones).
-- En index.html, los <button onclick="agregarGasto()"> se vuelven <button data-action="agregarGasto">.
-- Borrá la asignación correspondiente de window.agregarGasto = agregarGasto.
-- Si el onclick tenía argumentos (onclick="delGasto(3)"), usar data-action="delGasto" data-arg-id="3".
-- Correr npm test + smoke test manual.
-- Commit: `refactor: migrar dashboard a data-action`.
-
-PASO C — Repetir para las otras 6 pantallas.
-
-PASO D — Auditoría final.
-- Buscar en todo el proyecto: `grep -rn "onclick=" index.html` → debería dar 0.
-- Buscar: `grep -rn "window\." modules/` → debería dar <30 (sólo window.addEventListener y similares legítimos).
-- Actualizar el reporte de auditoría con los nuevos números.
-- Commit: `docs: actualizar métricas post-migración a data-action`.
-
-Si en algún momento un onclick no se puede migrar limpio (por ejemplo porque es un onsubmit o onchange complejo), pausás y me preguntás.
-```
-
----
-
-### Prompt 5 — Fase 4: features de mentor (opcional pero muy recomendado)
-
-```text
-FASE 4 — Mejoras de producto que sugiere la auditoría.
-
-Implementá estas 4 features, cada una en su propio commit/PR:
-
-1. BACKUP AUTOMÁTICO ROTATIVO
-   - En core/storage.js, agregar función `snapshotDiario()` que:
-     a) Corre al arranque si `lastSnapshot` > 24h atrás.
-     b) Copia S a localStorage['finko_backup_' + timestamp].
-     c) Mantiene máximo 3 backups, borra el más viejo.
-   - Agregar en dashboard un botón "Restaurar desde respaldo" (con showConfirm).
-   - Commit: `feat: backup automático rotativo en localStorage`.
-
-2. RECORDATORIO DE EXPORT
-   - Si pasaron 30+ días sin exportar (trackear lastExport en S), mostrar banner cálido:
-     "🛡️ Hace un mes no bajás un respaldo de tu plata. ¿Te lo genero ahorita?"
-   - Con botón "Bajar respaldo" y "Recordame en 7 días".
-   - Commit: `feat: recordatorio amigable de export cada 30 días`.
-
-3. TOP 3 HORMIGAS DE LA QUINCENA
-   - En analisis.js (antes stats), calcular las 3 categorías de gasto hormiga más altas.
-   - Mostrarlas como card en dashboard con emojis:
-     "Tus 3 hormiguitas de esta quincena: ☕ Café $X, 🚕 Uber $Y, 📱 Datos $Z"
-   - Incluir mensaje mentor: "Si bajás estas 3 a la mitad, te ahorrás $Z al mes."
-   - Commit: `feat: top 3 hormigas visibles en dashboard`.
-
-4. COMPARACIÓN VS QUINCENA PASADA
-   - En dashboard, al lado del total gastado, mostrar `+12% vs la pasada 📈` o `-8% vs la pasada 📉`.
-   - Color: rojo si subió, verde si bajó.
-   - Sacar el dato de historial.js (ya lo tiene).
-   - Commit: `feat: comparación vs quincena anterior en dashboard`.
-
-Cada feature debe respetar el tono colombiano cálido. Cada texto largo pasámelo antes de pegarlo en el código para yo aprobarlo.
-```
-
----
-
-## 4. Flujo recomendado en Claude Code
-
-Paso a paso:
-
-1. **Abrí terminal** en la carpeta del proyecto y escribí `claude`.
-2. **Fijá el modelo** para la fase que vas a correr. Al iniciar, escribí `/model` y elegí:
-   - Haiku para Fase 0.
-   - Sonnet para Fases 1, 3, 4.
-   - Opus para Fase 2.
-3. **Pegá el Prompt 0** (contexto) como primer mensaje.
-4. **Pegá el Prompt N** de la fase correspondiente.
-5. Claude Code **te va a pedir aprobación** para cada edición de archivo (o podés usar `/permissions` para confiar permanentemente en una ruta). Revisá los diffs antes de aceptar.
-6. Al finalizar cada fase, **verificá con `git log --oneline`** que los commits quedaron atómicos y con mensajes claros.
-7. **Cambiá de modelo** (`/model`) al pasar de fase si corresponde.
-8. Entre Fase 2 y Fase 3, hacé **push de la rama** a GitHub para tener respaldo remoto:
-   ```bash
-   git push origin refactor/v5-reorganizacion
-   ```
-
----
-
-## 5. Consejos prácticos
-
-- **Contexto limitado.** Claude Code mantiene contexto por sesión. Si sentís que se confundió, `/clear` y volvé a pegar Prompt 0 + el prompt de la fase actual.
-- **Agentes especializados.** Claude Code soporta subagents. Si querés ir más estructurado:
-  - `Explore` para escanear el código antes de refactorizar.
-  - `Plan` para que te muestre el plan ANTES de ejecutar cambios grandes.
-- **Hooks útiles.** En `.claude/settings.json` podés agregar un `PostToolUse` que corra `npm test` automáticamente tras cada edición:
-  ```json
-  {
-    "hooks": {
-      "PostToolUse": [{
-        "matcher": "Edit|Write",
-        "hooks": [{"type": "command", "command": "npm test --silent"}]
-      }]
-    }
-  }
-  ```
-- **Escape hatch.** Si un refactor se rompe feo: `git reset --hard pre-refactor-v5` te devuelve al tag que creamos en Fase 1.
-- **Costos.** Opus cuesta ~5× Sonnet. Por eso sólo lo uso para Fase 2 (la única donde las malas decisiones de arquitectura son caras). El resto lo maneja Sonnet sin problema.
-
----
-
-## 6. Orden de ataque ideal (si tenés 1 semana)
-
-- **Día 1 lunes, 1 hora:** Fase 0 con Haiku. La app vuelve a cargar.
-- **Día 1 tarde, 3–4 horas:** Fase 1 con Sonnet. Tests, a11y, tag de respaldo.
-- **Día 2 martes + Día 3 miércoles:** Fase 2 con Opus. Es la más larga pero la más valiosa.
-- **Día 4 jueves:** Fase 3 con Sonnet. Migrar onclick.
-- **Día 5 viernes:** Fase 4 con Sonnet. Features de mentor.
-
-Al final de la semana: app más rápida, más accesible, más fácil de mantener, con 4 features nuevas visibles para el usuario.
-
-— Fin del plan —
+**Gracias por el análisis exhaustivo. Esta app merece ser perfecta.** 🚀
