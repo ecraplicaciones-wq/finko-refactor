@@ -1,0 +1,124 @@
+name: 🧪 CI — Tests y Validación
+
+on:
+  push:
+    branches: [ main, refactor/v5-reorganizacion ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Tests con Vitest
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [ 18.x, 20.x ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🧪 Ejecutar tests
+        run: npm test
+
+      - name: 📊 Coverage (opcional)
+        run: npm run coverage 2>/dev/null || true
+        continue-on-error: true
+
+  lint:
+    name: Validación de código
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci
+
+      - name: 🔍 Buscar TODOs y FIXMEs (informativo)
+        run: |
+          echo "📋 TODOs encontrados:"
+          grep -r "TODO\|FIXME" modules/ --include="*.js" | head -20 || echo "✓ Sin TODOs pendientes"
+
+      - name: ✅ Verificar que no hay syntax errors
+        run: |
+          echo "✓ Verificando sintaxis..."
+          node -c modules/core/state.js
+          node -c modules/core/storage.js
+          node -c modules/ui/events.js
+          echo "✓ Sintaxis válida"
+
+  deploy-preview:
+    name: 🚀 Preview en Vercel
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: [ test, lint ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy a Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install -g vercel@latest
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            vercel --prod --token $VERCEL_TOKEN
+          else
+            vercel --token $VERCEL_TOKEN
+          fi
+        continue-on-error: true
+
+  status-check:
+    name: ✅ Status Check
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [ test, lint ]
+
+    steps:
+      - name: Tests
+        run: |
+          if [ "${{ needs.test.result }}" = "success" ]; then
+            echo "✅ Tests: PASADOS"
+          else
+            echo "❌ Tests: FALLIDOS"
+            exit 1
+          fi
+
+      - name: Lint
+        run: |
+          if [ "${{ needs.lint.result }}" = "success" ]; then
+            echo "✅ Validación: OK"
+          else
+            echo "❌ Validación: FAILED"
+            exit 1
+          fi
+
+      - name: 📊 Resumen
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ CI COMPLETADO CON ÉXITO"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📍 Branch: ${{ github.ref_name }}"
+          echo "🔗 Commit: ${{ github.sha }}"
+          echo "👤 Por: ${{ github.actor }}"
+          echo ""
