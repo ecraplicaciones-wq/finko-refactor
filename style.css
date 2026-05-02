@@ -312,11 +312,6 @@
   .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
-  /* ── GASTOS SPLIT GRID ── */
-  .gast-split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: flex-start; }
-  .gast-col { display: flex; flex-direction: column; gap: 14px; }
-  .gast-fijos-col { display: flex; flex-direction: column; }
-  .gast-fijos-col .card { flex: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -981,10 +976,6 @@
     .modal { padding: 20px; width: 100vw; max-height: 90vh; border-radius: var(--r3) var(--r3) 0 0; align-self: flex-end; }
     .modal-ov { padding: 0; align-items: flex-end; }
 
-    /* Gastos split */
-    .gast-split-grid { grid-template-columns: 1fr; }
-    #fijos-panel-body { display: none; }
-
     /* Agenda */
     #sec-agen .g2 { display: flex; flex-direction: column; }
     #sec-agen .g2 > :first-child { order: 1; }
@@ -1118,7 +1109,7 @@
   }
   .itab:focus-visible { outline: 2px solid var(--a1); outline-offset: 2px; border-radius: 8px; }
   .itab-panel { display: none; }
-  .itab-panel.active { display: block; }
+  .itab-panel.active { display: block !important; }
 
   /* ── ui_02: ACORDEÓN DE DASHBOARD — divulgación progresiva ──────────────
      Reemplaza los display:none/block con JS inline por una transición CSS

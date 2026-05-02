@@ -2,6 +2,8 @@ import { S, resetAppState } from '../core/state.js';
 import { f, he } from '../infra/utils.js';
 import { sr } from '../infra/a11y.js';
 import { NAVS } from '../core/constants.js';
+import { guardarUndoSnapshot, mostrarBannerUndo } from '../core/storage.js';
+import { registerAction } from './actions.js';
 
 // ═══ SECCIONES ═══
 
@@ -30,6 +32,16 @@ async function _cargarCalculadoras() {
     window.toggleCalc   = _calcModulo.toggleCalc;
     window.calcPrima    = _calcModulo.calcPrima;
     window.guardarPrima = _calcModulo.guardarPrima;
+    // Registrar acciones data-action (data-action="cCDT", "cCre", ...).
+    // toggleCalc y guardarPrima ya están registradas globalmente en events.js;
+    // aquí registramos solo las puntuales que viven en index.html.
+    registerAction('cCDT', () => _calcModulo.cCDT?.());
+    registerAction('cCre', () => _calcModulo.cCre?.());
+    registerAction('cIC',  () => _calcModulo.cIC?.());
+    registerAction('cMeta',() => _calcModulo.cMeta?.());
+    registerAction('cPila',() => _calcModulo.cPila?.());
+    registerAction('cInf', () => _calcModulo.cInf?.());
+    registerAction('cR72', () => _calcModulo.cR72?.());
     // Inicializar aria y valores por defecto
     _calcModulo._initAriaCalc?.();
     _calcModulo.cCDT();
@@ -154,25 +166,38 @@ function _initSwipe() {
 
 // ─── NAVEGACIÓN ───────────────────────────────────────────────────────────────
 
+// ── ALIASES DE NAVEGACIÓN ───────────────────────────────────────────────────
+// Cuando dos botones del sidebar apuntan a la misma sección fusionada (caso:
+// "Alcancías" + "Metas" → sec-alcancias con tabs internos), el alias mapea
+// id-clickeado → sección-real + tab-interno. El highlight del sidebar usa el
+// id original (para que "Metas" quede resaltado al hacer click en "Metas",
+// no "Alcancías"). Bug reportado el 2026-04-26.
+const NAV_ALIASES = {
+  fijo:      { target: 'gast' },
+  hist:      { target: 'stat',        afterFn: () => window.setResumenTab?.('historial') },
+  deu:       { target: 'compromisos', tab: { sec: 'compromisos', name: 'deudas' } },
+  agen:      { target: 'compromisos', tab: { sec: 'compromisos', name: 'agenda' } },
+  objetivos: { target: 'alcancias',   tab: { sec: 'alcancias',   name: 'metas' } },
+  ahorro:    { target: 'alcancias',   tab: { sec: 'alcancias',   name: 'apartado' } },
+};
+
 export function go(id) {
   _initSwipe();
 
-  // ── Redirects de IDs anteriores → secciones fusionadas ──────────────────────
-  // Los onclick="go('deu')" en el dashboard y otros módulos siguen funcionando.
-  if (id === 'fijo')     { go('gast'); return; }
-  if (id === 'hist')     { go('stat'); window.setResumenTab?.('historial'); return; }
-  if (id === 'deu')      { go('compromisos'); switchSecTab('compromisos','deudas'); return; }
-  if (id === 'agen')     { go('compromisos'); switchSecTab('compromisos','agenda'); return; }
-  if (id === 'objetivos'){ go('alcancias');   switchSecTab('alcancias','metas');    return; }
-  if (id === 'ahorro')   { go('alcancias');   switchSecTab('alcancias','apartado'); return; }
+  // Resolver alias → target (sección real) y mantener `id` para el highlight
+  const alias  = NAV_ALIASES[id];
+  const target = alias ? alias.target : id;
 
   closeMas();
 
+  // Activar la sección real (target), no el id clickeado
   NAVS.forEach(n => {
     const s = document.getElementById('sec-' + n);
-    if (s) s.classList.toggle('active', n === id);
+    if (s) s.classList.toggle('active', n === target);
   });
 
+  // Resaltar el botón del sidebar usando el id original — así "Metas" queda
+  // activo cuando el usuario clickeó "Metas", aunque la sección sea "alcancias".
   document.querySelectorAll('.nb[data-section]').forEach(b => {
     const isActive = b.dataset.section === id;
     b.classList.toggle('active', isActive);
@@ -181,7 +206,7 @@ export function go(id) {
 
   const btnMas = document.getElementById('btn-mas');
   if (btnMas) {
-    const enMas = MAS_SECTIONS.includes(id);
+    const enMas = MAS_SECTIONS.includes(id) || MAS_SECTIONS.includes(target);
     btnMas.classList.toggle('active', enMas);
     btnMas.setAttribute('aria-current', enMas ? 'page' : 'false');
   }
@@ -190,15 +215,19 @@ export function go(id) {
     item.classList.toggle('active', item.dataset.section === id);
   });
 
-  // Triggers de render por sección
-  if (id === 'stat')         window.setResumenTab?.('analisis');
-  if (id === 'gast')         window.updSaldo?.();
-  if (id === 'compromisos')  _renderCompromisos();
-  if (id === 'meDeben')      window.renderMeDeben?.();
-  if (id === 'alcancias')    _renderAlcancias();
-  if (id === 'quin')         _cargarCalculadoras();   // ← lazy-load
+  // Triggers de render por sección (usa target, la sección real que se mostró)
+  if (target === 'stat')         window.setResumenTab?.('analisis');
+  if (target === 'gast')         window.updSaldo?.();
+  if (target === 'compromisos')  _renderCompromisos();
+  if (target === 'meDeben')      window.renderMeDeben?.();
+  if (target === 'alcancias')    _renderAlcancias();
+  if (target === 'quin')         _cargarCalculadoras();   // ← lazy-load
 
-  sr(SEC_LABELS[id] || `Sección ${id}`);
+  // Activar tab interno si el alias lo pide
+  if (alias?.tab)     switchSecTab(alias.tab.sec, alias.tab.name);
+  if (alias?.afterFn) alias.afterFn();
+
+  sr(SEC_LABELS[id] || SEC_LABELS[target] || `Sección ${id}`);
 }
 
 // ─── RENDER INTERNO DE SECCIONES FUSIONADAS ──────────────────────────────────
@@ -245,7 +274,12 @@ export function switchSecTab(section, tab, btnEl) {
   }
   if (section === 'alcancias' && tab === 'metas')    window.renderObjetivos?.();
   if (section === 'alcancias' && tab === 'apartado') window.renderBolsillos?.();
+  if (section === 'gast'      && tab === 'gastos')   window.renderGastos?.();
+  if (section === 'gast'      && tab === 'fijos')    window.renderFijos?.();
 }
+
+// Registrar switchSecTab como acción delegada
+registerAction('switchSecTab', (args, el) => switchSecTab(args.section, args.tab, el));
 
 // ─── ESTADO INTERNO: PANEL "MÁS" ─────────────────────────────────────────────
 // Necesario para restaurar el foco al botón que abrió el panel (WCAG 2.1)
@@ -370,7 +404,7 @@ export function toggleDayPicker(id) {
       <div class="day-pick-header">Día de pago mensual</div>
       <div class="day-pick-days">
         ${Array.from({ length: 31 }, (_, i) => i + 1).map(d =>
-          `<button type="button" class="day-pick-btn" data-day="${d}" onclick="selectDay('${id}',${d})">${d}</button>`
+          `<button type="button" class="day-pick-btn" data-day="${d}" data-action="selectDay" data-arg-id="${id}" data-arg-day="${d}">${d}</button>`
         ).join('')}
       </div>`;
   }
@@ -602,21 +636,27 @@ export async function guardarQ() {
 
 export async function resetTodo() {
   const ok = await window.showPromptConfirm?.(
-    'Esta acción va a borrar TODOS tus datos. No se puede deshacer, ¿seguro seguro?',
+    'Esta acción va a borrar TODOS tus datos. Vas a poder deshacer durante 10 minutos, después se vuelve permanente.',
     'BORRAR',
     '🗑️ Borrar todo lo registrado'
   );
   if (!ok) return;
+  // Snapshot de undo antes de tocar disco. Best-effort — si falla, igual procede.
+  guardarUndoSnapshot('Borrado total');
   localStorage.removeItem('fco_v4');
   resetAppState();                       // ✅ única fuente de verdad
   window.renderAll?.();
   window.go?.('dash');
   await window.showAlert?.('✅ Listo, empezás de cero. Buen arranque.', 'Todo limpio');
+  // El banner se muestra después del alert para que no compitan visualmente.
+  mostrarBannerUndo('🗑️ Todo borrado — ¿deshacer?');
 }
 
 export async function resetQuincena() {
   const ok = await window.showConfirm?.('Esto elimina los gastos del período actual. Tus objetivos y deudas NO se verán afectados.', '↺ Resetear período');
   if (!ok) return;
+  // Snapshot antes de mutar — captura S completo (gastos, saldos, gastosFijos.pagadoEn, ingreso).
+  guardarUndoSnapshot('Reset de quincena');
   const mes = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
   S.gastos.filter(g => g.tipo !== 'ahorro').forEach(g => {
     if (g.fondo === 'efectivo') S.saldos.efectivo = Math.max(0, S.saldos.efectivo + (g.montoTotal || g.monto));
@@ -629,6 +669,7 @@ export async function resetQuincena() {
   window.save?.();
   window.renderAll?.();
   window.go?.('dash');
+  mostrarBannerUndo('↺ Quincena reseteada — ¿deshacer?');
 }
 
 // ─── TEMA ────────────────────────────────────────────────────────────────────

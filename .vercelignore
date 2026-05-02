@@ -1,0 +1,17 @@
+# Dependencias (no van en producción)
+node_modules/
+
+# Tests
+tests/
+modules/vitest.config.js
+
+# Documentación interna
+*.md
+CLAUDE.md
+localhost_*.report.html
+
+# Configuración local de Claude Code
+.claude/
+
+# Coverage
+coverage/

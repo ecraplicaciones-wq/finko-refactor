@@ -2,7 +2,7 @@
 
 // ─── CIMIENTOS ───────────────────────────────────────────────────────────────
 import { S, resetAppState }   from '../core/state.js';
-import { save, loadData }     from '../core/storage.js';
+import { save, loadData, initUndoShortcut } from '../core/storage.js';
 import { inyectarConstantes, verificarVigenciaConstantes } from '../core/constants.js';
 import { f, hoy, mesStr, he, setEl, setHtml, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from '../infra/utils.js';
 import { sr } from '../infra/a11y.js';
@@ -67,6 +67,7 @@ registerAction('guardarQ',        ()         => guardarQ());
 registerAction('toggleFormGasto', ()         => toggleFormGasto());
 registerAction('toggleFijoInline',()         => toggleFijoInline());
 registerAction('toggleDayPicker', ({ id })   => toggleDayPicker(id));
+registerAction('selectDay',       ({ id, day }) => selectDay(id, +day));
 // utils (openM / closeM vienen de utils.js)
 registerAction('openM',              ({ id })   => openM(id));
 registerAction('closeM',             ({ id })   => closeM(id));
@@ -102,6 +103,18 @@ registerAction('toggleDesgloseHero', () => _toggleDesgloseHero());
 registerAction('editEfectivoDash',   () => _editEfectivoDash());
 registerAction('cdlgResOk',          () => window._cdlgRes?.(true));
 registerAction('cdlgResCancel',      () => window._cdlgRes?.(false));
+registerAction('dismissStorageBanner', () => document.getElementById('finko-storage-banner')?.remove());
+// Toggle del checkbox de retención CDT al hacer click en el row del label.
+// Antes era un onclick inline encadenado (toggle + cCDT). Si el click viene
+// del propio checkbox, el browser ya hace el toggle y data-action en el
+// input recibe el evento por sí solo — no hay doble-toggle.
+registerAction('toggleCdtRetencion', (_args, _el, e) => {
+  const cb = document.getElementById('cc-ret');
+  if (!cb) return;
+  // Solo togglear si el click NO vino del input (que ya se autotoggleó)
+  if (e?.target !== cb) cb.checked = !cb.checked;
+  window.cCDT?.();
+});
 
 // ─── EXPOSICIÓN GLOBAL ───────────────────────────────────────────────────────
 // Solo se exponen funciones llamadas desde HTML dinámico (innerHTML) o desde JS externo.
@@ -283,6 +296,10 @@ function _initUI() {
     const el = document.getElementById('q-ing'); if (el) el.value = S.ingreso;
   }
   initClickOutside();
+  // Ctrl+Z global para deshacer la última operación destructiva (resetTodo,
+  // resetQuincena, importarDatos). Los guards (sin modal, sin foco en input)
+  // evitan colisión con el undo nativo de los campos editables.
+  initUndoShortcut();
 }
 
 // _initCalculadoras() eliminada — ver sections.js::_cargarCalculadoras()
