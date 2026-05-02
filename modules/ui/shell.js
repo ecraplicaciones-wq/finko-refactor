@@ -1,4 +1,4 @@
-import { S, resetAppState } from '../core/state.js';
+import { S, resetAppState, EventBus } from '../core/state.js';
 import { f, he } from '../infra/utils.js';
 import { sr } from '../infra/a11y.js';
 import { NAVS } from '../core/constants.js';
@@ -627,8 +627,8 @@ export async function guardarQ() {
   const ingresoManual = +(document.getElementById('q-ing')?.value || 0);
   S.ingreso = ingresoManual > 0 ? ingresoManual : total;
   S.metodo  = document.getElementById('q-met')?.value || '50-30-20';
-  window.save?.();
-  window.renderAll?.();
+  EventBus.emit('state:save');
+  EventBus.emit('ui:renderAll');
   window.go?.('dash');
   window.sr?.('Quincena configurada');
   await window.showAlert?.('¡Presupuesto fijado! 🚀\n\nLas barras del Dashboard ahora medirán tus gastos en base a este dinero.', 'Todo listo');
@@ -645,7 +645,7 @@ export async function resetTodo() {
   guardarUndoSnapshot('Borrado total');
   localStorage.removeItem('fco_v4');
   resetAppState();                       // ✅ única fuente de verdad
-  window.renderAll?.();
+  EventBus.emit('ui:renderAll');
   window.go?.('dash');
   await window.showAlert?.('✅ Listo, empezás de cero. Buen arranque.', 'Todo limpio');
   // El banner se muestra después del alert para que no compitan visualmente.
@@ -666,8 +666,8 @@ export async function resetQuincena() {
   S.gastosFijos.forEach(g => { g.pagadoEn = (g.pagadoEn || []).filter(m => m !== mes); });
   S.gastos  = [];
   S.ingreso = 0;
-  window.save?.();
-  window.renderAll?.();
+  EventBus.emit('state:save');
+  EventBus.emit('ui:renderAll');
   window.go?.('dash');
   mostrarBannerUndo('↺ Quincena reseteada — ¿deshacer?');
 }

@@ -69,6 +69,12 @@ const _focusStack = [];
 
 export function openM(id) {
   _focusStack.push(document.activeElement);
+  // Si el modal fue migrado a <template>, clonarlo al body antes de mostrar.
+  // Esto permite lazy-loading: el DOM inicial es más liviano.
+  if (!document.getElementById(id)) {
+    const tpl = document.getElementById(`tpl-${id}`);
+    if (tpl) document.body.appendChild(tpl.content.cloneNode(true));
+  }
   const modal = document.getElementById(id);
   if (!modal) return;
   modal.classList.add('open');
@@ -91,6 +97,11 @@ export function closeM(id) {
   const prevFocus = _focusStack.pop();
   if (prevFocus && typeof prevFocus.focus === 'function') {
     prevFocus.focus();
+  }
+  // Si existe un template para este modal, fue clonado dinámicamente.
+  // Destruirlo garantiza forms limpios al próximo abrir y libera memoria.
+  if (document.getElementById(`tpl-${id}`)) {
+    setTimeout(() => modal.remove(), 150);
   }
 }
 

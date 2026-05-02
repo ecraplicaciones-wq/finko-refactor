@@ -1,4 +1,17 @@
+// Objeto de estado global
 export const S = {};
+
+// 🚀 Event Bus: Sistema central de comunicación
+export const EventBus = {
+  on(event, callback) {
+    if (typeof document === 'undefined') return;
+    document.addEventListener(event, (e) => callback(e.detail));
+  },
+  emit(event, data) {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new CustomEvent(event, { detail: data }));
+  }
+};
 
 export function resetAppState() {
   Object.keys(S).forEach(k => delete S[k]);
@@ -23,4 +36,7 @@ export function resetAppState() {
     lastBackupAt:    null, // v7 — fecha 'YYYY-MM-DD' del último export/import
     logros:          { desbloqueados: [], vistos: [], rachas: {} }  // ✅ agregado
   });
+  
+  // Avisamos a toda la app que el estado se reinició
+  EventBus.emit('state:reset', S);
 }

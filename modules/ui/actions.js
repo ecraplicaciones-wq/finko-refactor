@@ -47,3 +47,4 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
 export function initActions() {
   // Los módulos llaman registerAction() en su top-level — nada que hacer aquí.
 }
+

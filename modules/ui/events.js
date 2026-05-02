@@ -1,7 +1,7 @@
 // Orquestador principal: importa todos los módulos, expone globals, arranca la app.
 
 // ─── CIMIENTOS ───────────────────────────────────────────────────────────────
-import { S, resetAppState }   from '../core/state.js';
+import { S, resetAppState, EventBus }   from '../core/state.js';
 import { save, loadData, initUndoShortcut } from '../core/storage.js';
 import { inyectarConstantes, verificarVigenciaConstantes } from '../core/constants.js';
 import { f, hoy, mesStr, he, setEl, setHtml, openM, closeM, showAlert, showConfirm, showPrompt, showPromptConfirm } from '../infra/utils.js';
@@ -305,6 +305,11 @@ function _initUI() {
 // _initCalculadoras() eliminada — ver sections.js::_cargarCalculadoras()
 
 function initApp() {
+  // Puentes del EventBus: shell.js emite estos eventos en lugar de llamar
+  // window.save/renderAll directamente, desacoplando el módulo del orquestador.
+  EventBus.on('state:save',   () => save());
+  EventBus.on('ui:renderAll', () => renderAll());
+
   _initDatos();
   _initUI();
   populateSelectObjetivos();

@@ -198,10 +198,10 @@
     <div class="mb" role="region" aria-label="Tu plata disponible hoy">
 
       <!-- ── HERO — Un número claro + donut visual + desglose colapsable ── -->
-      <div class="card mb" style="border-radius:18px; padding:18px;">
+      <div class="card mb" style="border-radius:18px;">
 
         <!-- Fila superior: donut ring + número principal con semáforo -->
-        <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+        <div class="ui-row" style="gap:16px; margin-bottom:14px;">
 
           <!-- Donut ring: % libre vs bolsillos de un vistazo -->
           <div style="position:relative; width:76px; height:76px; flex-shrink:0;"
@@ -232,33 +232,33 @@
 
           <!-- Número protagonista — color cambia con el semáforo -->
           <div style="flex:1; min-width:0;">
-            <div style="class="ui-label" style="letter-spacing:1.2px;margin-bottom:4px;"">
+            <div class="ui-label" style="letter-spacing:1.2px; margin-bottom:4px;">
               💵 Tu plata disponible hoy
             </div>
             <div id="d-tot"
                  role="text" tabindex="0"
-                 style="font-family:var(--fm);font-weight:800;font-size:36px;color:var(--a1);letter-spacing:-1.5px;line-height:1;transition:color .4s ease;"
+                 style="font-family:var(--fm); font-weight:800; font-size:36px; color:var(--a1); letter-spacing:-1.5px; line-height:1; transition:color .4s ease;"
                  aria-label="Tu plata disponible hoy: total en efectivo y cuentas bancarias">$0</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:4px;">efectivo + cuentas bancarias</div>
+            <div class="tm" style="margin-top:4px;">efectivo + cuentas bancarias</div>
           </div>
         </div>
 
         <!-- Pastillas de desglose: libre / bolsillos -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
           <div class="ui-chip ui-chip-green">
-            <div style="class="ui-label-sm" style="margin-bottom:4px;"">
+            <div class="ui-label-sm" style="margin-bottom:4px;">
               ✅ Libre pa' gastar
             </div>
             <div id="d-libre"
-                 style="class="ui-val-green" style="font-size:16px;""
+                 class="ui-val-green" style="font-size:16px;"
                  aria-live="polite" aria-label="Plata libre para gastar sin comprometer ningún bolsillo">$0</div>
           </div>
           <div class="ui-chip ui-chip-yellow">
-            <div style="class="ui-label-sm" style="margin-bottom:4px;"">
+            <div class="ui-label-sm" style="margin-bottom:4px;">
               🪙 En bolsillos
             </div>
             <div id="d-bols-ap"
-                 style="font-family:var(--fm);font-weight:800;font-size:16px;color:var(--a2);"
+                 style="font-family:var(--fm); font-weight:800; font-size:16px; color:var(--a2);"
                  aria-live="polite" aria-label="Total apartado en bolsillos con propósito">$0</div>
           </div>
         </div>
@@ -342,12 +342,15 @@
     </div>
 
     <div class="card mb" style="border-color:rgba(59,158,255,.2)">
-      <div class="fb mb">
-        <span class="ct" style="margin:0">🏦 Mis cuentas</span>
-        <button class="btn bbl bsm" data-action="openM" data-arg-id="m-cuenta">+ Agregar cuenta</button>
-      </div>
-      <div id="d-cuentas"><div class="tm">Sin cuentas. Agrégalas aquí.</div></div>
-    </div>
+          <div class="fb mb"><span class="ct" style="margin:0">🏦 Mis cuentas</span><button class="btn bbl bsm" data-action="openM" data-arg-id="m-cuenta">+ Agregar cuenta</button></div>
+          <div id="d-cuentas">
+            <button class="btn" style="width: 100%; border: 2px dashed rgba(59,158,255,.4); background: transparent; color: var(--t1); padding: 24px 16px; border-radius: 12px; margin-top: 8px; cursor: pointer; transition: background 0.2s;" data-action="openM" data-arg-id="m-cuenta" aria-label="Crear primera cuenta">
+              <div style="font-size: 28px; margin-bottom: 8px;" aria-hidden="true">🏦</div>
+              <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--a3);">Aún no tienes cuentas</div>
+              <div class="tm">+ Toca aquí para registrar tu plata</div>
+            </button>
+          </div>
+        </div>
 
     <div class="card mb">
       <button id="btn-dash-resumen"
@@ -477,6 +480,18 @@
         </button>
       </div>
     </div>
+
+    <button class="btn bp" 
+      style="position: fixed; bottom: 84px; right: 24px; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0,220,130,0.4); display: flex; align-items: center; justify-content: center; font-size: 26px; z-index: 100; padding: 0; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);" 
+      data-action="openM" 
+      data-arg-id="m-eg" 
+      aria-label="Agregar un nuevo gasto rápidamente"
+      onmousedown="this.style.transform='scale(0.9)'"
+      onmouseup="this.style.transform='scale(1)'"
+      ontouchstart="this.style.transform='scale(0.9)'"
+      ontouchend="this.style.transform='scale(1)'">
+          💸
+    </button>
 
   </section>
 
@@ -1306,107 +1321,115 @@
 ════════════════════════════════════════════════════════ -->
 
 <!-- Nuevo bolsillo -->
-<div class="modal-ov" id="m-nuevo-bolsillo" role="dialog" aria-modal="true" aria-labelledby="bols-modal-title">
-  <div class="modal">
-    <div class="fb mb">
-      <div id="bols-modal-title" class="mtit">🪙 Nuevo Bolsillo</div>
-      <button class="mclose" data-action="closeM" data-arg-id="m-nuevo-bolsillo" aria-label="Cerrar">×</button>
+<template id="tpl-m-nuevo-bolsillo">
+  <div class="modal-ov" id="m-nuevo-bolsillo" role="dialog" aria-modal="true" aria-labelledby="bols-modal-title">
+    <div class="modal">
+      <div class="fb mb">
+        <div id="bols-modal-title" class="mtit">🪙 Nuevo Bolsillo</div>
+        <button class="mclose" data-action="closeM" data-arg-id="m-nuevo-bolsillo" aria-label="Cerrar">×</button>
+      </div>
+      <div class="fg">
+        <label for="bols-nombre">¿Para qué es esta plata?</label>
+        <input type="text" id="bols-nombre" placeholder='Ej: "Arriendo julio", "Viaje diciembre"' maxlength="40">
+      </div>
+      <div class="fg">
+        <label for="bols-monto-ini">¿Cuánto querés apartar ahora? <span class="tm">(opcional)</span></label>
+        <input type="number" id="bols-monto-ini" placeholder="Ej: 500000" inputmode="decimal" min="0">
+      </div>
+      <div class="fg">
+        <label for="bols-banco">¿En qué cuenta está esa plata?</label>
+        <select id="bols-banco"></select>
+      </div>
+      <div class="fg">
+        <label for="bols-desc">Nota o recordatorio <span class="tm">(opcional)</span></label>
+        <input type="text" id="bols-desc" placeholder="Ej: Pagar antes del 5 de cada mes" maxlength="80">
+      </div>
+      <div class="fg">
+        <label>Ícono del bolsillo</label>
+        <input type="hidden" id="bols-icono-val" value="🪙">
+        <div id="bols-iconos-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px;max-height:140px;overflow-y:auto;"></div>
+      </div>
+      <button class="btn bp bfw" data-action="guardarNuevoBolsillo">Crear bolsillo 🪙</button>
     </div>
-    <div class="fg">
-      <label for="bols-nombre">¿Para qué es esta plata?</label>
-      <input type="text" id="bols-nombre" placeholder='Ej: "Arriendo julio", "Viaje diciembre"' maxlength="40">
-    </div>
-    <div class="fg">
-      <label for="bols-monto-ini">¿Cuánto querés apartar ahora? <span class="tm">(opcional)</span></label>
-      <input type="number" id="bols-monto-ini" placeholder="Ej: 500000" inputmode="decimal" min="0">
-    </div>
-    <div class="fg">
-      <label for="bols-banco">¿En qué cuenta está esa plata?</label>
-      <select id="bols-banco"></select>
-    </div>
-    <div class="fg">
-      <label for="bols-desc">Nota o recordatorio <span class="tm">(opcional)</span></label>
-      <input type="text" id="bols-desc" placeholder="Ej: Pagar antes del 5 de cada mes" maxlength="80">
-    </div>
-    <div class="fg">
-      <label>Ícono del bolsillo</label>
-      <input type="hidden" id="bols-icono-val" value="🪙">
-      <div id="bols-iconos-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px;max-height:140px;overflow-y:auto;"></div>
-    </div>
-    <button class="btn bp bfw" data-action="guardarNuevoBolsillo">Crear bolsillo 🪙</button>
   </div>
-</div>
+</template>
 
 <!-- Abonar / Retirar bolsillo -->
-<div class="modal-ov" id="m-bolsillo-mov" role="dialog" aria-modal="true" aria-labelledby="bols-mov-title">
-  <div class="modal">
-    <div class="fb mb">
-      <div id="bols-mov-title" class="mtit">Movimiento</div>
-      <button class="mclose" data-action="closeM" data-arg-id="m-bolsillo-mov" aria-label="Cerrar">×</button>
+<template id="tpl-m-bolsillo-mov">
+  <div class="modal-ov" id="m-bolsillo-mov" role="dialog" aria-modal="true" aria-labelledby="bols-mov-title">
+    <div class="modal">
+      <div class="fb mb">
+        <div id="bols-mov-title" class="mtit">Movimiento</div>
+        <button class="mclose" data-action="closeM" data-arg-id="m-bolsillo-mov" aria-label="Cerrar">×</button>
+      </div>
+      <input type="hidden" id="bols-mov-id">
+      <input type="hidden" id="bols-mov-tipo">
+      <div class="fg">
+        <label for="bols-mov-monto">Monto (COP)</label>
+        <input type="number" id="bols-mov-monto" placeholder="Ej: 200000" inputmode="decimal" min="1">
+      </div>
+      <div class="fg">
+        <label for="bols-mov-nota">Nota <span class="tm">(opcional)</span></label>
+        <input type="text" id="bols-mov-nota" placeholder="Ej: Quincena, bonificación..." maxlength="60">
+      </div>
+      <button class="btn bp bfw" data-action="confirmarMovBolsillo">Confirmar</button>
     </div>
-    <input type="hidden" id="bols-mov-id">
-    <input type="hidden" id="bols-mov-tipo">
-    <div class="fg">
-      <label for="bols-mov-monto">Monto (COP)</label>
-      <input type="number" id="bols-mov-monto" placeholder="Ej: 200000" inputmode="decimal" min="1">
-    </div>
-    <div class="fg">
-      <label for="bols-mov-nota">Nota <span class="tm">(opcional)</span></label>
-      <input type="text" id="bols-mov-nota" placeholder="Ej: Quincena, bonificación..." maxlength="60">
-    </div>
-    <button class="btn bp bfw" data-action="confirmarMovBolsillo">Confirmar</button>
   </div>
-</div>
+</template>
 
 <!-- Fondo de emergencia -->
-<div class="modal-ov" id="m-fondo-emergencia" role="dialog" aria-modal="true">
-  <div class="modal" style="width:400px;">
-    <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg"><label>Cuenta de origen</label><select id="fe-fo"></select></div>
-    <div class="fg"><label>Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
-    <button class="btn bp bfw" data-action="registrarAbonoFondo">Guardar en el Fondo</button>
+<template id="tpl-m-fondo-emergencia">
+  <div class="modal-ov" id="m-fondo-emergencia" role="dialog" aria-modal="true">
+    <div class="modal" style="width:400px;">
+      <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
+      <div class="fg"><label>Cuenta de origen</label><select id="fe-fo"></select></div>
+      <div class="fg"><label>Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
+      <button class="btn bp bfw" data-action="registrarAbonoFondo">Guardar en el Fondo</button>
+    </div>
   </div>
-</div>
+</template>
 
 <!-- Agregar cuenta bancaria -->
-<div class="modal-ov" id="m-cuenta" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit">Agregar cuenta 🏦</div><button class="mclose" data-action="closeM" data-arg-id="m-cuenta" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg">
-      <label>Entidad Financiera</label>
-      <select id="cu-banco">
-        <optgroup label="Billeteras y Neobancos">
-          <option value="nequi">📱 Nequi</option>
-          <option value="daviplata">💳 Daviplata</option>
-          <option value="nu">💜 Nubank</option>
-          <option value="lulo">🍋 Lulo Bank</option>
-        </optgroup>
-        <optgroup label="Bancos Tradicionales">
-          <option value="bancolombia">🌻 Bancolombia</option>
-          <option value="davivienda">🏠 Davivienda</option>
-          <option value="bogota">🏛️ Banco de Bogotá</option>
-          <option value="avvillas">🏡 AV Villas</option>
-          <option value="cajasocial">🤲 Caja Social</option>
-          <option value="bbva">🌊 BBVA</option>
-          <option value="colpatria">🏢 Scotiabank Colpatria</option>
-          <option value="popular">🌿 Banco Popular</option>
-          <option value="occidente">🌅 Banco de Occidente</option>
-        </optgroup>
-        <optgroup label="Cooperativas">
-          <option value="confiar">🛡️ Confiar</option>
-          <option value="jfk">✈️ JFK Cooperativa</option>
-          <option value="cotrafa">⚙️ Cotrafa</option>
-        </optgroup>
-        <optgroup label="Otros">
-          <option value="otro">🏦 Otro banco o entidad</option>
-        </optgroup>
-      </select>
+<template id="tpl-m-cuenta">
+  <div class="modal-ov" id="m-cuenta" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit">Agregar cuenta 🏦</div><button class="mclose" data-action="closeM" data-arg-id="m-cuenta" aria-label="Cerrar ventana">×</button></div>
+      <div class="fg">
+        <label>Entidad Financiera</label>
+        <select id="cu-banco">
+          <optgroup label="Billeteras y Neobancos">
+            <option value="nequi">📱 Nequi</option>
+            <option value="daviplata">💳 Daviplata</option>
+            <option value="nu">💜 Nubank</option>
+            <option value="lulo">🍋 Lulo Bank</option>
+          </optgroup>
+          <optgroup label="Bancos Tradicionales">
+            <option value="bancolombia">🌻 Bancolombia</option>
+            <option value="davivienda">🏠 Davivienda</option>
+            <option value="bogota">🏛️ Banco de Bogotá</option>
+            <option value="avvillas">🏡 AV Villas</option>
+            <option value="cajasocial">🤲 Caja Social</option>
+            <option value="bbva">🌊 BBVA</option>
+            <option value="colpatria">🏢 Scotiabank Colpatria</option>
+            <option value="popular">🌿 Banco Popular</option>
+            <option value="occidente">🌅 Banco de Occidente</option>
+          </optgroup>
+          <optgroup label="Cooperativas">
+            <option value="confiar">🛡️ Confiar</option>
+            <option value="jfk">✈️ JFK Cooperativa</option>
+            <option value="cotrafa">⚙️ Cotrafa</option>
+          </optgroup>
+          <optgroup label="Otros">
+            <option value="otro">🏦 Otro banco o entidad</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg"><label>Alias (Ej: Ahorros, Nómina)</label><input type="text" id="cu-alias"></div>
+      <div class="fg"><label>Saldo actual</label><input type="number" id="cu-saldo"></div>
+      <button class="btn bp bfw" data-action="guardarCuenta">Agregar cuenta</button>
     </div>
-    <div class="fg"><label>Alias (Ej: Ahorros, Nómina)</label><input type="text" id="cu-alias"></div>
-    <div class="fg"><label>Saldo actual</label><input type="number" id="cu-saldo"></div>
-    <button class="btn bp bfw" data-action="guardarCuenta">Agregar cuenta</button>
   </div>
-</div>
+</template>
 
 <!-- Diálogo genérico (confirm / alert / prompt) -->
 <div class="modal-ov" id="cdlg-ov" role="dialog" aria-modal="true" style="z-index:300;">
@@ -1431,17 +1454,19 @@
 </div>
 
 <!-- Pagar gasto fijo -->
-<div class="modal-ov" id="modal-pagar-fijo" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit">Pagar Fijo 📌</div><button class="mclose" data-action="cerrarModalFijo" aria-label="Cerrar ventana">×</button></div>
-    <div style="background:var(--s2);padding:14px;margin-bottom:18px;border-radius:8px;">
-      <div id="mf-nombre" style="font-weight:700;"></div>
-      <div id="mf-monto" style="font-family:var(--fm);font-size:22px;color:var(--a3);font-weight:700;"></div>
+<template id="tpl-modal-pagar-fijo">
+  <div class="modal-ov" id="modal-pagar-fijo" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit">Pagar Fijo 📌</div><button class="mclose" data-action="cerrarModalFijo" aria-label="Cerrar ventana">×</button></div>
+      <div style="background:var(--s2);padding:14px;margin-bottom:18px;border-radius:8px;">
+        <div id="mf-nombre" style="font-weight:700;"></div>
+        <div id="mf-monto" style="font-family:var(--fm);font-size:22px;color:var(--a3);font-weight:700;"></div>
+      </div>
+      <div class="fg"><label>¿De dónde sale el dinero?</label><select id="mf-fo"></select></div>
+      <button class="btn bp bfw" data-action="ejecutarPagoFijo">Confirmar Pago</button>
     </div>
-    <div class="fg"><label>¿De dónde sale el dinero?</label><select id="mf-fo"></select></div>
-    <button class="btn bp bfw" data-action="ejecutarPagoFijo">Confirmar Pago</button>
   </div>
-</div>
+</template>
 
 <!-- Editar gasto -->
 <div class="modal-ov" id="m-edit-gasto" role="dialog" aria-modal="true">
@@ -1508,277 +1533,289 @@
 </div>
 
 <!-- Nuevo objetivo -->
-<div class="modal-ov" id="m-objetivo" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit">Nuevo Objetivo 🎯</div><button class="mclose" data-action="closeM" data-arg-id="m-objetivo" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg">
-      <label for="obj-tipo">¿Qué tipo de objetivo es?</label>
-      <select id="obj-tipo" onchange="toggleTipoObjetivo()">
-        <option value="ahorro">💰 Ahorro Simple (Ej: Laptop, Fondo)</option>
-        <option value="evento">🌴 Evento Planeado (Ej: Viaje, Fiesta)</option>
-      </select>
-    </div>
-    <div class="fg"><label for="obj-no">Nombre de tu objetivo</label><input type="text" id="obj-no" placeholder="Ej: Viaje a San Andrés"></div>
-    <div class="fr">
-      <div class="fg"><label for="obj-ahorro">Meta de Ahorro (COP)</label><input type="number" id="obj-ahorro" min="0"></div>
-      <div class="fg"><label for="obj-fe">Fecha límite</label><input type="date" id="obj-fe"></div>
-    </div>
-    <div class="fg">
-      <label for="obj-ic">Ícono</label>
-      <select id="obj-ic"><option>🎯</option><option>🌴</option><option>✈️</option><option>💻</option><option>🚗</option><option>🏠</option><option>🎂</option><option>🎓</option></select>
-    </div>
-    <div class="fg" id="obj-pres-container" style="display:none;background:rgba(0,220,130,.06);padding:12px;border-radius:8px;border:1px solid rgba(0,220,130,.2);">
-      <label for="obj-pres" style="color:var(--a1);">Presupuesto a gastar (COP)</label>
-      <div class="tm mb" style="line-height:1.5;">¿Cuánto planeas gastar durante el evento? Independiente del ahorro.</div>
-      <input type="number" id="obj-pres" min="0">
-    </div>
-    <button class="btn bp bfw" data-action="guardarObjetivo">Crear Objetivo</button>
-  </div>
-</div>
-
-<!-- Acción sobre objetivo (abonar / gastar) -->
-<div class="modal-ov" id="m-obj-accion" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit" id="oa-tit">Acción</div><button class="mclose" data-action="closeM" data-arg-id="m-obj-accion" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg">
-      <label for="oa-mo" id="oa-lbl-mo">Monto (COP)</label>
-      <input type="number" id="oa-mo" min="0" oninput="evaluarGastoEvento()">
-      <div id="oa-coach-msg" style="display:none;margin-top:10px;padding:12px;border-radius:8px;font-size:12px;line-height:1.4;"></div>
-    </div>
-    <div class="fg" id="oa-fg-desc" style="display:none;">
-      <label for="oa-desc">¿En qué lo gastaste?</label>
-      <input type="text" id="oa-desc" placeholder="Ej: Vuelos, Hotel, Comida...">
-    </div>
-    <div class="fg">
-      <label for="oa-fo">Fondo de origen</label>
-      <select id="oa-fo">
-        <option value="banco">🏦 Banco / Nequi / Nu</option>
-        <option value="efectivo">💵 Efectivo</option>
-      </select>
-    </div>
-    <input type="hidden" id="oa-id">
-    <input type="hidden" id="oa-tipo-accion">
-    <button class="btn bp bfw" data-action="ejecutarAccionObjetivo">Confirmar</button>
-  </div>
-</div>
-
-<!-- Editar deuda -->
-<div class="modal-ov" id="m-edit-deu" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:520px;">
-    <div class="fb mb">
-      <div><div class="mtit" style="margin-bottom:2px;">Editar Deuda ✏️</div><div style="font-size:11px;color:var(--t3);">Corrige cualquier dato de esta deuda</div></div>
-      <button class="mclose" data-action="closeM" data-arg-id="m-edit-deu" aria-label="Cerrar ventana">×</button>
-    </div>
-    <div style="margin-bottom:20px;">
-      <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="tarjeta"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="credito"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="hipoteca"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="vehiculo"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="educacion" class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="persona"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="salud"     class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button data-action="selTipoDeudaEdit" data-arg-tipo="otro"      class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
-      </div>
-      <input type="hidden" id="ed-ti">
-    </div>
-    <div class="fg"><label>Nombre de la deuda</label><input type="text" id="ed-no" placeholder="Ej: Tarjeta Bancolombia"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div><label style="margin-bottom:5px;display:block;">Saldo pendiente (COP)</label><input type="number" id="ed-to" placeholder="Ej: 5000000"></div>
-      <div><label style="margin-bottom:5px;display:block;">Cuota (COP)</label><input type="number" id="ed-cu" placeholder="Ej: 300000"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div>
-        <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
-        <div style="display:flex;gap:8px;">
-          <button data-action="selFrecDeudaEdit" data-arg-frec="mensual"   id="btn-edit-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
-          <button data-action="selFrecDeudaEdit" data-arg-frec="quincenal" id="btn-edit-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
-        </div>
-        <input type="hidden" id="ed-pe" value="mensual">
-      </div>
-      <div>
-        <label style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
-        <input type="number" id="ed-ta" step="0.1" placeholder="Ej: 2.5">
-        <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no la sabes, déjalo en 0</div>
-      </div>
-    </div>
-    <div class="fg" style="margin-bottom:14px;">
-      <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar?</label>
-      <div class="day-picker" id="dp-ed-dia">
-        <input type="hidden" id="ed-dia" value="">
-        <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="ed-dia">
-          <span class="day-pick-icon">📅</span>
-          <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
-          <span class="day-pick-arrow">▾</span>
-        </div>
-        <div class="day-pick-grid"></div>
-      </div>
-    </div>
-    <input type="hidden" id="ed-id">
-    <button class="btn bp bfw" data-action="guardarEditarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Guardar cambios →</button>
-  </div>
-</div>
-
-<!-- Nueva deuda -->
-<div class="modal-ov" id="m-deu" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:520px;">
-    <div class="fb mb">
-      <div><div class="mtit" style="margin-bottom:2px;">Nueva Deuda</div><div style="font-size:11px;color:var(--t3);">Registra cuánto debes y cuánto pagas cada mes</div></div>
-      <button class="mclose" data-action="closeM" data-arg-id="m-deu" aria-label="Cerrar ventana">×</button>
-    </div>
-    <div style="margin-bottom:20px;">
-      <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <button data-action="selTipoDeuda" data-arg-tipo="tarjeta"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="credito"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="hipoteca"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="vehiculo"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="educacion" class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="persona"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="salud"     class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
-        <button data-action="selTipoDeuda" data-arg-tipo="otro"      class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
-      </div>
-      <input type="hidden" id="dn-ti" value="tarjeta">
-    </div>
-    <div class="fg"><label>¿Cómo se llama esta deuda?</label><input type="text" id="dn-no" placeholder="Ej: Tarjeta Bancolombia, Crédito del carro..."></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div><label style="margin-bottom:5px;display:block;">¿Cuánto debes en total?</label><input type="number" id="dn-to" placeholder="Ej: 5000000"></div>
-      <div>
-        <label style="margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
-          <span>¿Cuánto pagas cada vez?</span>
-          <button type="button" data-action="toggleAutoCuota" id="btn-auto-cuota" aria-expanded="false" aria-controls="panel-auto-cuota" style="background:none;border:none;color:var(--a1);font-size:10px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">💡 Calcular</button>
-        </label>
-        <input type="number" id="dn-cu" placeholder="Ej: 300000">
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div>
-        <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
-        <div style="display:flex;gap:8px;">
-          <button data-action="selFrecDeuda" data-arg-frec="mensual"   id="btn-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
-          <button data-action="selFrecDeuda" data-arg-frec="quincenal" id="btn-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
-        </div>
-        <input type="hidden" id="dn-pe" value="mensual">
-      </div>
-      <div>
-        <label style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
-        <input type="number" id="dn-ta" step="0.1" placeholder="Ej: 2.5">
-        <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no sabes la tasa, déjalo en 0</div>
-      </div>
-    </div>
-    <div id="panel-auto-cuota" hidden style="margin-bottom:14px;padding:14px;border-radius:12px;background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
-        <span aria-hidden="true" style="font-size:18px;">💡</span>
-        <div style="flex:1;">
-          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px;">Calculá tu cuota automáticamente</div>
-          <div style="font-size:11px;color:var(--t3);line-height:1.5;">Llená el total, la tasa anual y a cuántos meses lo querés pagar. Usamos la fórmula estándar de cuota fija (sistema francés).</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
-        <div>
-          <label for="dn-plazo" style="margin-bottom:4px;display:block;font-size:11px;">¿En cuántos meses la pagás?</label>
-          <input type="number" id="dn-plazo" min="1" placeholder="Ej: 12" style="width:100%;">
-        </div>
-        <button type="button" data-action="calcularCuotaAuto" class="btn bp" style="padding:10px 14px;font-size:12px;font-weight:700;white-space:nowrap;">Calcular →</button>
-      </div>
-      <div id="auto-cuota-out" role="status" aria-live="polite" style="margin-top:10px;font-size:11px;color:var(--t3);min-height:0;"></div>
-    </div>
-    <div class="fg" style="margin-bottom:14px;">
-      <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
-      <div class="day-picker" id="dp-dn-dia">
-        <input type="hidden" id="dn-dia" value="">
-        <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="dn-dia">
-          <span class="day-pick-icon">📅</span>
-          <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
-          <span class="day-pick-arrow">▾</span>
-        </div>
-        <div class="day-pick-grid"></div>
-      </div>
-      <div style="font-size:10px;color:var(--t3);margin-top:6px;">💡 Úsalo para ver esta cuota en la Agenda y recibir alertas de mora a tiempo.</div>
-    </div>
-    <button class="btn bp bfw" data-action="guardarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Registrar Deuda →</button>
-  </div>
-</div>
-
-<!-- Pagar cuota de deuda -->
-<div class="modal-ov" id="m-pgc" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:420px;border-radius:22px;padding:0;overflow:hidden;">
-    <div style="padding:24px 24px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
-        <div><div class="mtit" style="margin-bottom:2px;">Pagar Cuota 💳</div><div style="font-size:11px;color:var(--t3);">Registra el pago de esta deuda</div></div>
-        <button class="mclose" data-action="closeM" data-arg-id="m-pgc" aria-label="Cerrar ventana">×</button>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);border-radius:16px;padding:18px;margin-bottom:16px;">
-        <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Deuda</div>
-        <div id="pgc-no" style="font-weight:800;font-size:18px;color:var(--t1);margin-bottom:14px;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;">
-          <div>
-            <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">CUOTA A PAGAR</div>
-            <div id="pgc-mo" style="font-family:var(--fm);font-size:30px;color:var(--a1);font-weight:800;letter-spacing:-1px;line-height:1;"></div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">YA PAGASTE</div>
-            <div id="pgc-pagado" style="font-family:var(--fm);font-size:18px;color:var(--t2);font-weight:700;line-height:1;"></div>
-          </div>
-        </div>
-        <div style="height:6px;background:var(--s3);border-radius:999px;overflow:hidden;margin-bottom:6px;">
-          <div id="pgc-barra" style="height:100%;border-radius:999px;background:var(--a1);transition:width .4s ease;"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;">
-          <span id="pgc-pct" style="font-size:10px;color:var(--a1);font-weight:700;"></span>
-          <span id="pgc-pendiente" style="font-size:10px;color:var(--t3);">Pendiente: —</span>
-        </div>
-      </div>
-      <div class="fg" style="margin-bottom:0;">
-        <label style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;display:block;">¿De dónde sale el dinero?</label>
-        <div class="fund-select" id="pgc-fo-wrap">
-          <input type="hidden" id="pgc-fo" value="efectivo">
-          <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="pgc-fo">
-            <span class="fund-sel-icon">💵</span>
-            <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
-            <span class="fund-sel-arrow">▾</span>
-          </div>
-          <div class="fund-sel-opts"></div>
-        </div>
-      </div>
-      <input type="hidden" id="pgc-id">
-    </div>
-    <div style="padding:16px 24px 24px;border-top:1px solid var(--b1);margin-top:20px;">
-      <button class="btn bp bfw" data-action="confPagarCuota" style="padding:14px;font-size:14px;font-weight:700;border-radius:12px;">Confirmar Pago →</button>
-    </div>
-  </div>
-</div>
-
-<!-- Agendar pago -->
-<div class="modal-ov" id="m-pago" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit">Agendar Pago 📅</div><button class="mclose" data-action="closeM" data-arg-id="m-pago" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg"><label>Descripción</label><input type="text" id="ag-de"></div>
-    <div class="fr">
-      <div class="fg"><label>Monto</label><input type="number" id="ag-mo"></div>
-      <div class="fg"><label>Fecha</label><input type="date" id="ag-fe"></div>
-    </div>
-    <div class="fr">
+<template id="tpl-m-objetivo">
+  <div class="modal-ov" id="m-objetivo" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit">Nuevo Objetivo 🎯</div><button class="mclose" data-action="closeM" data-arg-id="m-objetivo" aria-label="Cerrar ventana">×</button></div>
       <div class="fg">
-        <label>Frecuencia</label>
-        <select id="ag-re">
-          <option value="unico">Pago Único</option>
-          <option value="quincenal">Quincenal</option>
-          <option value="mensual">Mensual</option>
+        <label for="obj-tipo">¿Qué tipo de objetivo es?</label>
+        <select id="obj-tipo" onchange="toggleTipoObjetivo()">
+          <option value="ahorro">💰 Ahorro Simple (Ej: Laptop, Fondo)</option>
+          <option value="evento">🌴 Evento Planeado (Ej: Viaje, Fiesta)</option>
         </select>
       </div>
+      <div class="fg"><label for="obj-no">Nombre de tu objetivo</label><input type="text" id="obj-no" placeholder="Ej: Viaje a San Andrés"></div>
+      <div class="fr">
+        <div class="fg"><label for="obj-ahorro">Meta de Ahorro (COP)</label><input type="number" id="obj-ahorro" min="0"></div>
+        <div class="fg"><label for="obj-fe">Fecha límite</label><input type="date" id="obj-fe"></div>
+      </div>
       <div class="fg">
-        <label>Fondo</label>
-        <select id="ag-fo">
-          <option value="banco">🏦 Banco</option>
+        <label for="obj-ic">Ícono</label>
+        <select id="obj-ic"><option>🎯</option><option>🌴</option><option>✈️</option><option>💻</option><option>🚗</option><option>🏠</option><option>🎂</option><option>🎓</option></select>
+      </div>
+      <div class="fg" id="obj-pres-container" style="display:none;background:rgba(0,220,130,.06);padding:12px;border-radius:8px;border:1px solid rgba(0,220,130,.2);">
+        <label for="obj-pres" style="color:var(--a1);">Presupuesto a gastar (COP)</label>
+        <div class="tm mb" style="line-height:1.5;">¿Cuánto planeas gastar durante el evento? Independiente del ahorro.</div>
+        <input type="number" id="obj-pres" min="0">
+      </div>
+      <button class="btn bp bfw" data-action="guardarObjetivo">Crear Objetivo</button>
+    </div>
+  </div>
+</template>
+
+<!-- Acción sobre objetivo (abonar / gastar) -->
+<template id="tpl-m-obj-accion">
+  <div class="modal-ov" id="m-obj-accion" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit" id="oa-tit">Acción</div><button class="mclose" data-action="closeM" data-arg-id="m-obj-accion" aria-label="Cerrar ventana">×</button></div>
+      <div class="fg">
+        <label for="oa-mo" id="oa-lbl-mo">Monto (COP)</label>
+        <input type="number" id="oa-mo" min="0" oninput="evaluarGastoEvento()">
+        <div id="oa-coach-msg" style="display:none;margin-top:10px;padding:12px;border-radius:8px;font-size:12px;line-height:1.4;"></div>
+      </div>
+      <div class="fg" id="oa-fg-desc" style="display:none;">
+        <label for="oa-desc">¿En qué lo gastaste?</label>
+        <input type="text" id="oa-desc" placeholder="Ej: Vuelos, Hotel, Comida...">
+      </div>
+      <div class="fg">
+        <label for="oa-fo">Fondo de origen</label>
+        <select id="oa-fo">
+          <option value="banco">🏦 Banco / Nequi / Nu</option>
           <option value="efectivo">💵 Efectivo</option>
         </select>
       </div>
+      <input type="hidden" id="oa-id">
+      <input type="hidden" id="oa-tipo-accion">
+      <button class="btn bp bfw" data-action="ejecutarAccionObjetivo">Confirmar</button>
     </div>
-    <button class="btn bp bfw" data-action="guardarPago">Agendar pago</button>
   </div>
-</div>
+</template>
+
+<!-- Editar deuda -->
+<template id="tpl-m-edit-deu">
+  <div class="modal-ov" id="m-edit-deu" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width:520px;">
+      <div class="fb mb">
+        <div><div class="mtit" style="margin-bottom:2px;">Editar Deuda ✏️</div><div style="font-size:11px;color:var(--t3);">Corrige cualquier dato de esta deuda</div></div>
+        <button class="mclose" data-action="closeM" data-arg-id="m-edit-deu" aria-label="Cerrar ventana">×</button>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="tarjeta"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="credito"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="hipoteca"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="vehiculo"  class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="educacion" class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="persona"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="salud"     class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+          <button data-action="selTipoDeudaEdit" data-arg-tipo="otro"      class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        </div>
+        <input type="hidden" id="ed-ti">
+      </div>
+      <div class="fg"><label>Nombre de la deuda</label><input type="text" id="ed-no" placeholder="Ej: Tarjeta Bancolombia"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div><label style="margin-bottom:5px;display:block;">Saldo pendiente (COP)</label><input type="number" id="ed-to" placeholder="Ej: 5000000"></div>
+        <div><label style="margin-bottom:5px;display:block;">Cuota (COP)</label><input type="number" id="ed-cu" placeholder="Ej: 300000"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
+          <div style="display:flex;gap:8px;">
+            <button data-action="selFrecDeudaEdit" data-arg-frec="mensual"   id="btn-edit-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
+            <button data-action="selFrecDeudaEdit" data-arg-frec="quincenal" id="btn-edit-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
+          </div>
+          <input type="hidden" id="ed-pe" value="mensual">
+        </div>
+        <div>
+          <label style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
+          <input type="number" id="ed-ta" step="0.1" placeholder="Ej: 2.5">
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no la sabes, déjalo en 0</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:14px;">
+        <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar?</label>
+        <div class="day-picker" id="dp-ed-dia">
+          <input type="hidden" id="ed-dia" value="">
+          <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="ed-dia">
+            <span class="day-pick-icon">📅</span>
+            <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
+            <span class="day-pick-arrow">▾</span>
+          </div>
+          <div class="day-pick-grid"></div>
+        </div>
+      </div>
+      <input type="hidden" id="ed-id">
+      <button class="btn bp bfw" data-action="guardarEditarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Guardar cambios →</button>
+    </div>
+  </div>
+</template>
+
+<!-- Nueva deuda -->
+<template id="tpl-m-deu">
+  <div class="modal-ov" id="m-deu" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width:520px;">
+      <div class="fb mb">
+        <div><div class="mtit" style="margin-bottom:2px;">Nueva Deuda</div><div style="font-size:11px;color:var(--t3);">Registra cuánto debes y cuánto pagas cada mes</div></div>
+        <button class="mclose" data-action="closeM" data-arg-id="m-deu" aria-label="Cerrar ventana">×</button>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <button data-action="selTipoDeuda" data-arg-tipo="tarjeta"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="credito"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Crédito</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="hipoteca"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏠</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vivienda</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="vehiculo"  class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🚗</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Vehículo</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="educacion" class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🎓</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Estudio</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="persona"   class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">👤</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Personal</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="salud"     class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">🏥</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Salud</span></button>
+          <button data-action="selTipoDeuda" data-arg-tipo="otro"      class="btn-tipo-deuda ui-btn-tipo"><span class="ui-btn-tipo-ico">📦</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Otra</span></button>
+        </div>
+        <input type="hidden" id="dn-ti" value="tarjeta">
+      </div>
+      <div class="fg"><label>¿Cómo se llama esta deuda?</label><input type="text" id="dn-no" placeholder="Ej: Tarjeta Bancolombia, Crédito del carro..."></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div><label style="margin-bottom:5px;display:block;">¿Cuánto debes en total?</label><input type="number" id="dn-to" placeholder="Ej: 5000000"></div>
+        <div>
+          <label style="margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <span>¿Cuánto pagas cada vez?</span>
+            <button type="button" data-action="toggleAutoCuota" id="btn-auto-cuota" aria-expanded="false" aria-controls="panel-auto-cuota" style="background:none;border:none;color:var(--a1);font-size:10px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">💡 Calcular</button>
+          </label>
+          <input type="number" id="dn-cu" placeholder="Ej: 300000">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label style="margin-bottom:5px;display:block;">¿Cada cuánto pagas?</label>
+          <div style="display:flex;gap:8px;">
+            <button data-action="selFrecDeuda" data-arg-frec="mensual"   id="btn-frec-mensual"   style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--a1);background:rgba(0,220,130,.1);font-size:12px;font-weight:700;color:var(--a1);cursor:pointer;transition:all .2s;">Mensual</button>
+            <button data-action="selFrecDeuda" data-arg-frec="quincenal" id="btn-frec-quincenal" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--b2);background:var(--s2);font-size:12px;font-weight:700;color:var(--t3);cursor:pointer;transition:all .2s;">Quincenal</button>
+          </div>
+          <input type="hidden" id="dn-pe" value="mensual">
+        </div>
+        <div>
+          <label style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
+          <input type="number" id="dn-ta" step="0.1" placeholder="Ej: 2.5">
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no sabes la tasa, déjalo en 0</div>
+        </div>
+      </div>
+      <div id="panel-auto-cuota" hidden style="margin-bottom:14px;padding:14px;border-radius:12px;background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
+          <span aria-hidden="true" style="font-size:18px;">💡</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px;">Calculá tu cuota automáticamente</div>
+            <div style="font-size:11px;color:var(--t3);line-height:1.5;">Llená el total, la tasa anual y a cuántos meses lo querés pagar. Usamos la fórmula estándar de cuota fija (sistema francés).</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;">
+          <div>
+            <label for="dn-plazo" style="margin-bottom:4px;display:block;font-size:11px;">¿En cuántos meses la pagás?</label>
+            <input type="number" id="dn-plazo" min="1" placeholder="Ej: 12" style="width:100%;">
+          </div>
+          <button type="button" data-action="calcularCuotaAuto" class="btn bp" style="padding:10px 14px;font-size:12px;font-weight:700;white-space:nowrap;">Calcular →</button>
+        </div>
+        <div id="auto-cuota-out" role="status" aria-live="polite" style="margin-top:10px;font-size:11px;color:var(--t3);min-height:0;"></div>
+      </div>
+      <div class="fg" style="margin-bottom:14px;">
+        <label style="margin-bottom:5px;display:block;">¿Qué día del mes te toca pagar? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
+        <div class="day-picker" id="dp-dn-dia">
+          <input type="hidden" id="dn-dia" value="">
+          <div class="day-pick-trigger" data-action="toggleDayPicker" data-arg-id="dn-dia">
+            <span class="day-pick-icon">📅</span>
+            <div class="day-pick-info"><div class="day-pick-val">Selecciona el día</div><div class="day-pick-sub">Día del mes de pago</div></div>
+            <span class="day-pick-arrow">▾</span>
+          </div>
+          <div class="day-pick-grid"></div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:6px;">💡 Úsalo para ver esta cuota en la Agenda y recibir alertas de mora a tiempo.</div>
+      </div>
+      <button class="btn bp bfw" data-action="guardarDeuda" style="margin-top:8px;padding:14px;font-size:14px;">Registrar Deuda →</button>
+    </div>
+  </div>
+</template>
+
+<!-- Pagar cuota de deuda -->
+<template id="tpl-m-pgc">
+  <div class="modal-ov" id="m-pgc" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width:420px;border-radius:22px;padding:0;overflow:hidden;">
+      <div style="padding:24px 24px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+          <div><div class="mtit" style="margin-bottom:2px;">Pagar Cuota 💳</div><div style="font-size:11px;color:var(--t3);">Registra el pago de esta deuda</div></div>
+          <button class="mclose" data-action="closeM" data-arg-id="m-pgc" aria-label="Cerrar ventana">×</button>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);border-radius:16px;padding:18px;margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Deuda</div>
+          <div id="pgc-no" style="font-weight:800;font-size:18px;color:var(--t1);margin-bottom:14px;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;">
+            <div>
+              <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">CUOTA A PAGAR</div>
+              <div id="pgc-mo" style="font-family:var(--fm);font-size:30px;color:var(--a1);font-weight:800;letter-spacing:-1px;line-height:1;"></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">YA PAGASTE</div>
+              <div id="pgc-pagado" style="font-family:var(--fm);font-size:18px;color:var(--t2);font-weight:700;line-height:1;"></div>
+            </div>
+          </div>
+          <div style="height:6px;background:var(--s3);border-radius:999px;overflow:hidden;margin-bottom:6px;">
+            <div id="pgc-barra" style="height:100%;border-radius:999px;background:var(--a1);transition:width .4s ease;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span id="pgc-pct" style="font-size:10px;color:var(--a1);font-weight:700;"></span>
+            <span id="pgc-pendiente" style="font-size:10px;color:var(--t3);">Pendiente: —</span>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0;">
+          <label style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;display:block;">¿De dónde sale el dinero?</label>
+          <div class="fund-select" id="pgc-fo-wrap">
+            <input type="hidden" id="pgc-fo" value="efectivo">
+            <div class="fund-sel-trigger" data-action="toggleFundSelect" data-arg-id="pgc-fo">
+              <span class="fund-sel-icon">💵</span>
+              <div class="fund-sel-info"><div class="fund-sel-name">Efectivo</div><div class="fund-sel-bal">Disponible: $0</div></div>
+              <span class="fund-sel-arrow">▾</span>
+            </div>
+            <div class="fund-sel-opts"></div>
+          </div>
+        </div>
+        <input type="hidden" id="pgc-id">
+      </div>
+      <div style="padding:16px 24px 24px;border-top:1px solid var(--b1);margin-top:20px;">
+        <button class="btn bp bfw" data-action="confPagarCuota" style="padding:14px;font-size:14px;font-weight:700;border-radius:12px;">Confirmar Pago →</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- Agendar pago -->
+<template id="tpl-m-pago">
+  <div class="modal-ov" id="m-pago" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit">Agendar Pago 📅</div><button class="mclose" data-action="closeM" data-arg-id="m-pago" aria-label="Cerrar ventana">×</button></div>
+      <div class="fg"><label>Descripción</label><input type="text" id="ag-de"></div>
+      <div class="fr">
+        <div class="fg"><label>Monto</label><input type="number" id="ag-mo"></div>
+        <div class="fg"><label>Fecha</label><input type="date" id="ag-fe"></div>
+      </div>
+      <div class="fr">
+        <div class="fg">
+          <label>Frecuencia</label>
+          <select id="ag-re">
+            <option value="unico">Pago Único</option>
+            <option value="quincenal">Quincenal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Fondo</label>
+          <select id="ag-fo">
+            <option value="banco">🏦 Banco</option>
+            <option value="efectivo">💵 Efectivo</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn bp bfw" data-action="guardarPago">Agendar pago</button>
+    </div>
+  </div>
+</template>
 
 <!-- Confirmar pago agendado -->
 <div class="modal-ov" id="m-conf-pago" role="dialog" aria-modal="true">
@@ -1807,29 +1844,19 @@
 ═════════════════════════════════════════════════════════════════════════ -->
 
 <!-- Nuevo / Editar préstamo personal -->
-<div class="modal-ov" id="m-md" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:480px;">
-    <div class="fb mb">
-      <div>
-        <div class="mtit" id="md-titulo" style="margin-bottom:2px;">Nuevo Préstamo 🤝</div>
-        <div style="font-size:11px;color:var(--t3);">Anotá a quién le prestaste y cuánto. Lo del cobro lo manejas vos.</div>
-      </div>
-      <button class="mclose" data-action="closeM" data-arg-id="m-md" aria-label="Cerrar ventana">×</button>
+<template id="tpl-m-md">
+  <div class="modal-ov" id="m-md" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit" id="md-tit">Nuevo Préstamo 🤝</div><button class="mclose" data-action="closeM" data-arg-id="m-md">×</button></div>
+      <input type="hidden" id="md-id">
+      <div class="fg"><label>¿A quién le prestaste?</label><input type="text" id="md-per" placeholder="Ej: Juan Pérez"></div>
+      <div class="fg"><label>¿Cuánto le prestaste? (COP)</label><input type="number" id="md-mon" placeholder="Ej: 50000"></div>
+      <div class="fg"><label>¿De qué cuenta salió la plata?</label><select id="md-fo"></select></div>
+      <div class="fg"><label>Nota <span class="tm">(opcional)</span></label><input type="text" id="md-not" placeholder="Ej: Para el almuerzo"></div>
+      <button class="btn bp bfw" data-action="guardarMD">Guardar Préstamo</button>
     </div>
-    <div class="fg"><label>¿A quién le prestaste?</label><input type="text" id="md-pe" placeholder="Ej: María, Hermano Carlos, Vecino..." maxlength="50"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div><label style="margin-bottom:5px;display:block;">¿Cuánto?</label><input type="number" id="md-mo" placeholder="Ej: 100000" min="1"></div>
-      <div><label style="margin-bottom:5px;display:block;">¿Cuándo se la prestaste?</label><input type="date" id="md-fe"></div>
-    </div>
-    <div class="fg"><label>¿Para qué? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label><input type="text" id="md-mt" placeholder="Ej: Mercado del mes, Pasaje, Favor..." maxlength="80"></div>
-    <div class="fg">
-      <label>¿Te dijo cuándo te devuelve? <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
-      <input type="date" id="md-fl">
-      <div style="font-size:10px;color:var(--t3);margin-top:4px;">Te ayuda a saber cuándo recordarle.</div>
-    </div>
-    <button class="btn bp bfw" data-action="guardarMeDeben" style="margin-top:8px;padding:14px;font-size:14px;">Guardar →</button>
   </div>
-</div>
+</template>
 
 <!-- Registrar pago de préstamo personal -->
 <div class="modal-ov" id="m-mdp" role="dialog" aria-modal="true">
@@ -1860,26 +1887,14 @@
 
 
 <!-- Nueva inversión -->
-<div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="fb mb"><div class="mtit">Nueva Inversión 📈</div><button class="mclose" data-action="closeM" data-arg-id="m-inversion" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg"><label>Nombre</label><input type="text" id="inv-no"></div>
-    <div class="fr">
-      <div class="fg"><label>Plataforma</label><input type="text" id="inv-pl"></div>
-      <div class="fg"><label>Tasa E.A. (%)</label><input type="number" id="inv-ta"></div>
+<template id="tpl-m-inversion">
+  <div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="fb mb"><div class="mtit">Nueva Inversión 📈</div><button class="mclose" data-action="closeM" data-arg-id="m-inversion">×</button></div>
+      <button class="btn bp bfw" data-action="guardarInversion">Crear Inversión</button>
     </div>
-    <div class="fg"><label>Capital (COP)</label><input type="number" id="inv-cap"></div>
-    <div class="fg">
-      <label>Descontar capital de</label>
-      <select id="inv-fo">
-        <option value="">No descontar (solo registrar)</option>
-        <option value="banco">🏦 Banco</option>
-        <option value="efectivo">💵 Efectivo</option>
-      </select>
-    </div>
-    <button class="btn bp bfw" data-action="guardarInversion">Registrar Inversión</button>
   </div>
-</div>
+</template>
 
 <!-- Actualizar rendimiento -->
 <div class="modal-ov" id="m-rendimiento" role="dialog" aria-modal="true">
