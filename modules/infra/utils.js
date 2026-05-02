@@ -27,6 +27,14 @@ export function he(s) {
     .replace(/'/g, '&#39;');
 }
 
+export function normalizarTexto(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim();
+}
+
 // ─── CONTROL DE FLUJO ────────────────────────────────────────────────────────
 /**
  * Envuelve `fn` para que cada llamada resetee un timer de `ms`; la función

@@ -32,7 +32,10 @@
       "Bash(node --check modules/dominio/compromisos.js)",
       "Bash(node --check modules/ui/events.js)",
       "Bash(node --check modules/dominio/metas.js)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s http://localhost:8080/)",
+      "mcp__scheduled-tasks__create_scheduled_task",
+      "Bash(chmod +x dev-routine.sh)"
     ]
   }
 }

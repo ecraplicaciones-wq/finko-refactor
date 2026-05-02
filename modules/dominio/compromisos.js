@@ -9,7 +9,7 @@ import { save } from '../core/storage.js';
 import {
   f, he, hoy, mesStr, setEl, setHtml,
   openM, closeM, showAlert, showConfirm,
-  descontarFondo, reintegrarFondo
+  descontarFondo, reintegrarFondo, normalizarTexto
 } from '../infra/utils.js';
 import { CATS, GMF_TASA, TASA_USURA_EA } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
@@ -76,15 +76,13 @@ export function calcularDiasMora(deuda, fechaRef = new Date(), gastos = []) {
 
   if (hoyDate <= fechaLimite) return 0;
 
-  const _norm = s => String(s || '').toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
   const mesPago    = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, '0')}`;
-  const nombreNorm = _norm(deuda?.nombre);
+  const nombreNorm = normalizarTexto(deuda?.nombre);
 
   const pagadoEsteMes = (gastos || []).find(g => {
     if (g.cat !== 'deudas' || !String(g.fecha || '').startsWith(mesPago)) return false;
     if (g.deudaId != null) return g.deudaId === deuda.id;
-    return _norm(g.desc).includes(nombreNorm);
+    return normalizarTexto(g.desc).includes(nombreNorm);
   });
 
   if (pagadoEsteMes || ((deuda?.total ?? 0) - (deuda?.pagado ?? 0) <= 0)) return 0;

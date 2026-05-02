@@ -1,7 +1,7 @@
 // Fusión de: gastos.js + dashboard.js + resumen.js + historial.js
 import { S }        from '../core/state.js';
 import { save }     from '../core/storage.js';
-import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo } from '../infra/utils.js';
+import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo, normalizarTexto } from '../infra/utils.js';
 import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, TOPE_DIAN, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
@@ -83,18 +83,13 @@ export function calcularComparacionQuincenas(actual, anterior) {
 export function calcularTopHormigas(gastos, mesYYYYMM = null, limit = 3) {
   if (!Array.isArray(gastos) || gastos.length === 0) return [];
 
-  const norm = s => String(s || '')
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .trim();
-
   const mapa = new Map();   // key normalizada → { concepto, total, count }
   for (const g of gastos) {
     if (!(g?.tipo === 'hormiga' || g?.hormiga === true)) continue;
     if (mesYYYYMM && !String(g.fecha || '').startsWith(mesYYYYMM)) continue;
 
     const desc = (g.desc || '').trim() || 'Sin descripción';
-    const key  = norm(desc);
+    const key  = normalizarTexto(desc);
     const monto = g.montoTotal || g.monto || 0;
     if (!mapa.has(key)) {
       mapa.set(key, { concepto: desc, total: 0, count: 0 });

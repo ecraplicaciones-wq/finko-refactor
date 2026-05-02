@@ -1,6 +1,6 @@
 // tests/unit/utils.test.js
 import { describe, it, expect, vi } from 'vitest';
-import { he, debounce } from '../../modules/infra/utils.js';
+import { he, debounce, normalizarTexto } from '../../modules/infra/utils.js';
 
 // ─── he() — escape de HTML ────────────────────────────────────────────────────
 
@@ -84,6 +84,55 @@ describe('debounce()', () => {
 
     await new Promise(r => setTimeout(r, 40));
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+});
+
+// ─── normalizarTexto() ────────────────────────────────────────────────────────
+
+describe('normalizarTexto() — normalización de strings', () => {
+
+  it('convierte a minúsculas', () => {
+    expect(normalizarTexto('GASTOS')).toBe('gastos');
+    expect(normalizarTexto('Efectivo')).toBe('efectivo');
+  });
+
+  it('remueve acentos y diacríticos', () => {
+    expect(normalizarTexto('Café')).toBe('cafe');
+    expect(normalizarTexto('Mérida')).toBe('merida');
+    expect(normalizarTexto('Qué')).toBe('que');
+    expect(normalizarTexto('Sofía')).toBe('sofia');
+  });
+
+  it('hace trim de espacios', () => {
+    expect(normalizarTexto('  Gasto  ')).toBe('gasto');
+    expect(normalizarTexto('\tRappi\n')).toBe('rappi');
+  });
+
+  it('combina todas las transformaciones', () => {
+    expect(normalizarTexto('  SOFÍA GARCÍA  ')).toBe('sofia garcia');
+    expect(normalizarTexto('Cómo Está')).toBe('como esta');
+  });
+
+  it('no rompe con string vacío', () => {
+    expect(normalizarTexto('')).toBe('');
+  });
+
+  it('no rompe con null', () => {
+    expect(normalizarTexto(null)).toBe('');
+  });
+
+  it('no rompe con undefined', () => {
+    expect(normalizarTexto(undefined)).toBe('');
+  });
+
+  it('funciona con números', () => {
+    expect(normalizarTexto('2026 gasto')).toBe('2026 gasto');
+  });
+
+  it('no modifica texto plano sin acentos', () => {
+    expect(normalizarTexto('efectivo')).toBe('efectivo');
+    expect(normalizarTexto('Banco')).toBe('banco');
   });
 
 });
