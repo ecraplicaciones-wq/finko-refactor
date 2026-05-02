@@ -1,7 +1,7 @@
 // Fusión de: objetivos.js + inversiones.js
 import { S }    from '../core/state.js';
 import { save } from '../core/storage.js';
-import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo } from '../infra/utils.js';
+import { f, he, hoy, setEl, openM, closeM, showAlert, showConfirm, descontarFondo, getValueOrThrow } from '../infra/utils.js';
 import { renderSmart } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
 
@@ -529,10 +529,17 @@ export function renderInversionesSinActualizar() {
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarObjetivo() {
-  const nombre    = document.getElementById('obj-no').value.trim();
-  const tipo      = document.getElementById('obj-tipo').value;
-  const objAhorro = +document.getElementById('obj-ahorro').value || 0;
-  if (!nombre || !objAhorro) { await showAlert('Completa el nombre y la meta de ahorro.', 'Campos requeridos'); return; }
+  let nombre, tipo, objAhorro;
+
+  try {
+    nombre    = getValueOrThrow('obj-no', 'Nombre').trim();
+    tipo      = getValueOrThrow('obj-tipo', 'Tipo');
+    objAhorro = +getValueOrThrow('obj-ahorro', 'Meta de ahorro') || 0;
+    if (!nombre || !objAhorro) { await showAlert('Completa el nombre y la meta de ahorro.', 'Campos requeridos'); return; }
+  } catch (err) {
+    await showAlert(err.message, 'Error en objetivo');
+    return;
+  }
 
   S.objetivos.push({
     id:            Date.now(),

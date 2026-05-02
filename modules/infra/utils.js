@@ -35,6 +35,12 @@ export function normalizarTexto(s) {
     .trim();
 }
 
+export function getValueOrThrow(id, fieldName) {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Elemento "${id}" (${fieldName}) no encontrado en el DOM`);
+  return el.value;
+}
+
 // ─── CONTROL DE FLUJO ────────────────────────────────────────────────────────
 /**
  * Envuelve `fn` para que cada llamada resetee un timer de `ms`; la función

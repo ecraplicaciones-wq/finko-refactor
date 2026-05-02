@@ -9,7 +9,7 @@ import { save } from '../core/storage.js';
 import {
   f, he, hoy, setEl, setHtml,
   openM, closeM, showAlert, showConfirm, showPrompt,
-  descontarFondo
+  descontarFondo, getValueOrThrow
 } from '../infra/utils.js';
 import { sr }         from '../infra/a11y.js';
 import { BANCOS_CO }  from '../core/constants.js';
@@ -22,10 +22,17 @@ import { registerAction } from '../ui/actions.js';
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export function guardarCuenta() {
-  const banco = document.getElementById('cu-banco').value;
-  const alias = document.getElementById('cu-alias').value.trim();
-  const saldo = +document.getElementById('cu-saldo').value || 0;
-  if (!banco) return;
+  let banco, alias, saldo;
+
+  try {
+    banco = getValueOrThrow('cu-banco', 'Banco');
+    alias = getValueOrThrow('cu-alias', 'Alias').trim();
+    saldo = +getValueOrThrow('cu-saldo', 'Saldo') || 0;
+    if (!banco) return;
+  } catch (err) {
+    showAlert(err.message, 'Error en cuenta');
+    return;
+  }
 
   const info = BANCOS_CO.find(b => b.id === banco) || { id: banco, nombre: alias || banco, icono: '🏦', color: '#888' };
   S.cuentas.push({ id: Date.now(), banco, nombre: alias || info.nombre, icono: info.icono, color: info.color, saldo });

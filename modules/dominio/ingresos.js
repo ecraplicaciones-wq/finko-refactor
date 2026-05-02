@@ -1,7 +1,7 @@
 // Fusión de: gastos.js + dashboard.js + resumen.js + historial.js
 import { S }        from '../core/state.js';
 import { save }     from '../core/storage.js';
-import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo, normalizarTexto } from '../infra/utils.js';
+import { f, he, hoy, mesStr, setEl, setHtml, openM, closeM, showAlert, showConfirm, descontarFondo, reintegrarFondo, normalizarTexto, getValueOrThrow } from '../infra/utils.js';
 import { CATS, GMF_TASA, GMF_EXENTO_MONTO, GMF_EXENTO_UVT, SMMLV_2026, TASA_USURA_EA, TOPE_DIAN, CCOLORS } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
 import { registerAction } from '../ui/actions.js';
@@ -378,15 +378,22 @@ export function detectarGastoAtipico(candidato, gastos, config = {}) {
 
 // ─── AGREGAR GASTO ────────────────────────────────────────────────────────────
 export async function agregarGasto() {
-  const de = document.getElementById('g-de').value.trim();
-  const mo = +document.getElementById('g-mo').value;
-  const ca = document.getElementById('g-ca').value;
-  if (!de || !mo || !ca) { await showAlert('Falta ponerle nombre al gasto, cuánto fue y de qué es. ¡Sin eso no podemos anotarlo!', 'Falta info'); return; }
+  let de, mo, ca, fx, montoTotal, fo, ti;
 
-  const fx         = document.getElementById('g-4k').checked;
-  const montoTotal = fx ? Math.round(mo * (1 + GMF_TASA)) : mo;
-  const fo         = document.getElementById('g-fo').value;
-  const ti         = document.getElementById('g-ti').value;
+  try {
+    de = getValueOrThrow('g-de', 'Descripción').trim();
+    mo = +getValueOrThrow('g-mo', 'Monto');
+    ca = getValueOrThrow('g-ca', 'Categoría');
+    if (!de || !mo || !ca) { await showAlert('Falta ponerle nombre al gasto, cuánto fue y de qué es. ¡Sin eso no podemos anotarlo!', 'Falta info'); return; }
+
+    fx         = document.getElementById('g-4k').checked;
+    montoTotal = fx ? Math.round(mo * (1 + GMF_TASA)) : mo;
+    fo         = getValueOrThrow('g-fo', 'Fuente');
+    ti         = getValueOrThrow('g-ti', 'Tipo');
+  } catch (err) {
+    await showAlert(err.message, 'Error de formulario');
+    return;
+  }
 
   if (ti !== 'ahorro') {
     let disp = 0;

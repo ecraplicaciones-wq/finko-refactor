@@ -9,7 +9,7 @@ import { save } from '../core/storage.js';
 import {
   f, he, hoy, mesStr, setEl, setHtml,
   openM, closeM, showAlert, showConfirm,
-  descontarFondo, reintegrarFondo, normalizarTexto
+  descontarFondo, reintegrarFondo, normalizarTexto, getValueOrThrow
 } from '../infra/utils.js';
 import { CATS, GMF_TASA, TASA_USURA_EA } from '../core/constants.js';
 import { renderSmart, updSaldo, totalCuentas } from '../infra/render.js';
@@ -657,12 +657,19 @@ let _idFijoPendiente = null;
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarFijo() {
-  const no = document.getElementById('gf-no').value.trim();
-  const mo = +document.getElementById('gf-mn').value;
-  if (!no || !mo) return;
+  let no, mo, fx, montoTotal;
 
-  const fx         = document.getElementById('gf-4k').checked;
-  const montoTotal = fx ? Math.round(mo * (1 + GMF_TASA)) : mo;
+  try {
+    no = getValueOrThrow('gf-no', 'Nombre del fijo').trim();
+    mo = +getValueOrThrow('gf-mn', 'Monto');
+    if (!no || !mo) return;
+
+    fx         = document.getElementById('gf-4k').checked;
+    montoTotal = fx ? Math.round(mo * (1 + GMF_TASA)) : mo;
+  } catch (err) {
+    await showAlert(err.message, 'Error en gasto fijo');
+    return;
+  }
 
   S.gastosFijos.push({
     id:           Date.now(),
@@ -1304,10 +1311,17 @@ let _modoTimer = null;
 
 // ─── GUARDAR ─────────────────────────────────────────────────────────────────
 export async function guardarDeuda() {
-  const no = document.getElementById('dn-no').value.trim();
-  const to = +document.getElementById('dn-to').value;
-  const cu = +document.getElementById('dn-cu').value;
-  if (!no || !to || !cu) { await showAlert('Falta el nombre de la deuda, cuánto debés en total y cuánto pagás cada vez. Sin eso no podemos registrarla.', 'Falta info'); return; }
+  let no, to, cu;
+
+  try {
+    no = getValueOrThrow('dn-no', 'Nombre de deuda').trim();
+    to = +getValueOrThrow('dn-to', 'Total a deber');
+    cu = +getValueOrThrow('dn-cu', 'Cuota');
+    if (!no || !to || !cu) { await showAlert('Falta el nombre de la deuda, cuánto debés en total y cuánto pagás cada vez. Sin eso no podemos registrarla.', 'Falta info'); return; }
+  } catch (err) {
+    await showAlert(err.message, 'Error en deuda');
+    return;
+  }
 
   S.deudas.push({
     id:           Date.now(),
