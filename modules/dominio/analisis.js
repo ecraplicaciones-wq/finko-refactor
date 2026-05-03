@@ -891,6 +891,221 @@ function _diffDiasSalud(desdeISO, hastaISO) {
   return Math.floor((dB - dA) / 86_400_000);
 }
 
+function _calcCompAtrasos({ gastosFijos, deudas, objetivos, mesActual, anio, mes, dia, hoyISO }) {
+  let fijosAtrasados = 0;
+  for (const fx of gastosFijos) {
+    if (!fx || typeof fx !== 'object')        continue;
+    const diaRaw = Number(fx.dia) || 1;
+    if (diaRaw < 1 || diaRaw > 31)            continue;
+    const lastDay = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+    const dia1 = Math.min(diaRaw, lastDay);
+    if (dia < dia1)                            continue;
+    const pagados = Array.isArray(fx.pagadoEn)
+      ? fx.pagadoEn.filter(x => x === mesActual).length
+      : 0;
+    if (pagados >= 1)                          continue;
+    fijosAtrasados += 1;
+  }
+  let deudasDurmiendo = 0;
+  for (const d of deudas) {
+    if (!d || typeof d !== 'object')           continue;
+    const total  = Number(d.total)  || 0;
+    const pagado = Number(d.pagado) || 0;
+    if (total - pagado <= 0)                   continue;
+    const fup = (typeof d.fechaUltimoPago === 'string') ? d.fechaUltimoPago : null;
+    if (!fup)                                  continue;
+    const dias = _diffDiasSalud(fup, hoyISO);
+    if (dias !== null && dias > 60) deudasDurmiendo += 1;
+  }
+  let objSinProgreso = 0;
+  for (const o of objetivos) {
+    if (!o || typeof o !== 'object')           continue;
+    const meta = Number(o.objetivoAhorro) || 0;
+    const ah   = Number(o.ahorrado)       || 0;
+    if (meta <= 0 || ah >= meta)               continue;
+    const fua = (typeof o.fechaUltimoAporte === 'string') ? o.fechaUltimoAporte : null;
+    if (!fua)                                  continue;
+    const dias = _diffDiasSalud(fua, hoyISO);
+    if (dias !== null && dias > 60) objSinProgreso += 1;
+  }
+  const totalAtrasos = fijosAtrasados + deudasDurmiendo + objSinProgreso;
+  const score = totalAtrasos === 0 ? 25 : totalAtrasos === 1 ? 15 : totalAtrasos === 2 ? 5 : 0;
+  return {
+    key:    'atrasos',
+    label:  'Sin atrasos',
+    peso:   25,
+    score,
+    mensaje: totalAtrasos === 0
+      ? 'Todo al día. Cero fijos atrasados, deudas durmiendo u objetivos abandonados.'
+      : `${totalAtrasos} ${totalAtrasos === 1 ? 'cosa' : 'cosas'} pidiendo atención.`,
+  };
+}
+
+function _calcCompAhorro({ gastos, ingreso, mesActual }) {
+  let ahorrado = 0;
+  for (const g of gastos) {
+    if (!g || typeof g !== 'object')           continue;
+    if (g.tipo !== 'ahorro')                   continue;
+    if (typeof g.fecha !== 'string')           continue;
+    if (!g.fecha.startsWith(mesActual))        continue;
+    ahorrado += Number(g.montoTotal) || Number(g.monto) || 0;
+  }
+  const tasaAhorro = ingreso > 0 ? (ahorrado / ingreso) : 0;
+  const score = tasaAhorro >= 0.20 ? 25 : tasaAhorro >= 0.10 ? 15 : tasaAhorro >= 0.05 ? 8 : 0;
+  return {
+    key:    'ahorro',
+    label:  'Ahorrando',
+    peso:   25,
+    score,
+    mensaje: ingreso <= 0
+      ? 'Configurá tu ingreso para ver tu tasa de ahorro.'
+      : tasaAhorro >= 0.20
+        ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}% — disciplinado de verdad.`
+        : tasaAhorro >= 0.10
+          ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}%. Subí al 20% para excelencia.`
+          : tasaAhorro > 0
+            ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}%. Apuntá al 10% mínimo.`
+            : 'Sin ahorros este mes — empezá con cualquier monto.',
+  };
+}
+
+function _calcCompFondo({ fondo, ingreso }) {
+  if (!fondo || ingreso <= 0) {
+    return {
+      key:    'fondo',
+      label:  'Fondo de emergencia',
+      peso:   20,
+      score:  0,
+      mensaje: 'Sin fondo de emergencia configurado.',
+    };
+  }
+  const objMeses = Number(fondo.objetivoMeses) || 6;
+  const actual   = Number(fondo.actual)        || 0;
+  const objetivo = ingreso * objMeses;
+  const pctFondo = objetivo > 0 ? (actual / objetivo) * 100 : 0;
+  const score = pctFondo >= 100 ? 20 : pctFondo >= 50 ? 12 : pctFondo >= 20 ? 6 : 0;
+  return {
+    key:    'fondo',
+    label:  'Fondo de emergencia',
+    peso:   20,
+    score,
+    mensaje: pctFondo >= 100
+      ? `Fondo completo (${objMeses} meses). Dormís tranquilo.`
+      : `Fondo al ${pctFondo.toFixed(0)}% de ${objMeses} meses.`,
+  };
+}
+
+function _calcCompDeudas({ deudas, ingreso }) {
+  let cuotaMensual = 0;
+  let deudasVivas  = 0;
+  for (const d of deudas) {
+    if (!d || typeof d !== 'object')           continue;
+    const total  = Number(d.total)  || 0;
+    const pagado = Number(d.pagado) || 0;
+    if (total - pagado <= 0)                   continue;
+    deudasVivas += 1;
+    const cuota = Number(d.cuota) || 0;
+    cuotaMensual += d.periodicidad === 'quincenal' ? cuota * 2 : cuota;
+  }
+  if (deudasVivas === 0) {
+    return {
+      key:    'deudas',
+      label:  'Deudas bajo control',
+      peso:   15,
+      score:  15,
+      mensaje: 'Sin deudas vivas. Libertad financiera.',
+    };
+  }
+  if (ingreso <= 0) {
+    return {
+      key:    'deudas',
+      label:  'Deudas bajo control',
+      peso:   15,
+      score:  0,
+      mensaje: 'Configurá tu ingreso para evaluar carga de deudas.',
+    };
+  }
+  const pct = (cuotaMensual / ingreso) * 100;
+  const score = pct <= 20 ? 15 : pct <= 40 ? 10 : pct <= 60 ? 5 : 0;
+  return {
+    key:    'deudas',
+    label:  'Deudas bajo control',
+    peso:   15,
+    score,
+    mensaje: `Cuotas mensuales: ${pct.toFixed(0)}% de tu ingreso.`,
+  };
+}
+
+function _calcCompBackup({ lastBackupAt, hoyISO }) {
+  if (!lastBackupAt) {
+    return {
+      key:    'backup',
+      label:  'Backup reciente',
+      peso:   10,
+      score:  0,
+      mensaje: 'Nunca exportaste un backup. Hacelo ahora.',
+    };
+  }
+  const dias = _diffDiasSalud(lastBackupAt, hoyISO);
+  let score, mensaje;
+  if (dias === null || dias < 0) {
+    score   = 0;
+    mensaje = 'Fecha de backup inválida — exportá uno nuevo.';
+  } else if (dias <= 7) {
+    score   = 10;
+    mensaje = `Backup hace ${dias} día${dias === 1 ? '' : 's'}. Impecable.`;
+  } else if (dias <= 30) {
+    score   = 6;
+    mensaje = `Backup hace ${dias} días. Bien.`;
+  } else if (dias <= 60) {
+    score   = 3;
+    mensaje = `Backup hace ${dias} días. Convendría refrescar.`;
+  } else {
+    score   = 0;
+    mensaje = `Backup hace ${dias} días — exportá uno nuevo ya.`;
+  }
+  return { key: 'backup', label: 'Backup reciente', peso: 10, score, mensaje };
+}
+
+function _calcCompHormigas({ gastos, ingreso, mesActual }) {
+  let hormigasMes = 0;
+  for (const g of gastos) {
+    if (!g || typeof g !== 'object')           continue;
+    if (typeof g.fecha !== 'string')           continue;
+    if (!g.fecha.startsWith(mesActual))        continue;
+    if (!(g.hormiga === true || g.tipo === 'hormiga')) continue;
+    hormigasMes += Number(g.montoTotal) || Number(g.monto) || 0;
+  }
+  if (hormigasMes === 0) {
+    return {
+      key:    'hormiga',
+      label:  'Hormigas controladas',
+      peso:   5,
+      score:  5,
+      mensaje: 'Cero hormigas este mes. Disciplina pura.',
+    };
+  }
+  if (ingreso <= 0) {
+    // Sin ingreso: usar monto como proxy (no podemos calcular pct)
+    return {
+      key:    'hormiga',
+      label:  'Hormigas controladas',
+      peso:   5,
+      score:  3,
+      mensaje: `${f(hormigasMes)} en hormigas este mes.`,
+    };
+  }
+  const pct = (hormigasMes / ingreso) * 100;
+  const score = pct < 2 ? 5 : pct < 5 ? 3 : pct < 10 ? 1 : 0;
+  return {
+    key:    'hormiga',
+    label:  'Hormigas controladas',
+    peso:   5,
+    score,
+    mensaje: `Hormigas: ${pct.toFixed(1)}% del ingreso.`,
+  };
+}
+
 /**
  * Pure: calcula el indicador de salud financiera global a partir de slices
  * del estado. Sin S, sin DOM. Determinística para tests.
@@ -916,9 +1131,8 @@ export function calcularSaludFinanciera(input, hoyISO, _config = {}) {
   if (typeof hoyISO !== 'string' || !_RX_FECHA_SALUD.test(hoyISO)) return null;
 
   const m = _RX_FECHA_SALUD.exec(hoyISO);
-  const day = +m[3];
-  const month = +m[2];
-  if (month < 1 || month > 12 || day < 1 || day > 31)              return null;
+  const anio = +m[1], mes = +m[2], dia = +m[3];
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31)              return null;
 
   const mesActual = `${m[1]}-${m[2]}`;
   const ingreso   = Number(input.ingreso) || 0;
@@ -931,223 +1145,15 @@ export function calcularSaludFinanciera(input, hoyISO, _config = {}) {
     ? input.fondoEmergencia : null;
   const lastBackupAt = (typeof input.lastBackupAt === 'string') ? input.lastBackupAt : null;
 
-  const componentes = [];
+  const componentes = [
+    _calcCompAtrasos({ gastosFijos, deudas, objetivos, mesActual, anio, mes, dia, hoyISO }),
+    _calcCompAhorro({ gastos, ingreso, mesActual }),
+    _calcCompFondo({ fondo, ingreso }),
+    _calcCompDeudas({ deudas, ingreso }),
+    _calcCompBackup({ lastBackupAt, hoyISO }),
+    _calcCompHormigas({ gastos, ingreso, mesActual }),
+  ];
 
-  // ── 1) SIN ATRASOS (25 pts) ───────────────────────────────────────────────
-  // Fijos: cuyo día ya pasó y no aparecen en pagadoEn este mes.
-  let fijosAtrasados = 0;
-  for (const fx of gastosFijos) {
-    if (!fx || typeof fx !== 'object')           continue;
-    const diaRaw = Number(fx.dia) || 1;
-    if (diaRaw < 1 || diaRaw > 31)                continue;
-    const lastDay = new Date(Date.UTC(+m[1], +m[2], 0)).getUTCDate();
-    const dia1 = Math.min(diaRaw, lastDay);
-    if (day < dia1)                               continue;
-    const pagados = Array.isArray(fx.pagadoEn)
-      ? fx.pagadoEn.filter(x => x === mesActual).length
-      : 0;
-    if (pagados >= 1)                             continue;
-    fijosAtrasados += 1;
-  }
-  // Deudas durmiendo: vivas sin fechaUltimoPago en últimos 60 días.
-  let deudasDurmiendo = 0;
-  for (const d of deudas) {
-    if (!d || typeof d !== 'object')              continue;
-    const total  = Number(d.total)  || 0;
-    const pagado = Number(d.pagado) || 0;
-    if (total - pagado <= 0)                      continue;  // liquidada
-    const fup = (typeof d.fechaUltimoPago === 'string') ? d.fechaUltimoPago : null;
-    if (!fup)                                     continue;  // sin info, no contamos
-    const dias = _diffDiasSalud(fup, hoyISO);
-    if (dias !== null && dias > 60) deudasDurmiendo += 1;
-  }
-  // Objetivos sin progreso: vivos sin fechaUltimoAporte en últimos 60 días.
-  let objSinProgreso = 0;
-  for (const o of objetivos) {
-    if (!o || typeof o !== 'object')              continue;
-    const meta = Number(o.objetivoAhorro) || 0;
-    const ah   = Number(o.ahorrado)       || 0;
-    if (meta <= 0 || ah >= meta)                  continue;
-    const fua = (typeof o.fechaUltimoAporte === 'string') ? o.fechaUltimoAporte : null;
-    if (!fua)                                     continue;
-    const dias = _diffDiasSalud(fua, hoyISO);
-    if (dias !== null && dias > 60) objSinProgreso += 1;
-  }
-  const totalAtrasos = fijosAtrasados + deudasDurmiendo + objSinProgreso;
-  let scoreAtrasos;
-  if      (totalAtrasos === 0) scoreAtrasos = 25;
-  else if (totalAtrasos === 1) scoreAtrasos = 15;
-  else if (totalAtrasos === 2) scoreAtrasos = 5;
-  else                          scoreAtrasos = 0;
-  componentes.push({
-    key:    'atrasos',
-    label:  'Sin atrasos',
-    peso:   25,
-    score:  scoreAtrasos,
-    mensaje: totalAtrasos === 0
-      ? 'Todo al día. Cero fijos atrasados, deudas durmiendo u objetivos abandonados.'
-      : `${totalAtrasos} ${totalAtrasos === 1 ? 'cosa' : 'cosas'} pidiendo atención.`,
-  });
-
-  // ── 2) AHORRANDO (25 pts) ─────────────────────────────────────────────────
-  let ahorrado = 0;
-  for (const g of gastos) {
-    if (!g || typeof g !== 'object')              continue;
-    if (g.tipo !== 'ahorro')                      continue;
-    if (typeof g.fecha !== 'string')              continue;
-    if (!g.fecha.startsWith(mesActual))           continue;
-    ahorrado += Number(g.montoTotal) || Number(g.monto) || 0;
-  }
-  const tasaAhorro = ingreso > 0 ? (ahorrado / ingreso) : 0;
-  let scoreAhorro;
-  if      (tasaAhorro >= 0.20) scoreAhorro = 25;
-  else if (tasaAhorro >= 0.10) scoreAhorro = 15;
-  else if (tasaAhorro >= 0.05) scoreAhorro = 8;
-  else                          scoreAhorro = 0;
-  componentes.push({
-    key:    'ahorro',
-    label:  'Ahorrando',
-    peso:   25,
-    score:  scoreAhorro,
-    mensaje: ingreso <= 0
-      ? 'Configurá tu ingreso para ver tu tasa de ahorro.'
-      : tasaAhorro >= 0.20
-        ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}% — disciplinado de verdad.`
-        : tasaAhorro >= 0.10
-          ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}%. Subí al 20% para excelencia.`
-          : tasaAhorro > 0
-            ? `Ahorrás el ${(tasaAhorro*100).toFixed(0)}%. Apuntá al 10% mínimo.`
-            : 'Sin ahorros este mes — empezá con cualquier monto.',
-  });
-
-  // ── 3) FONDO DE EMERGENCIA (20 pts) ───────────────────────────────────────
-  let scoreFondo = 0;
-  let pctFondo   = 0;
-  let mensajeFondo = 'Sin fondo de emergencia configurado.';
-  if (fondo && ingreso > 0) {
-    const objMeses = Number(fondo.objetivoMeses) || 6;
-    const actual   = Number(fondo.actual)        || 0;
-    const objetivo = ingreso * objMeses;
-    pctFondo = objetivo > 0 ? (actual / objetivo) * 100 : 0;
-    if      (pctFondo >= 100) scoreFondo = 20;
-    else if (pctFondo >=  50) scoreFondo = 12;
-    else if (pctFondo >=  20) scoreFondo = 6;
-    else                       scoreFondo = 0;
-    mensajeFondo = pctFondo >= 100
-      ? `Fondo completo (${objMeses} meses). Dormís tranquilo.`
-      : `Fondo al ${pctFondo.toFixed(0)}% de ${objMeses} meses.`;
-  }
-  componentes.push({
-    key:    'fondo',
-    label:  'Fondo de emergencia',
-    peso:   20,
-    score:  scoreFondo,
-    mensaje: mensajeFondo,
-  });
-
-  // ── 4) DEUDAS BAJO CONTROL (15 pts) ───────────────────────────────────────
-  // Suma cuotas mensuales: mensual=1, quincenal=2 al mes.
-  let cuotaMensual = 0;
-  let deudasVivas  = 0;
-  for (const d of deudas) {
-    if (!d || typeof d !== 'object')              continue;
-    const total  = Number(d.total)  || 0;
-    const pagado = Number(d.pagado) || 0;
-    if (total - pagado <= 0)                      continue;
-    deudasVivas += 1;
-    const cuota = Number(d.cuota) || 0;
-    cuotaMensual += d.periodicidad === 'quincenal' ? cuota * 2 : cuota;
-  }
-  let scoreDeudas;
-  let mensajeDeudas;
-  if (deudasVivas === 0) {
-    scoreDeudas = 15;
-    mensajeDeudas = 'Sin deudas vivas. Libertad financiera.';
-  } else if (ingreso <= 0) {
-    scoreDeudas = 0;
-    mensajeDeudas = 'Configurá tu ingreso para evaluar carga de deudas.';
-  } else {
-    const pct = (cuotaMensual / ingreso) * 100;
-    if      (pct <= 20) scoreDeudas = 15;
-    else if (pct <= 40) scoreDeudas = 10;
-    else if (pct <= 60) scoreDeudas = 5;
-    else                 scoreDeudas = 0;
-    mensajeDeudas = `Cuotas mensuales: ${pct.toFixed(0)}% de tu ingreso.`;
-  }
-  componentes.push({
-    key:    'deudas',
-    label:  'Deudas bajo control',
-    peso:   15,
-    score:  scoreDeudas,
-    mensaje: mensajeDeudas,
-  });
-
-  // ── 5) BACKUP RECIENTE (10 pts) ───────────────────────────────────────────
-  let scoreBackup = 0;
-  let mensajeBackup;
-  if (lastBackupAt) {
-    const dias = _diffDiasSalud(lastBackupAt, hoyISO);
-    if (dias === null || dias < 0) {
-      mensajeBackup = 'Fecha de backup inválida — exportá uno nuevo.';
-    } else if (dias <= 7) {
-      scoreBackup = 10;
-      mensajeBackup = `Backup hace ${dias} día${dias === 1 ? '' : 's'}. Impecable.`;
-    } else if (dias <= 30) {
-      scoreBackup = 6;
-      mensajeBackup = `Backup hace ${dias} días. Bien.`;
-    } else if (dias <= 60) {
-      scoreBackup = 3;
-      mensajeBackup = `Backup hace ${dias} días. Convendría refrescar.`;
-    } else {
-      scoreBackup = 0;
-      mensajeBackup = `Backup hace ${dias} días — exportá uno nuevo ya.`;
-    }
-  } else {
-    mensajeBackup = 'Nunca exportaste un backup. Hacelo ahora.';
-  }
-  componentes.push({
-    key:    'backup',
-    label:  'Backup reciente',
-    peso:   10,
-    score:  scoreBackup,
-    mensaje: mensajeBackup,
-  });
-
-  // ── 6) HORMIGAS CONTROLADAS (5 pts) ───────────────────────────────────────
-  let hormigasMes = 0;
-  for (const g of gastos) {
-    if (!g || typeof g !== 'object')              continue;
-    if (typeof g.fecha !== 'string')              continue;
-    if (!g.fecha.startsWith(mesActual))           continue;
-    if (!(g.hormiga === true || g.tipo === 'hormiga')) continue;
-    hormigasMes += Number(g.montoTotal) || Number(g.monto) || 0;
-  }
-  let scoreHormiga;
-  let mensajeHormiga;
-  if (hormigasMes === 0) {
-    scoreHormiga = 5;
-    mensajeHormiga = 'Cero hormigas este mes. Disciplina pura.';
-  } else if (ingreso <= 0) {
-    // Sin ingreso: usar count como proxy (ya que no podemos calcular pct)
-    scoreHormiga = 3;
-    mensajeHormiga = `${f(hormigasMes)} en hormigas este mes.`;
-  } else {
-    const pct = (hormigasMes / ingreso) * 100;
-    if      (pct <  2) scoreHormiga = 5;
-    else if (pct <  5) scoreHormiga = 3;
-    else if (pct < 10) scoreHormiga = 1;
-    else                scoreHormiga = 0;
-    mensajeHormiga = `Hormigas: ${pct.toFixed(1)}% del ingreso.`;
-  }
-  componentes.push({
-    key:    'hormiga',
-    label:  'Hormigas controladas',
-    peso:   5,
-    score:  scoreHormiga,
-    mensaje: mensajeHormiga,
-  });
-
-  // ── SCORE TOTAL Y ETIQUETA ────────────────────────────────────────────────
   const score = componentes.reduce((s, c) => s + c.score, 0);
   let etiqueta;
   if      (score >= 90) etiqueta = 'excelente';
