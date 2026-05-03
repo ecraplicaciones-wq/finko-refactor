@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finko Pro</title>
   <meta name="description" content="Finko Pro — Tu app de finanzas personales para Colombia. Controla gastos, deudas, ahorros e inversiones.">
+  <link rel="icon" href="data:,">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -40,11 +41,36 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════
+     ÍNDICE DE ESTRUCTURA — FINKO PRO index.html
+     ─────────────────────────────────────────────────────
+     [A] SIDEBAR ............. ~L50
+     [B] MAIN — secciones
+         dash  Dashboard ....... ~L184
+         quin  Planificar ....... ~L500
+         gast  Gastos ........... ~L591
+         alcancias Alcancías .... ~L801
+         inve  Inversiones ....... ~L872
+         compromisos ............. ~L1019
+         meDeben ................. ~L1180
+         stat  Balance ........... ~L1248
+     [C] MODALES
+         Bolsillos ............... ~L1322
+         Diálogo genérico ........ ~L1437
+         Gasto (pagar-fijo, edit). ~L1459
+         Objetivos ............... ~L1538
+         Compromisos (deudas) .... ~L1597
+         Agenda y pagos .......... ~L1791
+         Me Deben ................ ~L1845
+         Inversiones / Prima ..... ~L1892
+     [D] PANEL MÁS (móvil) .... ~L1926
+════════════════════════════════════════════════════════ -->
+
 <a href="#main" class="sr-only" onblur="this.style.top='-40px'" onfocus="this.style.top='0'">Saltar al contenido</a>
 <div id="sr-announcer" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
 <!-- ═══════════════════════════════════════════════════════
-     SIDEBAR — ADN Colombiano 
+     [A] SIDEBAR — ADN Colombiano
 ════════════════════════════════════════════════════════ -->
 <aside id="sidebar" aria-label="Menú principal de navegación">
   <div class="sb-logo" id="btn-sidebar-toggle"
@@ -86,12 +112,21 @@
 
     <!-- ── TAB 3: Compromisos (fusión Deudas+Agenda) ── -->
     <button class="nb"
-            data-section="compromisos"
-            data-action="go" data-arg-sec="compromisos"
-            title="Lo que debo y mis pagos agendados"
-            aria-label="Compromisos — deudas y pagos programados">
-      <span class="ni" aria-hidden="true">🤝</span>
-      <span class="nb-txt">Deberes</span>
+            data-section="agenda"
+            data-action="go" data-arg-sec="agenda"
+            title="Próximos pagos, suscripciones y recordatorios"
+            aria-label="Agenda — pagos fijos y eventos futuros">
+      <span class="ni" aria-hidden="true">📅</span>
+      <span class="nb-txt">Agenda</span>
+    </button>
+
+    <button class="nb nb-mob-hidden"
+            data-section="deudas"
+            data-action="go" data-arg-sec="deudas"
+            title="Estrategia para salir de deudas"
+            aria-label="Deudas — créditos y tarjetas">
+      <span class="ni" aria-hidden="true">💳</span>
+      <span class="nb-txt">Deudas</span>
     </button>
 
     <!-- ── R3: Me Deben — préstamos a familia/amigos (cara opuesta a Compromisos) ── -->
@@ -175,7 +210,7 @@
 </aside>
 
 <!-- ═══════════════════════════════════════════════════════
-     CONTENIDO PRINCIPAL
+     [B] CONTENIDO PRINCIPAL — secciones de la app
 ════════════════════════════════════════════════════════ -->
 <main id="main">
 
@@ -364,16 +399,16 @@
       <div id="dash-resumen-body" class="dash-card-body with-divider">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
         <div style="text-align:center;padding:12px 8px;background:rgba(0,220,130,.06);border:1px solid rgba(0,220,130,.18);border-radius:10px;">
-          <div style="class="ui-label-sm" style="margin-bottom:5px;"">Ingreso</div>
-          <div id="d-ing" style="class="ui-val-green" style="font-size:16px;"letter-spacing:-.5px;">$0</div>
+          <div class="ui-label-sm" style="margin-bottom:5px;">Ingreso</div>
+          <div id="d-ing" class="ui-val-green" style="font-size:16px;letter-spacing:-.5px;">$0</div>
         </div>
         <div style="text-align:center;padding:12px 8px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.18);border-radius:10px;">
-          <div style="class="ui-label-sm" style="margin-bottom:5px;"">Gastado</div>
-          <div id="d-gas" style="class="ui-val-red" style="font-size:16px;"letter-spacing:-.5px;">$0</div>
+          <div class="ui-label-sm" style="margin-bottom:5px;">Gastado</div>
+          <div id="d-gas" class="ui-val-red" style="font-size:16px;letter-spacing:-.5px;">$0</div>
           <div id="d-pgc" style="font-size:10px;color:var(--t3);margin-top:2px;">0%</div>
         </div>
         <div style="text-align:center;padding:12px 8px;background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.18);border-radius:10px;">
-          <div style="class="ui-label-sm" style="margin-bottom:5px;"">Ahorrado</div>
+          <div class="ui-label-sm" style="margin-bottom:5px;">Ahorrado</div>
           <div id="d-aho" style="font-family:var(--fm);font-weight:800;font-size:16px;color:var(--a4);letter-spacing:-.5px;">$0</div>
         </div>
       </div>
@@ -386,7 +421,7 @@
       </div>
 
       <div style="margin-top:14px;padding:12px 14px;background:rgba(121,85,72,.06);border:1px solid rgba(121,85,72,.18);border-radius:8px;">
-        <div style="class="ui-row-sb" style="margin-bottom:8px;"">
+        <div class="ui-row-sb" style="margin-bottom:8px;">
           <span style="font-size:11px;font-weight:700;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;">🐜 Gastos Hormiga</span>
           <div style="text-align:right;">
             <div id="d-hor" style="font-family:var(--fm);font-weight:800;font-size:16px;color:#a1887f;">$0</div>
@@ -418,7 +453,7 @@
         <div class="g2">
           <div class="card" id="card-fondo-emergencia" style="margin:0;">
             <div class="fb mb">
-              <div style="class="ui-row-gap10"">
+              <div class="ui-row-gap10">
                 <span class="ct" style="margin:0">🛡️ Fondo de Emergencia</span>
                 <button class="btn bg bsm" data-action="openM" data-arg-id="m-fondo-emergencia">+ Abonar</button>
               </div>
@@ -483,9 +518,9 @@
 
     <button class="btn bp" 
       style="position: fixed; bottom: 84px; right: 24px; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0,220,130,0.4); display: flex; align-items: center; justify-content: center; font-size: 26px; z-index: 100; padding: 0; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);" 
-      data-action="openM" 
-      data-arg-id="m-eg" 
-      aria-label="Agregar un nuevo gasto rápidamente"
+      data-action="go" 
+      data-arg-sec="gast" 
+      aria-label="Ir a registrar un nuevo gasto"
       onmousedown="this.style.transform='scale(0.9)'"
       onmouseup="this.style.transform='scale(1)'"
       ontouchstart="this.style.transform='scale(0.9)'"
@@ -600,30 +635,13 @@
     </header>
 
     <!-- Pestañas internas -->
-    <div class="itab-bar" role="tablist" aria-label="Ver gastos del período o gastos fijos">
-      <button class="itab active" data-tab="gastos"
-              role="tab" aria-selected="true" tabindex="0"
-              onclick="window.switchSecTab('gast','gastos')"
-              aria-controls="gast-tab-gastos">
-        💸 Diarios
-      </button>
-      <button class="itab" data-tab="fijos"
-              role="tab" aria-selected="false" tabindex="-1"
-              onclick="window.switchSecTab('gast','fijos')"
-              aria-controls="gast-tab-fijos">
-        📌 Fijos
-      </button>
-    </div>
-
     <!-- Panel: Gastos del período -->
-    <div id="gast-tab-gastos" class="itab-panel active"
-         data-tab="gastos" role="tabpanel" aria-label="Gastos del período">
-
+    <div class="sec-body">
       <div class="card" id="form-gasto-card">
         <button class="form-gasto-header" data-action="toggleFormGasto"
                 aria-expanded="false" aria-controls="form-gasto-body"
                 style="width:100%;background:none;border:none;padding:2px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;text-align:left;font-family:var(--ff);">
-          <div style="class="ui-row-gap10"">
+          <div class="ui-row-gap10">
             <div id="form-gasto-icon" aria-hidden="true" style="width:30px;height:30px;border-radius:8px;background:rgba(0,220,130,.15);border:1px solid rgba(0,220,130,.3);display:flex;align-items:center;justify-content:center;font-size:15px;">➕</div>
             <span class="st" style="font-size:15px;color:var(--t1);">Nuevo gasto</span>
           </div>
@@ -635,11 +653,11 @@
           <div class="fr">
             <div class="fg">
               <label>Monto (COP)</label>
-              <input type="number" id="g-mo" placeholder="Ej: 35000" inputmode="decimal" oninput="actualizarSemaforo()" onchange="actualizarSemaforo()">
+              <input type="number" id="g-mo" placeholder="Ej: 35000" inputmode="decimal" data-action-input="actualizarSemaforo" data-action-change="actualizarSemaforo">
             </div>
             <div class="fg">
               <label>¿Para qué es?</label>
-              <select id="g-ti" onchange="actualizarSemaforo();calcularImpactoHormiga()">
+              <select id="g-ti" data-action-change="evaluarTipoGasto">
                 <option value="necesidad">Necesidad — arriendo, comida, servicios</option>
                 <option value="deseo">Antojo — ropa, salidas, entretenimiento</option>
                 <option value="hormiga">Hormiga 🐜 — gastos chiquiticos que se acumulan</option>
@@ -677,7 +695,7 @@
           <div class="fr">
             <div class="fg"><label>Fecha</label><input type="date" id="g-fe"></div>
             <div class="fg ckrow" style="margin-bottom:0;display:flex;align-items:center;">
-              <input type="checkbox" id="g-4k" onchange="prev4k()">
+              <input type="checkbox" id="g-4k" data-action-change="prev4k">
               <label for="g-4k" style="margin:0;font-size:13px;">Aplica 4×1000</label>
             </div>
           </div>
@@ -691,7 +709,7 @@
       <div class="card">
         <div class="fb" style="margin-bottom:10px;">
           <div class="st" style="font-size:16px;">Lo que has gastado</div>
-          <div class="srch"><span>🔍</span><input type="text" id="g-search" placeholder="Buscar..." aria-label="Buscar en tus gastos" onkeyup="renderGastos()"></div>
+          <div class="srch"><span>🔍</span><input type="text" id="g-search" placeholder="Buscar..." aria-label="Buscar en tus gastos" data-action-keyup="renderGastos"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" role="group" aria-label="Filtrar por tipo">
           <button data-action="setFiltroGasto" data-arg-tipo=""         class="gfil active-fil pill pg" aria-pressed="true"  style="cursor:pointer;padding:5px 12px;font-size:11px;font-weight:800;border:none;">Todos</button>
@@ -740,7 +758,7 @@
       <div class="card" id="form-fijo-card">
         <button data-action="toggleFijoInline" aria-expanded="false" aria-controls="form-fijo-body"
                 style="width:100%;background:none;border:none;padding:2px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;text-align:left;font-family:var(--ff);">
-          <div style="class="ui-row-gap10"">
+          <div class="ui-row-gap10">
             <div id="form-fijo-icon" aria-hidden="true" style="width:30px;height:30px;border-radius:8px;background:rgba(255,214,10,.15);border:1px solid rgba(255,214,10,.3);display:flex;align-items:center;justify-content:center;font-size:15px;">📌</div>
             <span class="st" style="font-size:15px;color:var(--t1);">Nuevo fijo</span>
           </div>
@@ -1015,165 +1033,76 @@
   </section>
 
   <!-- ─── MIS COMPROMISOS (fusión: Deudas + Agenda) ──────── -->
-  <section class="sec" id="sec-compromisos" aria-label="Mis compromisos de pago">
-
+  <section class="sec" id="sec-agenda" aria-label="Agenda y Pagos Fijos">
     <header class="sh">
       <div class="sh-left">
-        <div class="sh-icon" aria-hidden="true">🤝</div>
+        <div class="sh-icon purple" aria-hidden="true">📅</div>
         <div>
-          <div class="st">Mis compromisos</div>
-          <div class="ss">Lo que debo al banco y los pagos que vienen — todo en un solo lugar. 💳</div>
+          <div class="st">Mi Agenda</div>
+          <div class="ss">Tus cuentas claras: fijos, suscripciones y recordatorios.</div>
         </div>
       </div>
+      <button class="btn bp bsm" data-action="openM" data-arg-id="m-pago">+ Agendar pago</button>
     </header>
 
-    <!-- Pestañas internas -->
-    <div class="itab-bar" role="tablist" aria-label="Ver deudas o pagos agendados">
-      <button class="itab active" data-tab="deudas"
-              role="tab" aria-selected="true" tabindex="0"
-              data-action="switchSecTab" data-arg-section="compromisos" data-arg-tab="deudas"
-              aria-controls="compromisos-tab-deudas">
-        🤝 Lo que debo
-      </button>
-      <button class="itab" data-tab="agenda"
-              role="tab" aria-selected="false" tabindex="-1"
-              data-action="switchSecTab" data-arg-section="compromisos" data-arg-tab="agenda"
-              aria-controls="compromisos-tab-agenda">
-        📅 Pagos agendados
-      </button>
-    </div>
-
-    <!-- Panel: Deudas -->
-    <div id="compromisos-tab-deudas" class="itab-panel active"
-         data-tab="deudas" role="tabpanel" aria-label="Lo que debo">
-      <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp" data-action="openM" data-arg-id="m-deu" style="padding:10px 18px;font-size:13px;font-weight:700;"
-                aria-label="Registrar una nueva deuda">
-          + Anotar deuda
-        </button>
-      </div>
-      <div style="background:var(--s1);border:1px solid var(--b1);border-radius:16px;margin-bottom:16px;overflow:hidden;">
-      <div style="display:flex;flex-wrap:wrap;align-items:stretch;">
-
-        <div style="flex:1;min-width:160px;padding:20px 24px;border-right:1px solid var(--b1);">
-          <div style="class="ui-row-gap8"margin-bottom:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:16px;" aria-hidden="true">💸</div>
-            <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">Deuda total</span>
-          </div>
-          <div id="de-tot" style="font-family:var(--fm);font-size:26px;font-weight:800;color:var(--dan);letter-spacing:-1px;">$0</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:6px;">lo que debes en total hoy</div>
-        </div>
-
-        <div style="flex:1;min-width:160px;padding:20px 24px;border-right:1px solid var(--b1);">
-          <div style="class="ui-row-gap8"margin-bottom:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.2);display:flex;align-items:center;justify-content:center;font-size:16px;" aria-hidden="true">📅</div>
-            <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">A pagar ahora</span>
-          </div>
-          <div id="de-cp" style="font-family:var(--fm);font-size:26px;font-weight:800;color:var(--a2);letter-spacing:-1px;">$0</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:6px;">comprometido este período</div>
-        </div>
-
-        <div style="flex:1;min-width:160px;padding:20px 24px;" id="card-pct-ingreso" role="region" aria-live="polite">
-          <div style="class="ui-row-gap8"margin-bottom:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,158,255,.1);border:1px solid rgba(59,158,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px;" aria-hidden="true">📊</div>
-            <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">De tu plata va en deudas</span>
-          </div>
-          <div id="de-pct" style="font-family:var(--fm);font-size:26px;font-weight:800;letter-spacing:-1px;">0%</div>
-          <div id="de-pct-msg" style="font-size:11px;margin-top:6px;line-height:1.5;"></div>
-        </div>
-
-      </div>
-      <div id="de-avisos" style="border-top:1px solid var(--b1);"></div>
-    </div>
-
-    <div class="card mb" id="deu-fijos-resumen" style="display:none;"></div>
-
-    <div class="card mb" style="background:linear-gradient(135deg,rgba(59,158,255,.04),var(--s1));border-color:rgba(59,158,255,.3);">
-      <div class="ct">🧠 Coach de Estrategia de Pagos</div>
-      <p class="tm" style="line-height:1.5;font-size:11px;margin-bottom:12px;">Elige el método y Finko ordena automáticamente cuál deuda atacar primero con dinero extra.</p>
-      <div class="fr" style="gap:10px;">
-        <button class="btn bp" id="btn-ava"  data-action="setModoDeuda" data-arg-modo="avalancha" style="flex:1;">🔥 Método Avalancha</button>
-        <button class="btn bg" id="btn-bola" data-action="setModoDeuda" data-arg-modo="bola"      style="flex:1;">⛄ Método Bola de Nieve</button>
-      </div>
-      <div id="deu-coach-msg" style="margin-top:12px;font-size:12px;color:var(--t2);background:var(--s2);padding:10px;border-radius:6px;border:1px dashed var(--b2);"><em>Activa un método para ver el consejo del coach.</em></div>
-    </div>
-
-    <div id="de-lst"><div class="emp"><span class="emp-icon">▣</span>Sin deudas registradas 🎉</div></div>
-    </div>
-
-    <!-- Panel: Agenda -->
-    <div id="compromisos-tab-agenda" class="itab-panel"
-         data-tab="agenda" role="tabpanel" aria-label="Pagos agendados">
-      <div class="sh-actions" style="margin-bottom:16px;">
-        <button class="btn bp" data-action="openM" data-arg-id="m-pago" style="padding:10px 18px;font-size:13px;font-weight:700;"
-                aria-label="Programar un nuevo pago">
-          + Programar pago
-        </button>
-      </div>
-      <div style="background:var(--s1);border:1px solid var(--b1);border-radius:16px;margin-bottom:16px;overflow:hidden;">
-      <div class="agen-stats-row" style="display:flex;flex-wrap:wrap;align-items:stretch;">
-
-        <div style="flex:1;min-width:140px;padding:14px 18px;border-right:1px solid var(--b1);">
-          <div style="class="ui-row-gap8"margin-bottom:8px;">
-            <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.2);display:flex;align-items:center;justify-content:center;font-size:14px;" aria-hidden="true">💸</div>
-            <span style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">Total pendiente</span>
-          </div>
-          <div id="ag-tot-monto" style="font-family:var(--fm);font-size:26px;font-weight:800;color:var(--a2);letter-spacing:-1px;">$0</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:6px;">por pagar en total</div>
-        </div>
-
-        <div style="flex:1;min-width:160px;padding:20px 24px;border-right:1px solid var(--b1);">
-          <div style="class="ui-row-gap8"margin-bottom:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);display:flex;align-items:center;justify-content:center;font-size:16px;" aria-hidden="true">⏰</div>
-            <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">Próximos 7 días</span>
-          </div>
-          <div id="ag-prox7" style="font-family:var(--fm);font-size:26px;font-weight:800;color:var(--a3);letter-spacing:-1px;">$0</div>
-          <div id="ag-prox7-count" style="font-size:11px;color:var(--t3);margin-top:6px;">0 pagos</div>
-        </div>
-
-        <div style="flex:1;min-width:160px;padding:20px 24px;" id="ag-card-vencidos">
-          <div style="class="ui-row-gap8"margin-bottom:10px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:16px;" aria-hidden="true">🚨</div>
-            <span style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">Pagos vencidos</span>
-          </div>
-          <div id="ag-vencidos-monto" aria-live="polite" aria-atomic="true" style="font-family:var(--fm);font-size:26px;font-weight:800;color:var(--a1);letter-spacing:-1px;">$0</div>
-          <div id="ag-vencidos-msg" style="font-size:11px;color:var(--t3);margin-top:6px;">sin pagos vencidos ✅</div>
-          <div id="ag-vencidos-count" style="font-size:10px;color:var(--t3);margin-top:2px;"></div>
-        </div>
-
-      </div>
-      <div id="ag-avisos" style="border-top:1px solid var(--b1);"></div>
-    </div>
-
-    <div class="g2 mb" style="align-items:start;">
-      <div class="card">
+    <div class="sec-body">
+      <div id="fijos-resumen-container"></div> 
+      
+      <div class="card mb">
         <div class="fb mb">
-          <button class="btn bg bsm" data-action="prevMonth" style="padding:4px 10px;" aria-label="Mes anterior">◀</button>
+          <button class="btn bg bsm" data-action="prevMonth">◀</button>
           <div class="ct" id="cal-month-title" style="margin:0;text-transform:capitalize;">Cargando...</div>
-          <button class="btn bg bsm" data-action="nextMonth" style="padding:4px 10px;" aria-label="Mes siguiente">▶</button>
+          <button class="btn bg bsm" data-action="nextMonth">▶</button>
         </div>
-        <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;" aria-label="Leyenda del calendario">
-          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--dan);flex-shrink:0;"></div> Agendado</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--a4);flex-shrink:0;"></div> Fijo</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--a2);flex-shrink:0;"></div> Deuda</div>
-        </div>
-        <div class="cal-hdr"><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>
         <div class="cal-grid" id="cal-g" role="grid"></div>
-        <div id="cal-details" style="display:none;margin-top:16px;padding:12px;background:var(--s2);border-radius:8px;border:1px solid var(--b2);"></div>
       </div>
 
-      <div class="card" style="padding:0;overflow:hidden;">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;">
-          <span class="ct" style="margin:0;">Lista de próximos pagos</span>
-          <span class="tm" id="pa-lst-count" style="font-size:10px;"></span>
+      <div class="g2">
+        <div class="card">
+          <div class="ct">📌 Mis Gastos Fijos</div>
+          <div id="fi-lst"></div>
         </div>
-        <div id="pa-lst" style="padding:16px;"></div>
+        <div class="card">
+          <div class="ct">🔔 Próximos de la Agenda</div>
+          <div id="pa-lst"></div>
+        </div>
       </div>
     </div>
-    </div>
-
   </section>
 
+  <section class="sec" id="sec-deudas" aria-label="Estrategia de Deudas">
+    <header class="sh">
+      <div class="sh-left">
+        <div class="sh-icon red" aria-hidden="true">💳</div>
+        <div>
+          <div class="st">Estrategia de Deudas</div>
+          <div class="ss">Plan para recuperar tu libertad financiera. 🚀</div>
+        </div>
+      </div>
+      <button class="btn bp bsm" data-action="openM" data-arg-id="m-deu">+ Nueva deuda</button>
+    </header>
+
+    <div class="sec-body">
+      <div class="card mb" style="background:var(--s1);">
+        <div class="g3">
+          <div><div class="tm">Deuda Total</div><div id="de-tot" class="mono" style="font-size:24px; color:var(--dan); font-weight:800;">$0</div></div>
+          <div><div class="tm">A pagar este mes</div><div id="de-cp" class="mono" style="font-size:24px; color:var(--a2); font-weight:800;">$0</div></div>
+          <div><div class="tm">% de tu ingreso</div><div id="de-pct" class="mono" style="font-size:24px; font-weight:800;">0%</div></div>
+        </div>
+      </div>
+
+      <div class="card mb accent-blue">
+        <div class="ct">🧠 Coach de Estrategia</div>
+        <div class="fr" style="gap:10px; margin-top:10px;">
+          <button class="btn bp" data-action="setModoDeuda" data-arg-modo="avalancha" style="flex:1;">🔥 Avalancha</button>
+          <button class="btn bg" data-action="setModoDeuda" data-arg-modo="bola" style="flex:1;">⛄ Bola de Nieve</button>
+        </div>
+        <div id="deu-coach-msg" class="tm mt"></div>
+      </div>
+
+      <div id="de-lst"></div>
+    </div>
+  </section>
 
   <!-- ─── ME DEBEN (R3 — préstamos personales) ───────────── -->
   <section class="sec" id="sec-meDeben" aria-label="Me deben — préstamos a familia y amigos">
@@ -1379,11 +1308,11 @@
 
 <!-- Fondo de emergencia -->
 <template id="tpl-m-fondo-emergencia">
-  <div class="modal-ov" id="m-fondo-emergencia" role="dialog" aria-modal="true">
+  <div class="modal-ov" id="m-fondo-emergencia" role="dialog" aria-modal="true" aria-labelledby="fondo-modal-title">
     <div class="modal" style="width:400px;">
-      <div class="fb mb"><div class="mtit">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
-      <div class="fg"><label>Cuenta de origen</label><select id="fe-fo"></select></div>
-      <div class="fg"><label>Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
+      <div class="fb mb"><div class="mtit" id="fondo-modal-title">Abonar al Fondo 🛡️</div><button class="mclose" data-action="closeM" data-arg-id="m-fondo-emergencia" aria-label="Cerrar ventana">×</button></div>
+      <div class="fg"><label for="fe-fo">Cuenta de origen</label><select id="fe-fo"></select></div>
+      <div class="fg"><label for="fe-monto-abono">Monto a guardar (COP)</label><input type="number" id="fe-monto-abono" placeholder="Ej. 100000"></div>
       <button class="btn bp bfw" data-action="registrarAbonoFondo">Guardar en el Fondo</button>
     </div>
   </div>
@@ -1391,11 +1320,11 @@
 
 <!-- Agregar cuenta bancaria -->
 <template id="tpl-m-cuenta">
-  <div class="modal-ov" id="m-cuenta" role="dialog" aria-modal="true">
+  <div class="modal-ov" id="m-cuenta" role="dialog" aria-modal="true" aria-labelledby="cuenta-modal-title">
     <div class="modal">
-      <div class="fb mb"><div class="mtit">Agregar cuenta 🏦</div><button class="mclose" data-action="closeM" data-arg-id="m-cuenta" aria-label="Cerrar ventana">×</button></div>
+      <div class="fb mb"><div class="mtit" id="cuenta-modal-title">Agregar cuenta 🏦</div><button class="mclose" data-action="closeM" data-arg-id="m-cuenta" aria-label="Cerrar ventana">×</button></div>
       <div class="fg">
-        <label>Entidad Financiera</label>
+        <label for="cu-banco">Entidad Financiera</label>
         <select id="cu-banco">
           <optgroup label="Billeteras y Neobancos">
             <option value="nequi">📱 Nequi</option>
@@ -1424,12 +1353,16 @@
           </optgroup>
         </select>
       </div>
-      <div class="fg"><label>Alias (Ej: Ahorros, Nómina)</label><input type="text" id="cu-alias"></div>
-      <div class="fg"><label>Saldo actual</label><input type="number" id="cu-saldo"></div>
+      <div class="fg"><label for="cu-alias">Alias (Ej: Ahorros, Nómina)</label><input type="text" id="cu-alias"></div>
+      <div class="fg"><label for="cu-saldo">Saldo actual</label><input type="number" id="cu-saldo"></div>
       <button class="btn bp bfw" data-action="guardarCuenta">Agregar cuenta</button>
     </div>
   </div>
 </template>
+
+<!-- ═══════════════════════════════════════════════════════
+     [C] MODALES — DIÁLOGO GENÉRICO + GASTOS
+════════════════════════════════════════════════════════ -->
 
 <!-- Diálogo genérico (confirm / alert / prompt) -->
 <div class="modal-ov" id="cdlg-ov" role="dialog" aria-modal="true" style="z-index:300;">
@@ -1462,7 +1395,7 @@
         <div id="mf-nombre" style="font-weight:700;"></div>
         <div id="mf-monto" style="font-family:var(--fm);font-size:22px;color:var(--a3);font-weight:700;"></div>
       </div>
-      <div class="fg"><label>¿De dónde sale el dinero?</label><select id="mf-fo"></select></div>
+      <div class="fg"><label for="mf-fo">¿De dónde sale el dinero?</label><select id="mf-fo"></select></div>
       <button class="btn bp bfw" data-action="ejecutarPagoFijo">Confirmar Pago</button>
     </div>
   </div>
@@ -1472,11 +1405,11 @@
 <div class="modal-ov" id="m-edit-gasto" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="fb mb"><div class="mtit">Editar gasto ✏️</div><button class="mclose" data-action="closeM" data-arg-id="m-edit-gasto" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg"><label>Descripción</label><input type="text" id="eg-de"></div>
+    <div class="fg"><label for="eg-de">Descripción</label><input type="text" id="eg-de"></div>
     <div class="fr">
-      <div class="fg"><label>Monto</label><input type="number" id="eg-mo"></div>
+      <div class="fg"><label for="eg-mo">Monto</label><input type="number" id="eg-mo"></div>
       <div class="fg">
-        <label>Categoría</label>
+        <label for="eg-ca">Categoría</label>
         <select id="eg-ca">
           <option value="alimentacion">🍽️ Alimentación</option>
           <option value="transporte">🚌 Transporte</option>
@@ -1491,7 +1424,7 @@
     </div>
     <div class="fr">
       <div class="fg">
-        <label>Tipo</label>
+        <label for="eg-ti">Tipo</label>
         <select id="eg-ti">
           <option value="necesidad">Necesidad</option>
           <option value="deseo">Deseo</option>
@@ -1512,7 +1445,7 @@
         </div>
       </div>
     </div>
-    <div class="fg"><label>Fecha</label><input type="date" id="eg-fe"></div>
+    <div class="fg"><label for="eg-fe">Fecha</label><input type="date" id="eg-fe"></div>
     <input type="hidden" id="eg-id">
     <button class="btn bp bfw" data-action="guardarEditarGasto">Guardar cambios</button>
   </div>
@@ -1531,6 +1464,10 @@
     <div id="reporte-contenido"></div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════
+     [C] MODALES — ALCANCÍAS (OBJETIVOS + BOLSILLOS)
+════════════════════════════════════════════════════════ -->
 
 <!-- Nuevo objetivo -->
 <template id="tpl-m-objetivo">
@@ -1591,6 +1528,10 @@
   </div>
 </template>
 
+<!-- ═══════════════════════════════════════════════════════
+     [C] MODALES — COMPROMISOS (DEUDAS + AGENDA)
+════════════════════════════════════════════════════════ -->
+
 <!-- Editar deuda -->
 <template id="tpl-m-edit-deu">
   <div class="modal-ov" id="m-edit-deu" role="dialog" aria-modal="true">
@@ -1613,10 +1554,10 @@
         </div>
         <input type="hidden" id="ed-ti">
       </div>
-      <div class="fg"><label>Nombre de la deuda</label><input type="text" id="ed-no" placeholder="Ej: Tarjeta Bancolombia"></div>
+      <div class="fg"><label for="ed-no">Nombre de la deuda</label><input type="text" id="ed-no" placeholder="Ej: Tarjeta Bancolombia"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div><label style="margin-bottom:5px;display:block;">Saldo pendiente (COP)</label><input type="number" id="ed-to" placeholder="Ej: 5000000"></div>
-        <div><label style="margin-bottom:5px;display:block;">Cuota (COP)</label><input type="number" id="ed-cu" placeholder="Ej: 300000"></div>
+        <div><label for="ed-to" style="margin-bottom:5px;display:block;">Saldo pendiente (COP)</label><input type="number" id="ed-to" placeholder="Ej: 5000000"></div>
+        <div><label for="ed-cu" style="margin-bottom:5px;display:block;">Cuota (COP)</label><input type="number" id="ed-cu" placeholder="Ej: 300000"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
@@ -1628,7 +1569,7 @@
           <input type="hidden" id="ed-pe" value="mensual">
         </div>
         <div>
-          <label style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
+          <label for="ed-ta" style="margin-bottom:5px;display:block;">Tasa de interés (% anual)</label>
           <input type="number" id="ed-ta" step="0.1" placeholder="Ej: 2.5">
           <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si no la sabes, déjalo en 0</div>
         </div>
@@ -1790,14 +1731,14 @@
   <div class="modal-ov" id="m-pago" role="dialog" aria-modal="true">
     <div class="modal">
       <div class="fb mb"><div class="mtit">Agendar Pago 📅</div><button class="mclose" data-action="closeM" data-arg-id="m-pago" aria-label="Cerrar ventana">×</button></div>
-      <div class="fg"><label>Descripción</label><input type="text" id="ag-de"></div>
+      <div class="fg"><label for="ag-de">Descripción</label><input type="text" id="ag-de"></div>
       <div class="fr">
-        <div class="fg"><label>Monto</label><input type="number" id="ag-mo"></div>
-        <div class="fg"><label>Fecha</label><input type="date" id="ag-fe"></div>
+        <div class="fg"><label for="ag-mo">Monto</label><input type="number" id="ag-mo"></div>
+        <div class="fg"><label for="ag-fe">Fecha</label><input type="date" id="ag-fe"></div>
       </div>
       <div class="fr">
         <div class="fg">
-          <label>Frecuencia</label>
+          <label for="ag-re">Frecuencia</label>
           <select id="ag-re">
             <option value="unico">Pago Único</option>
             <option value="quincenal">Quincenal</option>
@@ -1805,7 +1746,7 @@
           </select>
         </div>
         <div class="fg">
-          <label>Fondo</label>
+          <label for="ag-fo">Fondo</label>
           <select id="ag-fo">
             <option value="banco">🏦 Banco</option>
             <option value="efectivo">💵 Efectivo</option>
@@ -1845,25 +1786,25 @@
 
 <!-- Nuevo / Editar préstamo personal -->
 <template id="tpl-m-md">
-  <div class="modal-ov" id="m-md" role="dialog" aria-modal="true">
+  <div class="modal-ov" id="m-md" role="dialog" aria-modal="true" aria-labelledby="md-tit">
     <div class="modal">
-      <div class="fb mb"><div class="mtit" id="md-tit">Nuevo Préstamo 🤝</div><button class="mclose" data-action="closeM" data-arg-id="m-md">×</button></div>
+      <div class="fb mb"><div class="mtit" id="md-tit">Nuevo Préstamo 🤝</div><button class="mclose" data-action="closeM" data-arg-id="m-md" aria-label="Cerrar ventana">×</button></div>
       <input type="hidden" id="md-id">
-      <div class="fg"><label>¿A quién le prestaste?</label><input type="text" id="md-per" placeholder="Ej: Juan Pérez"></div>
-      <div class="fg"><label>¿Cuánto le prestaste? (COP)</label><input type="number" id="md-mon" placeholder="Ej: 50000"></div>
-      <div class="fg"><label>¿De qué cuenta salió la plata?</label><select id="md-fo"></select></div>
-      <div class="fg"><label>Nota <span class="tm">(opcional)</span></label><input type="text" id="md-not" placeholder="Ej: Para el almuerzo"></div>
+      <div class="fg"><label for="md-per">¿A quién le prestaste?</label><input type="text" id="md-per" placeholder="Ej: Juan Pérez"></div>
+      <div class="fg"><label for="md-mon">¿Cuánto le prestaste? (COP)</label><input type="number" id="md-mon" placeholder="Ej: 50000"></div>
+      <div class="fg"><label for="md-fo">¿De qué cuenta salió la plata?</label><select id="md-fo"></select></div>
+      <div class="fg"><label for="md-not">Nota <span class="tm">(opcional)</span></label><input type="text" id="md-not" placeholder="Ej: Para el almuerzo"></div>
       <button class="btn bp bfw" data-action="guardarMD">Guardar Préstamo</button>
     </div>
   </div>
 </template>
 
 <!-- Registrar pago de préstamo personal -->
-<div class="modal-ov" id="m-mdp" role="dialog" aria-modal="true">
+<div class="modal-ov" id="m-mdp" role="dialog" aria-modal="true" aria-labelledby="mdp-title">
   <div class="modal" style="max-width:420px;">
     <div class="fb mb">
       <div>
-        <div class="mtit" style="margin-bottom:2px;">¡Te pagaron! 💵</div>
+        <div class="mtit" id="mdp-title" style="margin-bottom:2px;">¡Te pagaron! 💵</div>
         <div style="font-size:11px;color:var(--t3);">Registrá lo que ya te devolvieron.</div>
       </div>
       <button class="mclose" data-action="closeM" data-arg-id="m-mdp" aria-label="Cerrar ventana">×</button>
@@ -1877,7 +1818,7 @@
       </div>
     </div>
     <div class="fg">
-      <label>¿Cuánto te pagó?</label>
+      <label for="mdp-mo">¿Cuánto te pagó?</label>
       <input type="number" id="mdp-mo" placeholder="Ej: 50000" min="1">
       <div style="font-size:10px;color:var(--t3);margin-top:4px;">Si te pagó todo, dejalo en el monto pendiente.</div>
     </div>
@@ -1886,11 +1827,15 @@
 </div>
 
 
+<!-- ═══════════════════════════════════════════════════════
+     [C] MODALES — INVERSIONES + PRIMA / BONO
+════════════════════════════════════════════════════════ -->
+
 <!-- Nueva inversión -->
 <template id="tpl-m-inversion">
-  <div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true">
+  <div class="modal-ov" id="m-inversion" role="dialog" aria-modal="true" aria-labelledby="inversion-modal-title">
     <div class="modal">
-      <div class="fb mb"><div class="mtit">Nueva Inversión 📈</div><button class="mclose" data-action="closeM" data-arg-id="m-inversion">×</button></div>
+      <div class="fb mb"><div class="mtit" id="inversion-modal-title">Nueva Inversión 📈</div><button class="mclose" data-action="closeM" data-arg-id="m-inversion" aria-label="Cerrar ventana">×</button></div>
       <button class="btn bp bfw" data-action="guardarInversion">Crear Inversión</button>
     </div>
   </div>
@@ -1900,7 +1845,7 @@
 <div class="modal-ov" id="m-rendimiento" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="fb mb"><div class="mtit" id="rend-t">Actualizar Valor</div><button class="mclose" data-action="closeM" data-arg-id="m-rendimiento" aria-label="Cerrar ventana">×</button></div>
-    <div class="fg"><label>Saldo Total Actual</label><input type="number" id="rend-val"></div>
+    <div class="fg"><label for="rend-val">Saldo Total Actual</label><input type="number" id="rend-val"></div>
     <input type="hidden" id="rend-id">
     <button class="btn bp bfw" data-action="guardarRendimiento">Actualizar</button>
   </div>
@@ -1914,7 +1859,7 @@
       💡 <strong>Regla 30/40/30:</strong> 30% a deudas · 40% a ahorro · 30% a gustos. La fórmula que los expertos recomiendan para aprovechar los ingresos extra sin derrocharlos.
     </div>
     <div class="fg"><label for="prm-mo">Monto recibido (COP)</label><input type="number" id="prm-mo" placeholder="Ej: 2500000" oninput="calcPrima()"></div>
-    <div class="fg"><label>¿A qué cuenta llegó el dinero?</label><select id="prm-fo"></select></div>
+    <div class="fg"><label for="prm-fo">¿A qué cuenta llegó el dinero?</label><select id="prm-fo"></select></div>
     <div id="prm-res"></div>
     <button class="btn bp bfw" data-action="guardarPrima">Registrar Ingreso →</button>
   </div>
@@ -1927,6 +1872,13 @@
 <div id="mas-panel" class="mas-panel" role="dialog" aria-label="Más secciones" aria-modal="false">
   <div class="mas-handle" aria-hidden="true"></div>
   <div class="mas-grid">
+
+    <button class="mas-item" data-section="deudas"
+            data-action="go" data-arg-sec="deudas" aria-label="Ir a Mis Deudas">
+      <span class="mas-icon" aria-hidden="true">💳</span>
+      <span class="mas-label">Deudas</span>
+    </button>
+
     <!-- Secciones secundarias — acceso desde el panel -->
     <button class="mas-item" data-section="alcancias"
             data-action="go" data-arg-sec="alcancias" aria-label="Ir a Mis alcancías">
