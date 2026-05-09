@@ -41,6 +41,30 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
 
     fn(args, el, e);
   });
+
+  // Delegación para eventos de formulario (input / change). Mismo contrato:
+  // `data-action-input="nombre"` o `data-action-change="nombre"` + `data-arg-*`.
+  // Las acciones se resuelven contra el mismo Map ACTIONS — no hay registro
+  // separado.
+  const _delegate = (attr, label) => (e) => {
+    const el = e.target.closest?.(`[${attr}]`);
+    if (!el) return;
+    const action = el.getAttribute(attr);
+    const fn = ACTIONS.get(action);
+    if (!fn) {
+      console.warn(`Acción no registrada (${label}):`, action);
+      return;
+    }
+    const args = {};
+    for (const a of el.attributes) {
+      if (a.name.startsWith('data-arg-')) {
+        args[a.name.replace('data-arg-', '')] = a.value;
+      }
+    }
+    fn(args, el, e);
+  };
+  document.addEventListener('input',  _delegate('data-action-input',  'input'));
+  document.addEventListener('change', _delegate('data-action-change', 'change'));
 }
 
 // Hook reservado para futuras inicializaciones de acciones desde módulos.

@@ -1,185 +1,183 @@
-# 📜 Guía de Contribución - Finko Pro
+# Contribuir a Finko Pro
 
-> **Última actualización:** Mayo 2026
-> **Versión:** 1.0.0
-
-¡Gracias por tu interés en contribuir a Finko Pro! Este documento establece las normas y convenciones que todo desarrollador debe seguir para mantener la calidad y consistencia del proyecto.
+Gracias por querer aportar al proyecto. Acá están las reglas de juego para que tu cambio entre rápido y sin fricción.
 
 ---
 
-## 1. Filosofía de Desarrollo
+## 1 · Antes de tocar código
 
-### Clean Code & Código Autodocumentado
+Leé en este orden:
 
-- **Nombres descriptivos:** Funciones y variables deben usar nombres claros en español/inglés que expliquen su propósito sin necesidad de comentarios.
-  - ✅ `function calcularSaldoDisponible()` 
-  - ❌ `function calc()` o `function hacerAlgo()`
+1. [`README.md`](./README.md) — entender qué hace la app.
+2. [`ARCHITECTURE.md`](./ARCHITECTURE.md) — capas, flujo de datos, reglas innegociables.
+3. [`AUDIT.md`](./AUDIT.md) — estado real, deuda técnica conocida.
+4. [`ROADMAP.md`](./ROADMAP.md) — fase activa y dependencias.
+5. El `REORG_*.md`, `DESIGN_SYSTEM.md` o `FINANCIAL_LOGIC_CO.md` específico de tu cambio.
 
-- **Una función, una responsabilidad:** Cada función debe hacer una sola cosa bien hecha.
-
-- **Mínimos comentarios:** Si necesitas un comentario para explicar qué hace una función, refactoriza el nombre en lugar de comentar.
-
-- **DRY (Don't Repeat Yourself):** Si copy-pasteas código más de 2 veces, crea una función reutilizable.
+Si tu PR no respeta la fase activa del roadmap, conviene avisar antes en un issue.
 
 ---
 
-## 2. Arquitectura Modular
-
-### Estructura de 6 Módulos Core
-
-Finko Pro sigue una **Arquitectura Lean** basada en módulos independientes:
-
-| Módulo | Responsabilidad | Regla de Oro |
-| :--- | :--- | :--- |
-| `main.js` | Orquestador de acciones | Punto único de entrada, mapea `data-action` |
-| `state.js` | Estado global `S` + persistencia | Single Source of Truth |
-| `finance.service.js` | Lógica de Gastos, Cuentas, Bolsillos | NO toca el DOM |
-| `planner.service.js` | Metas, Compromisos, Análisis | NO toca el DOM |
-| `tools.service.js` | Calculadoras financieras | Lógica matemática pura |
-| `ui.manager.js` | Capa de Presentación | Único módulo que toca el DOM |
-
-### Patrón de Flujo de Datos
-
-```
-UI Evento → main.js (Action) → Service (Lógica) → state.js (S) → save() → ui.manager.js (Render)
-```
-
-### Reglas de Oro para Nuevas Funcionalidades
-
-1. **Nueva lógica de negocio** → crear función en el servicio correspondiente
-2. **Nueva acción UI** → registrar en `main.js` con `registerAction()`
-3. **Nuevo render** → agregar función en `ui.manager.js`
-4. **Nueva constante** → agregar en `state.js` (constantes financieras colombianas)
-
----
-
-## 3. Proceso de Documentación
-
-### Archivos Maestros (Fuente de Verdad)
-
-Antes de realizar cambios estructurales, consultar:
-
-| Archivo | Contenido |
-| :--- | :--- |
-| `01_auditoria_y_limpieza.md` | Estado actual del código y deuda técnica |
-| `02_ux_ui_modernizacion.md` | Guía de estilo, tipografía, tokens CSS |
-| `03_logica_financiera_col.md` | Constantes yvalidaciones legales colombianas |
-| `04_roadmap_ejecucion.md` | Plan de release y tareas pendientes |
-
-### Actualizar Docs tras Cambios Estructurales
-
-Si modificas la estructura de módulos:
-1. Actualizar el `README.md` con el nuevo mapa del proyecto
-2. Si cambia la API pública de un servicio, documentar en los comentarios JSDoc
-3. Si agregas nueva constante financiera, actualizar `03_logica_financiera_col.md`
-
----
-
-## 4. Compromiso con la UX y Accesibilidad
-
-### WCAG 2.1 AA Obligatorio
-
-Todo cambio en la interfaz debe cumplir:
-
-- **Contraste mínimo:** 4.5:1 para texto normal, 3:1 para texto grande
-- **Navegación por teclado:** Toda funcionalidad accesible con Tab/Enter/Escape
-- **ARIA:** Labels en botones e inputs, `role="dialog"` en modales
-- **Etiquetado:** Todo elemento interactivo debe tener texto visible o `aria-label`
-
-### Guía de Estilo Visual
-
-- **Colores semánticos:**
-  - 🟢 Verde (`--a1`): Ingresos, acciones positivas
-  - 🔴 Rojo (`--a3`): Gastos, deudas, advertencias
-  - 🟡 Amarillo (`--a2`): Pendientes, información
-
-- **Tipografía:**
-  - Números monetarios: `font-family: var(--fm)` (monospace)
-  - Títulos: `font-family: var(--ff-display)` (Geist/Inter)
-  - Cuerpo: cuerpo legible con `line-height: 1.5`
-
-### Prevenir Fatiga Visual
-
-- No introducir nuevos colores sin consultar `02_ux_ui_modernizacion.md`
-- Mantener consistencia con border-radius existente (12px, 18px, 24px)
-- Usar transiciones suaves (0.2s - 0.3s) para microinteracciones
-
----
-
-## 5. Proceso de Commit
-
-### Convenciones de Mensajes (Conventional Commits)
-
-```
-<tipo>(<alcance>): <descripción>
-
-Tipos: feat, fix, refactor, chore, docs, style, a11y, test
-```
-
-| Tipo | Cuándo usar |
-| :--- | :--- |
-| `feat` | Nueva funcionalidad |
-| `fix` | Corrección de bug |
-| `refactor` | Reestructuración sin cambio de comportamiento |
-| `chore` | Mantenimiento, configs, dependencias |
-| `docs` | Documentación |
-| `style` | Solo cambios de formato (CSS) |
-| `a11y` | Accesibilidad |
-| `test` | Tests unitarios |
-
-**Ejemplos:**
-```
-feat(finance): agregar detector de gastos hormiga
-fix(dashboard): corregir cálculo de saldo libre
-docs(readme): actualizar mapa del proyecto
-a11y(modales): agregar aria-label a botones de cierre
-```
-
-### Reglas de Commit
-
-1. **Un commit por tarea lógica** (ver `04_roadmap_ejecucion.md`)
-2. **Tests verdes antes de commit:** `npm test` debe pasar 100%
-3. **No commitear secretos:** Verificar `.gitignore` antes de agregar
-4. **Staging check:** `git status` antes de commit para verificar archivos
-
----
-
-## 6. Configuración del Entorno
-
-### Requisitos
-
-- Node.js 18+
-- npm 9+
-
-### Comandos de Desarrollo
+## 2 · Setup local
 
 ```bash
-# Instalar dependencias
+# Clonar
+git clone <repo>
+cd Finko-Refactor
+
+# Instalar deps de testing
 npm install
 
-# Ejecutar tests
+# Tests
 npm test
+npm run test:watch
+npm run coverage
 
-# Iniciar servidor local
-npx serve . # o python -m http.server 8080
+# Servir la app (no hay build step)
+python -m http.server 8080
+# → http://localhost:8080
 ```
 
-### Service Worker
-
-Cualquier cambio en JS/CSS requiere:
-1. Bump `CACHE_NAME` en `service-worker.js`
-2. Verificar funcionamiento offline en pestaña incógnita
+Stack: vanilla JS ES6 modules, sin framework, sin bundler, Vitest + happy-dom.
 
 ---
 
-## 7. Contacto y Soporte
+## 3 · Reglas innegociables
 
-- **Issues:** Usar GitHub Issues para bugs y features
-- **-discussions:** Para preguntas y retroalimentación
-- **Seguridad:** Reportar vulnerabilidadessecrets@finko-pro.com
+Estas decisiones son ADN del proyecto. **No** se rompen sin discusión explícita:
+
+1. **Vanilla JS sin build step** (no TS, no bundler, no framework).
+2. **Offline-first**: la app debe funcionar sin red.
+3. **Sin servidor / sin sync** en v5. Cualquier feature de red debe ser opt-in y documentada.
+4. **Estado mutable singleton `S`** — no agregar reactivity.
+5. **`save()` debounced** — no escribir a `localStorage` sincrónicamente.
+6. **Migraciones idempotentes** — cada bump de schema sube datos sin perder nada.
+7. **`data-action` delegado** — 0 `onclick=""` en HTML estático.
+8. **Lenguaje del usuario** — "tu plata" antes que "saldo disponible".
+9. **Constantes legales vivas** — revisión trimestral obligatoria de la tasa de usura.
+
+Detalle en [`ARCHITECTURE.md §4`](./ARCHITECTURE.md).
 
 ---
 
-> **NOTA:** Este documento evoluciona con el proyecto. Antes de contribuir, verificar la versión más reciente en `main`.
+## 4 · Convenciones
 
-**¡Gracias por ayudar a hacer Finko Pro mejor!** 💰🚀
+### Naming
+
+- **Dominios:** español neutro (`ingresos`, `compromisos`, `tesoreria`, `metas`, `analisis`).
+- **Infra/UI:** inglés (`state`, `storage`, `events`, `actions`, `shell`).
+- **Funciones:** `camelCase`, verbo primero (`agregarGasto`, `renderDeudas`).
+- **Constantes:** `SCREAMING_SNAKE_CASE` (`SMMLV_2026`, `USURA_EA`).
+- **IDs DOM:** `kebab-case` (`g-mo`, `desglose-hero-body`).
+- **Clases CSS:** `.kebab-case` con prefijo por capa (`.ui-row`, `.modal-ov`, `.list-item`).
+
+### Imports
+
+- Siempre con extensión `.js` (necesario para módulos en navegador).
+- Rutas relativas con `../`. Sin path mapping ni aliases.
+- Agrupar por capa: core → infra → ui → dominio.
+
+### Commits
+
+Formato: `tipo(área): descripción corta`.
+
+Tipos comunes:
+
+- `feat` — nueva funcionalidad.
+- `fix` — corrección de bug.
+- `refactor` — cambio interno sin afectar comportamiento.
+- `test` — agregar / corregir tests.
+- `docs` — cambios en documentación.
+- `chore` — tareas auxiliares (config, scripts).
+- `style` — formato, indentación (no afecta lógica).
+
+Ejemplos:
+
+```
+feat(deudas): bloqueo educativo si tasa supera usura
+fix(agenda): clamp día 31 en febrero bisiesto
+refactor(analisis): partir en sub‑archivos por subdominio
+docs(roadmap): aclarar buffer de horas en Fase 4
+```
+
+Cuerpo del commit (opcional pero recomendado): explicar el "porqué" cuando no es obvio.
+
+---
+
+## 5 · Flujo de trabajo
+
+1. **Crear rama** desde `main`: `git checkout -b feat/mi-feature`.
+2. **Tests verdes localmente** antes del primer commit (`npm test`).
+3. **Un commit = una idea**. Si tu PR tiene 3 ideas, son 3 commits.
+4. **Tests verdes obligatorios** antes de pushear.
+5. **PR pequeños**. Si el diff supera 500 líneas, dividir.
+6. **Bumpear `CACHE_NAME`** del Service Worker si cambiaste assets cacheados.
+7. **Actualizar `CHANGELOG.md`** sección `[Unreleased]` con tu cambio.
+
+---
+
+## 6 · Tests
+
+- Funciones puras (sin DOM, sin `S` mutado vía window) son siempre testeables; cobertura objetivo ≥ 90 %.
+- Funciones DOM se testean indirectamente via las puras que llaman.
+- Si tocaste constantes legales (SMMLV, UVT, usura), agregar test que valide la nueva constante.
+- Las migraciones de schema **siempre** requieren test en `migrations.test.js`.
+
+---
+
+## 7 · Constantes legales
+
+Si modificás `modules/core/constants.js`:
+
+1. Verificar fecha de origen (decreto / resolución).
+2. Actualizar también [`FINANCIAL_LOGIC_CO.md §5`](./FINANCIAL_LOGIC_CO.md) con la nueva constante y vencimiento.
+3. Tag de commit: `chore(legal): actualizar tasa de usura Q3-2026`.
+4. Bumpear `CACHE_NAME` del Service Worker.
+
+**Ritual obligatorio:** cada trimestre, verificar tasa de usura vs Superfinanciera.
+
+---
+
+## 8 · Accesibilidad
+
+Cualquier cambio en HTML / CSS debe mantener o mejorar:
+
+- Contraste WCAG 2.1 AA (≥ 4.5:1 para texto normal).
+- Foco visible (`outline 2px solid var(--a1)` con offset 3px).
+- ARIA en modales (`role="dialog" aria-modal="true" aria-labelledby="…"`).
+- Min touch target 44×44 px.
+- Skip-link funcional.
+- Soporte teclado completo.
+
+Antes de mergear cambios visuales, correr Lighthouse (target Accessibility ≥ 95).
+
+---
+
+## 9 · Lo que NO hacer
+
+- ❌ Agregar `onclick="…"` en HTML — usar `data-action`.
+- ❌ Mutar `S` sin `save()` después.
+- ❌ Render con `innerHTML` sin escapar input del usuario (usar `he()` de `utils.js`).
+- ❌ Hacer fetch a internet (rompe offline-first).
+- ❌ Borrar tests sin justificación explícita.
+- ❌ Cambiar `CACHE_NAME` sin avisar.
+- ❌ Asumir backward-compat de schema; siempre escribir migración idempotente.
+
+---
+
+## 10 · Para asistentes IA (Claude Code, Cursor, Copilot)
+
+Leer también [`CLAUDE.md`](./CLAUDE.md), que explicita expectativas de contrato. Reglas extras:
+
+- **No hacer cambios destructivos sin pedir confirmación** (eliminar archivos, force push, reescribir historial, romper API pública).
+- **Una sub-fase por sesión** según `ROADMAP.md`.
+- **Tests verdes después de cada cambio** o frenar y reportar.
+- **Commits sugeridos**, no auto-commits sin aprobación humana.
+
+---
+
+## 11 · ¿Tenés dudas?
+
+Abrir issue con el contexto suficiente: qué intentaste hacer, qué esperabas, qué pasó. La app es chica, las dudas se resuelven rápido.
+
+¡Gracias por aportar! 🙌

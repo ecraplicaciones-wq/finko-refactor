@@ -1,4 +1,4 @@
-# 🔍 PROMPT DE AUDITORÍa EXHAUSTIVA PARA FINKO PRO
+# 🔍 PROMPT DE AUDITORÍA EXHAUSTIVA PARA FINKO PRO
 
 **Instrucción para Opus:** Este es un prompt de auditoría para revisar la PWA Finko Pro de finanzas personales para Colombia. Necesito que hagas un análisis **EXHAUSTIVO Y SIN PIEDAD** de todos los aspectos: código, diseño, UX, accesibilidad, precisión financiera colombiana, responsividad, y experiencia del usuario. Señala TODO lo que esté mal, falta, o pueda mejorar. Propón soluciones concretas.
 
@@ -102,7 +102,7 @@
 3. **Tablet (1024px+):**
    - [ ] ¿El menú es sidebar vertical a la izquierda?
    - [ ] ¿Las tarjetas se distribuyen en 2-3 columnas?
-   - [ ] ¿Los gráficos usan más espacio aproveado?
+   - [ ] ¿Los gráficos usan más espacio aprovechado?
 
 4. **Escritorio (1920px+):**
    - [ ] ¿El contenido está restringido a max-width (no 100% en una línea)?

@@ -66,17 +66,17 @@
      [D] PANEL MÁS (móvil) .... ~L1926
 ════════════════════════════════════════════════════════ -->
 
-<a href="#main" class="sr-only" onblur="this.style.top='-40px'" onfocus="this.style.top='0'">Saltar al contenido</a>
+<a href="#main" class="sr-only" id="skip-link">Saltar al contenido</a>
 <div id="sr-announcer" aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
 <!-- ═══════════════════════════════════════════════════════
      [A] SIDEBAR — ADN Colombiano
 ════════════════════════════════════════════════════════ -->
 <aside id="sidebar" aria-label="Menú principal de navegación">
-  <div class="sb-logo" id="btn-sidebar-toggle"
+  <button class="sb-logo" id="btn-sidebar-toggle"
        data-action="toggleSidebar"
-       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebar()}"
-       role="button" tabindex="0" aria-label="Expandir o colapsar menú lateral">
+       type="button"
+       aria-label="Expandir o colapsar menú lateral">
     <div class="sb-brand">
       <span class="sb-icon-collapsed">F</span>
       <span class="sb-icon-expanded">Finko<span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-left:3px;display:inline-block;transform:translateY(-1px);color:var(--a1);opacity:.8">PRO</span></span>
@@ -85,7 +85,7 @@
       <rect x="1" y="1" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/>
       <line x1="5" y1="1" x2="5" y2="15" stroke="currentColor" stroke-width="1.5"/>
     </svg>
-  </div>
+  </button>
 
   <nav aria-label="Secciones de la app">
 
@@ -241,7 +241,7 @@
           <!-- Donut ring: % libre vs bolsillos de un vistazo -->
           <div style="position:relative; width:76px; height:76px; flex-shrink:0;"
                role="img" aria-label="Distribución de tu plata: porcentaje libre y apartado en bolsillos">
-            <svg width="76" height="76" viewBox="0 0 76 76" style="display:block;" aria-hidden="true">
+            <svg width="76" height="76" viewBox="0 0 76 76" class="d-block" aria-hidden="true">
               <!-- Pista de fondo -->
               <circle cx="38" cy="38" r="28" fill="none" stroke="var(--s3)" stroke-width="10"/>
               <!-- Arco verde: libre pa' gastar (arranca en las 12) -->
@@ -274,22 +274,22 @@
                  role="text" tabindex="0"
                  style="font-family:var(--fm); font-weight:800; font-size:36px; color:var(--a1); letter-spacing:-1.5px; line-height:1; transition:color .4s ease;"
                  aria-label="Tu plata disponible hoy: total en efectivo y cuentas bancarias">$0</div>
-            <div class="tm" style="margin-top:4px;">efectivo + cuentas bancarias</div>
+            <div class="tm mt-1">efectivo + cuentas bancarias</div>
           </div>
         </div>
 
         <!-- Pastillas de desglose: libre / bolsillos -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
           <div class="ui-chip ui-chip-green">
-            <div class="ui-label-sm" style="margin-bottom:4px;">
+            <div class="ui-label-sm mb-1">
               ✅ Libre pa' gastar
             </div>
             <div id="d-libre"
-                 class="ui-val-green" style="font-size:16px;"
+                 class="ui-val-green fs-base"
                  aria-live="polite" aria-label="Plata libre para gastar sin comprometer ningún bolsillo">$0</div>
           </div>
           <div class="ui-chip ui-chip-yellow">
-            <div class="ui-label-sm" style="margin-bottom:4px;">
+            <div class="ui-label-sm mb-1">
               🪙 En bolsillos
             </div>
             <div id="d-bols-ap"
@@ -377,7 +377,7 @@
     </div>
 
     <div class="card mb" style="border-color:rgba(59,158,255,.2)">
-          <div class="fb mb"><span class="ct" style="margin:0">🏦 Mis cuentas</span><button class="btn bbl bsm" data-action="openM" data-arg-id="m-cuenta">+ Agregar cuenta</button></div>
+          <div class="fb mb"><span class="ct m-0">🏦 Mis cuentas</span><button class="btn bbl bsm" data-action="openM" data-arg-id="m-cuenta">+ Agregar cuenta</button></div>
           <div id="d-cuentas">
             <button class="btn" style="width: 100%; border: 2px dashed rgba(59,158,255,.4); background: transparent; color: var(--t1); padding: 24px 16px; border-radius: 12px; margin-top: 8px; cursor: pointer; transition: background 0.2s;" data-action="openM" data-arg-id="m-cuenta" aria-label="Crear primera cuenta">
               <div style="font-size: 28px; margin-bottom: 8px;" aria-hidden="true">🏦</div>
@@ -393,22 +393,22 @@
               data-action="toggleDashCard" data-arg-key="resumen"
               aria-expanded="false"
               aria-controls="dash-resumen-body">
-        <span class="ct" style="margin:0;">📊 Cómo va el período</span>
+        <span class="ct m-0">📊 Cómo va el período</span>
         <span id="dash-resumen-arrow" class="ui-acc-arrow" aria-hidden="true">▾</span>
       </button>
       <div id="dash-resumen-body" class="dash-card-body with-divider">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
         <div style="text-align:center;padding:12px 8px;background:rgba(0,220,130,.06);border:1px solid rgba(0,220,130,.18);border-radius:10px;">
-          <div class="ui-label-sm" style="margin-bottom:5px;">Ingreso</div>
+          <div class="ui-label-sm mb-1">Ingreso</div>
           <div id="d-ing" class="ui-val-green" style="font-size:16px;letter-spacing:-.5px;">$0</div>
         </div>
         <div style="text-align:center;padding:12px 8px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.18);border-radius:10px;">
-          <div class="ui-label-sm" style="margin-bottom:5px;">Gastado</div>
+          <div class="ui-label-sm mb-1">Gastado</div>
           <div id="d-gas" class="ui-val-red" style="font-size:16px;letter-spacing:-.5px;">$0</div>
           <div id="d-pgc" style="font-size:10px;color:var(--t3);margin-top:2px;">0%</div>
         </div>
         <div style="text-align:center;padding:12px 8px;background:rgba(59,158,255,.06);border:1px solid rgba(59,158,255,.18);border-radius:10px;">
-          <div class="ui-label-sm" style="margin-bottom:5px;">Ahorrado</div>
+          <div class="ui-label-sm mb-1">Ahorrado</div>
           <div id="d-aho" style="font-family:var(--fm);font-weight:800;font-size:16px;color:var(--a4);letter-spacing:-.5px;">$0</div>
         </div>
       </div>
@@ -416,14 +416,14 @@
         <div class="emp" style="padding:12px;">
           <span class="emp-icon" style="font-size:24px;">📋</span>
           Planifica tu quincena y empieza a controlar tu plata<br>
-          <button class="btn bp bsm" data-action="go" data-arg-sec="quin" style="margin-top:10px;">Ir a Planificar →</button>
+          <button class="btn bp bsm mt-2" data-action="go" data-arg-sec="quin">Ir a Planificar →</button>
         </div>
       </div>
 
       <div style="margin-top:14px;padding:12px 14px;background:rgba(121,85,72,.06);border:1px solid rgba(121,85,72,.18);border-radius:8px;">
-        <div class="ui-row-sb" style="margin-bottom:8px;">
+        <div class="ui-row-sb mb-2">
           <span style="font-size:11px;font-weight:700;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;">🐜 Gastos Hormiga</span>
-          <div style="text-align:right;">
+          <div class="text-right">
             <div id="d-hor" style="font-family:var(--fm);font-weight:800;font-size:16px;color:#a1887f;">$0</div>
             <div id="d-phc" style="font-size:10px;color:var(--t3);">0% del ingreso</div>
           </div>
@@ -446,15 +446,15 @@
               data-action="toggleDashCard" data-arg-key="patrimonio"
               aria-expanded="false"
               aria-controls="dash-patrimonio-body">
-        <span class="ct" style="margin:0;">💼 Patrimonio y metas</span>
+        <span class="ct m-0">💼 Patrimonio y metas</span>
         <span id="dash-patrimonio-arrow" class="ui-acc-arrow" aria-hidden="true">▾</span>
       </button>
       <div id="dash-patrimonio-body" class="dash-card-body with-divider">
         <div class="g2">
-          <div class="card" id="card-fondo-emergencia" style="margin:0;">
+          <div class="card m-0" id="card-fondo-emergencia">
             <div class="fb mb">
               <div class="ui-row-gap10">
-                <span class="ct" style="margin:0">🛡️ Fondo de Emergencia</span>
+                <span class="ct m-0">🛡️ Fondo de Emergencia</span>
                 <button class="btn bg bsm" data-action="openM" data-arg-id="m-fondo-emergencia">+ Abonar</button>
               </div>
               <div class="tm" id="fe-meses-cobertura">0.0 meses cubiertos</div>
@@ -465,13 +465,13 @@
             <div class="pw" style="height:10px;margin-bottom:14px;"><div class="pf" id="fe-barra-progreso" style="width:0%;background:var(--a1);"></div></div>
             <div class="fb">
               <div><div class="tm">Dinero Guardado</div><div class="mono" id="fe-dinero-actual" style="font-size:22px;font-weight:700;color:var(--a1);">$0</div></div>
-              <div style="text-align:right;"><div class="tm">Falta por ahorrar</div><div class="mono" id="fe-dinero-objetivo" style="font-size:22px;font-weight:700;color:var(--t2);">$0</div></div>
+              <div class="text-right"><div class="tm">Falta por ahorrar</div><div class="mono" id="fe-dinero-objetivo" style="font-size:22px;font-weight:700;color:var(--t2);">$0</div></div>
             </div>
             <!-- Tanda 22: proyección temporal del fondo de emergencia -->
             <div id="fe-proyeccion" style="display:none;margin-top:8px;padding:6px 8px;background:var(--s3);border-radius:6px;"></div>
           </div>
 
-          <div class="card" style="margin:0;">
+          <div class="card m-0">
             <div class="ct">Objetivos activos 🎯</div>
             <div id="d-met"><div class="emp"><span class="emp-icon">◯</span>Sin objetivos creados</div></div>
           </div>
@@ -485,13 +485,13 @@
               data-action="toggleDashCard" data-arg-key="movimientos"
               aria-expanded="false"
               aria-controls="dash-movimientos-body">
-        <span class="ct" style="margin:0;">🕐 Últimos movimientos</span>
+        <span class="ct m-0">🕐 Últimos movimientos</span>
         <span id="dash-movimientos-arrow" class="ui-acc-arrow" aria-hidden="true">▾</span>
       </button>
       <div id="dash-movimientos-body" class="dash-card-body with-divider">
         <div id="d-rec"><div class="emp"><span class="emp-icon">🕐</span>Sin movimientos registrados</div></div>
         <div id="d-rec-ver-mas" style="text-align:center;margin-top:10px;display:none;">
-          <button class="btn bg bsm" data-action="go" data-arg-sec="gast" style="font-size:12px;">Ver todos los movimientos →</button>
+          <button class="btn bg bsm fs-xs" data-action="go" data-arg-sec="gast">Ver todos los movimientos →</button>
         </div>
       </div>
     </div>
@@ -521,10 +521,7 @@
       data-action="go" 
       data-arg-sec="gast" 
       aria-label="Ir a registrar un nuevo gasto"
-      onmousedown="this.style.transform='scale(0.9)'"
-      onmouseup="this.style.transform='scale(1)'"
-      ontouchstart="this.style.transform='scale(0.9)'"
-      ontouchend="this.style.transform='scale(1)'">
+      id="fab-add-gasto">
           💸
     </button>
 
@@ -572,7 +569,7 @@
         <div class="card accent-yellow" style="padding:20px;text-align:center;">
           <div style="font-size:32px;margin-bottom:10px;">🎉</div>
           <div class="st" style="font-size:18px;margin-bottom:6px;">¿Llegó Prima o Bono?</div>
-          <div class="tm mb" style="line-height:1.5;">No dejes que se vuelva dinero de bolsillo. Simula cómo dividirlo inteligentemente.</div>
+          <div class="tm mb lh-normal">No dejes que se vuelva dinero de bolsillo. Simula cómo dividirlo inteligentemente.</div>
           <button class="btn byw bfw" data-action="openM" data-arg-id="m-prima">Simular distribución</button>
         </div>
       </div>
@@ -604,15 +601,15 @@
           <input type="hidden" id="q-met" value="50-30-20">
           <div id="cus-pct" style="display:none;margin-top:14px;">
             <div class="fr">
-              <div class="fg"><label for="pn">% Necesidades</label><input type="number" id="pn" value="50" oninput="calcDist()" min="0" max="100"></div>
-              <div class="fg"><label for="pd">% Deseos</label><input type="number" id="pd" value="30" oninput="calcDist()" min="0" max="100"></div>
-              <div class="fg"><label for="pa">% Ahorro</label><input type="number" id="pa" value="20" oninput="calcDist()" min="0" max="100"></div>
+              <div class="fg"><label for="pn">% Necesidades</label><input type="number" id="pn" value="50" data-action-input="calcDist" min="0" max="100"></div>
+              <div class="fg"><label for="pd">% Deseos</label><input type="number" id="pd" value="30" data-action-input="calcDist" min="0" max="100"></div>
+              <div class="fg"><label for="pa">% Ahorro</label><input type="number" id="pa" value="20" data-action-input="calcDist" min="0" max="100"></div>
             </div>
           </div>
-          <div class="fg" style="margin-top:16px;">
+          <div class="fg mt-4">
             <label for="q-ing">💰 ¿Cuánto te entró esta quincena? (opcional)</label>
             <input type="number" id="q-ing" placeholder="Ej: 2.500.000 — si lo dejas vacío usamos tu saldo total">
-            <div class="tm" style="margin-top:4px;">Escríbelo si quieres que los porcentajes y alertas se midan contra tu ingreso real, no contra tus ahorros acumulados.</div>
+            <div class="tm mt-1">Escríbelo si quieres que los porcentajes y alertas se midan contra tu ingreso real, no contra tus ahorros acumulados.</div>
           </div>
             <button class="btn bp bfw" data-action="guardarQ" style="margin-top:16px;padding:16px;font-size:14px;">Fijar Presupuesto Base ✓</button>        
         </div>
@@ -707,8 +704,8 @@
       </div>
 
       <div class="card">
-        <div class="fb" style="margin-bottom:10px;">
-          <div class="st" style="font-size:16px;">Lo que has gastado</div>
+        <div class="fb mb-2">
+          <div class="st fs-base">Lo que has gastado</div>
           <div class="srch"><span>🔍</span><input type="text" id="g-search" placeholder="Buscar..." aria-label="Buscar en tus gastos" data-action-keyup="renderGastos"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" role="group" aria-label="Filtrar por tipo">
@@ -739,16 +736,16 @@
       <!-- Resumen de fijos -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
         <div class="card accent-red" style="padding:14px;text-align:center;">
-          <div class="ct" style="margin-bottom:6px;">Total fijos/mes</div>
+          <div class="ct mb-2">Total fijos/mes</div>
           <div class="mc-val c-red" id="fi-tot" style="font-size:20px;">$0</div>
         </div>
         <div class="card accent-green" style="padding:14px;text-align:center;">
-          <div class="ct" style="margin-bottom:6px;">Pagados este mes</div>
+          <div class="ct mb-2">Pagados este mes</div>
           <div class="mc-val c-green" id="fi-pag" style="font-size:20px;">$0</div>
           <div class="mc-sub"><span id="fi-np">0</span> de <span id="fi-nt">0</span></div>
         </div>
         <div class="card" style="padding:14px;text-align:center;border-color:rgba(255,214,10,.2);background:linear-gradient(135deg,rgba(255,214,10,.04),var(--s1));">
-          <div class="ct" style="margin-bottom:6px;">Pendiente</div>
+          <div class="ct mb-2">Pendiente</div>
           <div class="mc-val" id="fi-pend" style="font-size:20px;color:var(--a2);">$0</div>
           <div class="mc-sub" id="fi-pend-txt">por cubrir</div>
         </div>
@@ -846,7 +843,7 @@
     <!-- Panel: Metas -->
     <div id="alcancias-tab-metas" class="itab-panel active"
          data-tab="metas" role="tabpanel" aria-label="Mis metas de ahorro">
-      <div class="sh-actions" style="margin-bottom:16px;">
+      <div class="sh-actions mb-4">
         <button class="btn bp bsm" data-action="openNuevoObjetivo"
                 aria-label="Crear una nueva meta de ahorro">+ Nueva meta</button>
       </div>
@@ -857,7 +854,7 @@
     <!-- Panel: Apartado -->
     <div id="alcancias-tab-apartado" class="itab-panel"
          data-tab="apartado" role="tabpanel" aria-label="Plata apartada con propósito">
-      <div class="sh-actions" style="margin-bottom:16px;">
+      <div class="sh-actions mb-4">
         <button class="btn bp bsm" data-action="abrirNuevoBolsillo"
                 aria-label="Apartar plata con propósito">+ Apartar plata</button>
       </div>
@@ -865,15 +862,15 @@
     <div class="g3 mb">
       <div class="sc yellow">
         <div class="sl">🪙 Total apartado</div>
-        <div class="sv" id="bols-total-ap" style="color:var(--a2);">$0</div>
+        <div class="sv t-a2" id="bols-total-ap">$0</div>
       </div>
       <div class="sc green">
         <div class="sl">✅ Libre pa' gastar</div>
-        <div class="sv" id="bols-libre-txt" style="color:var(--a1);">$0</div>
+        <div class="sv t-a1" id="bols-libre-txt">$0</div>
       </div>
       <div class="sc">
         <div class="sl">📦 Bolsillos activos</div>
-        <div class="sv" id="bols-count-txt" style="color:var(--t2);">0 bolsillos</div>
+        <div class="sv t-2" id="bols-count-txt">0 bolsillos</div>
       </div>
     </div>
 
@@ -901,7 +898,7 @@
     <div class="g3 mb">
       <div class="card accent-blue"><div class="ct">Capital Invertido</div><div class="mc-val c-blue" id="inv-tot-cap">$0</div></div>
       <div class="card accent-green"><div class="ct">Rendimientos</div><div class="mc-val c-green" id="inv-tot-rend">$0</div></div>
-      <div class="card"><div class="ct">Valor Total</div><div class="mc-val" id="inv-tot-gral" style="color:var(--t1);">$0</div></div>
+      <div class="card"><div class="ct">Valor Total</div><div class="mc-val t-1" id="inv-tot-gral">$0</div></div>
     </div>
 
     <div id="inv-lst"><div class="emp"><span class="emp-icon">📈</span>Cargando portafolio...</div></div>
@@ -921,14 +918,14 @@
           <div style="background:rgba(59,158,255,.05);border:1px solid rgba(59,158,255,.2);padding:12px;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--t2);line-height:1.5;">
             <strong>💡 ¿Qué es un CDT?</strong> Una inversión de bajo riesgo donde le prestas tu dinero al banco por un tiempo definido a cambio de una rentabilidad fija y segura.
           </div>
-          <div class="fg"><label for="cc-cap">Capital a invertir (COP)</label><input type="number" id="cc-cap" value="1000000" oninput="cCDT()"></div>
+          <div class="fg"><label for="cc-cap">Capital a invertir (COP)</label><input type="number" id="cc-cap" value="1000000" data-action-input="cCDT"></div>
           <div class="fr">
-            <div class="fg"><label>Tasa E.A. (%)</label><input type="number" id="cc-tas" value="10.5" oninput="cCDT()" step="0.1"></div>
-            <div class="fg"><label>Plazo (días)</label><input type="number" id="cc-dia" value="180" oninput="cCDT()"></div>
+            <div class="fg"><label>Tasa E.A. (%)</label><input type="number" id="cc-tas" value="10.5" data-action-input="cCDT" step="0.1"></div>
+            <div class="fg"><label>Plazo (días)</label><input type="number" id="cc-dia" value="180" data-action-input="cCDT"></div>
           </div>
           <div class="fg">
             <label>¿Cuándo te pagan los intereses?</label>
-            <select id="cc-per" onchange="cCDT()">
+            <select id="cc-per" data-action-change="cCDT">
               <option value="vencimiento">Al final del plazo (Vencimiento)</option>
               <option value="30">Pago Mensual</option>
             </select>
@@ -940,7 +937,7 @@
             </div>
             <div style="font-size:11px;color:var(--t3);margin-top:4px;margin-left:28px;line-height:1.6;">
               El banco descuenta el <strong><span data-const="RETEFUENTE_CDT_PCT"></span></strong> únicamente sobre tus <strong>intereses</strong>, no sobre el capital (Art. 395 E.T. + Decreto 2418/2013).<br>
-              <span style="color:var(--a2);">⚠️ <strong>Ojo con el GMF:</strong> el 4×1000 se cobra cuando <em>consignas</em> el dinero al CDT, no cuando lo retiras.</span>
+              <span class="t-a2">⚠️ <strong>Ojo con el GMF:</strong> el 4×1000 se cobra cuando <em>consignas</em> el dinero al CDT, no cuando lo retiras.</span>
             </div>
           </div>
           <div class="cres" id="cdt-res"></div>
@@ -958,10 +955,10 @@
           <div style="background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.2);padding:12px;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--t2);line-height:1.5;">
             <strong>💡 ¿Cuánto pagarías cada mes?</strong> Ingresa el monto, la tasa mensual y el plazo. El banco está obligado a informarte la tasa antes de firmar (Ley 1328/2009).
           </div>
-          <div class="fg"><label for="cr-mo">Monto del crédito (COP)</label><input type="number" id="cr-mo" placeholder="Ej: 5000000" oninput="cCre()"></div>
+          <div class="fg"><label for="cr-mo">Monto del crédito (COP)</label><input type="number" id="cr-mo" placeholder="Ej: 5000000" data-action-input="cCre"></div>
           <div class="fr">
-            <div class="fg"><label>Tasa mensual (%)</label><input type="number" id="cr-ta" placeholder="Ej: 1.8" step="0.01" oninput="cCre()"></div>
-            <div class="fg"><label>Número de cuotas</label><input type="number" id="cr-n" placeholder="Ej: 24" oninput="cCre()"></div>
+            <div class="fg"><label>Tasa mensual (%)</label><input type="number" id="cr-ta" placeholder="Ej: 1.8" step="0.01" data-action-input="cCre"></div>
+            <div class="fg"><label>Número de cuotas</label><input type="number" id="cr-n" placeholder="Ej: 24" data-action-input="cCre"></div>
           </div>
           <div class="cres" id="cre-res"></div>
         </div>
@@ -979,12 +976,12 @@
             <strong>🪄 La magia financiera:</strong> El interés compuesto hace que tus intereses generen más intereses. Ideal para metas a más de 5 años.
           </div>
           <div class="fr">
-            <div class="fg"><label>Capital inicial (COP)</label><input type="number" id="ic-cap" value="500000" oninput="cIC()"></div>
-            <div class="fg"><label>Aporte mensual extra</label><input type="number" id="ic-apo" value="200000" oninput="cIC()"></div>
+            <div class="fg"><label>Capital inicial (COP)</label><input type="number" id="ic-cap" value="500000" data-action-input="cIC"></div>
+            <div class="fg"><label>Aporte mensual extra</label><input type="number" id="ic-apo" value="200000" data-action-input="cIC"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Tasa E.A. (%)</label><input type="number" id="ic-tas" value="12" oninput="cIC()"></div>
-            <div class="fg"><label>Plazo (Meses)</label><input type="number" id="ic-mes" value="60" oninput="cIC()"></div>
+            <div class="fg"><label>Tasa E.A. (%)</label><input type="number" id="ic-tas" value="12" data-action-input="cIC"></div>
+            <div class="fg"><label>Plazo (Meses)</label><input type="number" id="ic-mes" value="60" data-action-input="cIC"></div>
           </div>
           <div class="cres" id="ic-res"></div>
         </div>
@@ -1001,10 +998,10 @@
           <div style="background:rgba(255,153,68,.05);border:1px solid rgba(255,153,68,.2);padding:12px;border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--t2);line-height:1.5;">
             <strong>🚨 El ladrón invisible:</strong> La inflación hace que las cosas sean más caras cada año. Si tu inversión crece al 10% pero la inflación es del 7%, tu ganancia real es mucho menor.
           </div>
-          <div class="fg"><label>Capital invertido (COP)</label><input type="number" id="in-cap" value="1000000" oninput="cInf()"></div>
+          <div class="fg"><label>Capital invertido (COP)</label><input type="number" id="in-cap" value="1000000" data-action-input="cInf"></div>
           <div class="fr">
-            <div class="fg"><label>Tasa de tu Inversión E.A. (%)</label><input type="number" id="in-tas" value="10.5" oninput="cInf()" step="0.1"></div>
-            <div class="fg"><label>Inflación Esperada (%)</label><input type="number" id="in-inf" value="7.0" oninput="cInf()" step="0.1"></div>
+            <div class="fg"><label>Tasa de tu Inversión E.A. (%)</label><input type="number" id="in-tas" value="10.5" data-action-input="cInf" step="0.1"></div>
+            <div class="fg"><label>Inflación Esperada (%)</label><input type="number" id="in-inf" value="7.0" data-action-input="cInf" step="0.1"></div>
           </div>
           <div class="cres" id="inf-res"></div>
         </div>
@@ -1022,8 +1019,8 @@
             <strong>⏱️ La Regla del 72:</strong> Divide 72 entre la tasa de interés y te dice en cuántos años tu dinero se duplica por sí solo.
           </div>
           <div class="fr">
-            <div class="fg"><label>Capital a invertir (COP)</label><input type="number" id="r72-cap" value="5000000" oninput="cR72()"></div>
-            <div class="fg"><label>Tasa de tu Inversión E.A. (%)</label><input type="number" id="r72-tas" value="10" oninput="cR72()" step="0.1"></div>
+            <div class="fg"><label>Capital a invertir (COP)</label><input type="number" id="r72-cap" value="5000000" data-action-input="cR72"></div>
+            <div class="fg"><label>Tasa de tu Inversión E.A. (%)</label><input type="number" id="r72-tas" value="10" data-action-input="cR72" step="0.1"></div>
           </div>
           <div class="cres" id="r72-res"></div>
         </div>
@@ -1094,8 +1091,8 @@
       <div class="card mb accent-blue">
         <div class="ct">🧠 Coach de Estrategia</div>
         <div class="fr" style="gap:10px; margin-top:10px;">
-          <button class="btn bp" data-action="setModoDeuda" data-arg-modo="avalancha" style="flex:1;">🔥 Avalancha</button>
-          <button class="btn bg" data-action="setModoDeuda" data-arg-modo="bola" style="flex:1;">⛄ Bola de Nieve</button>
+          <button class="btn bp flex-1" data-action="setModoDeuda" data-arg-modo="avalancha">🔥 Avalancha</button>
+          <button class="btn bg flex-1" data-action="setModoDeuda" data-arg-modo="bola">⛄ Bola de Nieve</button>
         </div>
         <div id="deu-coach-msg" class="tm mt"></div>
       </div>
@@ -1160,9 +1157,9 @@
       <!-- Educación / contexto ────────────────────────────── -->
       <div style="margin-top:18px;padding:14px;border-radius:12px;background:var(--s2);border:1px solid var(--b1);">
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span aria-hidden="true" style="font-size:18px;">💡</span>
+          <span aria-hidden="true" class="fs-md">💡</span>
           <div style="flex:1;font-size:12px;color:var(--t2);line-height:1.6;">
-            <strong style="color:var(--t1);">Tip colombiano:</strong> Prestar a familia y amigos es generoso, pero también incomoda cobrar. Anotalo siempre — no para presionarlos, sino para que vos no olvides. Y si la deuda pasa de 60 días, ya es hora de tener "esa charla". No te quedes con la plata por pena.
+            <strong class="t-1">Tip colombiano:</strong> Prestar a familia y amigos es generoso, pero también incomoda cobrar. Anotalo siempre — no para presionarlos, sino para que vos no olvides. Y si la deuda pasa de 60 días, ya es hora de tener "esa charla". No te quedes con la plata por pena.
           </div>
         </div>
       </div>
@@ -1193,7 +1190,7 @@
     <div id="resumen-tab-analisis" role="tabpanel">
       <div class="g2" style="align-items:flex-start;">
         <div style="display:flex;flex-direction:column;gap:16px;">
-          <div class="card" style="text-align:center;">
+          <div class="card text-center">
             <div class="ct">Puntaje Financiero</div>
             <div class="fin-score-container" style="transition:all .5s;">
               <div class="fin-score" id="stat-score">-</div>
@@ -1214,7 +1211,7 @@
           </div>
           <div class="card">
             <div class="ct">Top Categorías (Fugas de Dinero)</div>
-            <div id="stat-bars" style="margin-top:12px;"></div>
+            <div id="stat-bars" class="mt-3"></div>
           </div>
         </div>
       </div>
@@ -1222,7 +1219,7 @@
 
     <div id="resumen-tab-historial" style="display:none;" role="tabpanel">
       <div class="sh" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div class="tm" style="font-size:12px;">Tus períodos cerrados y el resumen de cada uno</div>
+        <div class="tm fs-xs">Tus períodos cerrados y el resumen de cada uno</div>
         <button class="btn bg bsm" data-action="cerrarQ">Cerrar período ✓</button>
       </div>
       <div class="card mb">
@@ -1231,7 +1228,7 @@
           <button class="btn bbl" data-action="exportarDatos">⬇️ Respaldo JSON</button>
           <label class="btn bg" style="margin:0;display:flex;justify-content:center;align-items:center;cursor:pointer;">
             ⬆️ Cargar Respaldo
-            <input type="file" id="file-import" accept=".json" style="display:none;" onchange="importarDatos(event)">
+            <input type="file" id="file-import" accept=".json" style="display:none;" data-action-change="importarDatos">
           </label>
           <button class="btn byw" data-action="exportarCSV" style="grid-column:span 2;">📊 Exportar Excel</button>
         </div>
@@ -1476,7 +1473,7 @@
       <div class="fb mb"><div class="mtit">Nuevo Objetivo 🎯</div><button class="mclose" data-action="closeM" data-arg-id="m-objetivo" aria-label="Cerrar ventana">×</button></div>
       <div class="fg">
         <label for="obj-tipo">¿Qué tipo de objetivo es?</label>
-        <select id="obj-tipo" onchange="toggleTipoObjetivo()">
+        <select id="obj-tipo" data-action-change="toggleTipoObjetivo">
           <option value="ahorro">💰 Ahorro Simple (Ej: Laptop, Fondo)</option>
           <option value="evento">🌴 Evento Planeado (Ej: Viaje, Fiesta)</option>
         </select>
@@ -1491,8 +1488,8 @@
         <select id="obj-ic"><option>🎯</option><option>🌴</option><option>✈️</option><option>💻</option><option>🚗</option><option>🏠</option><option>🎂</option><option>🎓</option></select>
       </div>
       <div class="fg" id="obj-pres-container" style="display:none;background:rgba(0,220,130,.06);padding:12px;border-radius:8px;border:1px solid rgba(0,220,130,.2);">
-        <label for="obj-pres" style="color:var(--a1);">Presupuesto a gastar (COP)</label>
-        <div class="tm mb" style="line-height:1.5;">¿Cuánto planeas gastar durante el evento? Independiente del ahorro.</div>
+        <label for="obj-pres" class="t-a1">Presupuesto a gastar (COP)</label>
+        <div class="tm mb lh-normal">¿Cuánto planeas gastar durante el evento? Independiente del ahorro.</div>
         <input type="number" id="obj-pres" min="0">
       </div>
       <button class="btn bp bfw" data-action="guardarObjetivo">Crear Objetivo</button>
@@ -1507,7 +1504,7 @@
       <div class="fb mb"><div class="mtit" id="oa-tit">Acción</div><button class="mclose" data-action="closeM" data-arg-id="m-obj-accion" aria-label="Cerrar ventana">×</button></div>
       <div class="fg">
         <label for="oa-mo" id="oa-lbl-mo">Monto (COP)</label>
-        <input type="number" id="oa-mo" min="0" oninput="evaluarGastoEvento()">
+        <input type="number" id="oa-mo" min="0" data-action-input="evaluarGastoEvento">
         <div id="oa-coach-msg" style="display:none;margin-top:10px;padding:12px;border-radius:8px;font-size:12px;line-height:1.4;"></div>
       </div>
       <div class="fg" id="oa-fg-desc" style="display:none;">
@@ -1537,10 +1534,10 @@
   <div class="modal-ov" id="m-edit-deu" role="dialog" aria-modal="true">
     <div class="modal" style="max-width:520px;">
       <div class="fb mb">
-        <div><div class="mtit" style="margin-bottom:2px;">Editar Deuda ✏️</div><div style="font-size:11px;color:var(--t3);">Corrige cualquier dato de esta deuda</div></div>
+        <div><div class="mtit mb-1">Editar Deuda ✏️</div><div class="tm">Corrige cualquier dato de esta deuda</div></div>
         <button class="mclose" data-action="closeM" data-arg-id="m-edit-deu" aria-label="Cerrar ventana">×</button>
       </div>
-      <div style="margin-bottom:20px;">
+      <div class="mb-5">
         <label style="margin-bottom:10px;display:block;">Tipo de deuda</label>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <button data-action="selTipoDeudaEdit" data-arg-tipo="tarjeta"   class="btn-tipo-deuda-edit ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--t3);">Tarjeta</span></button>
@@ -1597,10 +1594,10 @@
   <div class="modal-ov" id="m-deu" role="dialog" aria-modal="true">
     <div class="modal" style="max-width:520px;">
       <div class="fb mb">
-        <div><div class="mtit" style="margin-bottom:2px;">Nueva Deuda</div><div style="font-size:11px;color:var(--t3);">Registra cuánto debes y cuánto pagas cada mes</div></div>
+        <div><div class="mtit mb-1">Nueva Deuda</div><div class="tm">Registra cuánto debes y cuánto pagas cada mes</div></div>
         <button class="mclose" data-action="closeM" data-arg-id="m-deu" aria-label="Cerrar ventana">×</button>
       </div>
-      <div style="margin-bottom:20px;">
+      <div class="mb-5">
         <label style="margin-bottom:10px;display:block;">¿Qué tipo de deuda es?</label>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <button data-action="selTipoDeuda" data-arg-tipo="tarjeta"   class="btn-tipo-deuda activo ui-btn-tipo"><span class="ui-btn-tipo-ico">💳</span><span style="font-size:9px;font-weight:700;color:var(--a4);">Tarjeta</span></button>
@@ -1642,8 +1639,8 @@
       </div>
       <div id="panel-auto-cuota" hidden style="margin-bottom:14px;padding:14px;border-radius:12px;background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);">
         <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
-          <span aria-hidden="true" style="font-size:18px;">💡</span>
-          <div style="flex:1;">
+          <span aria-hidden="true" class="fs-md">💡</span>
+          <div class="flex-1">
             <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px;">Calculá tu cuota automáticamente</div>
             <div style="font-size:11px;color:var(--t3);line-height:1.5;">Llená el total, la tasa anual y a cuántos meses lo querés pagar. Usamos la fórmula estándar de cuota fija (sistema francés).</div>
           </div>
@@ -1681,7 +1678,7 @@
     <div class="modal" style="max-width:420px;border-radius:22px;padding:0;overflow:hidden;">
       <div style="padding:24px 24px 0;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
-          <div><div class="mtit" style="margin-bottom:2px;">Pagar Cuota 💳</div><div style="font-size:11px;color:var(--t3);">Registra el pago de esta deuda</div></div>
+          <div><div class="mtit mb-1">Pagar Cuota 💳</div><div class="tm">Registra el pago de esta deuda</div></div>
           <button class="mclose" data-action="closeM" data-arg-id="m-pgc" aria-label="Cerrar ventana">×</button>
         </div>
         <div style="background:linear-gradient(135deg,rgba(0,220,130,.06),var(--s2));border:1px solid rgba(0,220,130,.2);border-radius:16px;padding:18px;margin-bottom:16px;">
@@ -1692,7 +1689,7 @@
               <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">CUOTA A PAGAR</div>
               <div id="pgc-mo" style="font-family:var(--fm);font-size:30px;color:var(--a1);font-weight:800;letter-spacing:-1px;line-height:1;"></div>
             </div>
-            <div style="text-align:right;">
+            <div class="text-right">
               <div style="font-size:10px;color:var(--t3);font-weight:600;margin-bottom:3px;">YA PAGASTE</div>
               <div id="pgc-pagado" style="font-family:var(--fm);font-size:18px;color:var(--t2);font-weight:700;line-height:1;"></div>
             </div>
@@ -1804,8 +1801,8 @@
   <div class="modal" style="max-width:420px;">
     <div class="fb mb">
       <div>
-        <div class="mtit" id="mdp-title" style="margin-bottom:2px;">¡Te pagaron! 💵</div>
-        <div style="font-size:11px;color:var(--t3);">Registrá lo que ya te devolvieron.</div>
+        <div class="mtit mb-1" id="mdp-title">¡Te pagaron! 💵</div>
+        <div class="tm">Registrá lo que ya te devolvieron.</div>
       </div>
       <button class="mclose" data-action="closeM" data-arg-id="m-mdp" aria-label="Cerrar ventana">×</button>
     </div>
@@ -1813,7 +1810,7 @@
       <div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Persona</div>
       <div id="mdp-no" style="font-weight:800;font-size:16px;color:var(--t1);margin-bottom:10px;"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:11px;color:var(--t3);">Pendiente:</span>
+        <span class="tm">Pendiente:</span>
         <strong id="mdp-pendiente" style="font-family:var(--fm);font-size:18px;color:var(--a2);">$0</strong>
       </div>
     </div>
@@ -1858,7 +1855,7 @@
     <div style="background:rgba(255,214,10,.06);border:1px solid rgba(255,214,10,.2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:12px;color:var(--t2);line-height:1.6;">
       💡 <strong>Regla 30/40/30:</strong> 30% a deudas · 40% a ahorro · 30% a gustos. La fórmula que los expertos recomiendan para aprovechar los ingresos extra sin derrocharlos.
     </div>
-    <div class="fg"><label for="prm-mo">Monto recibido (COP)</label><input type="number" id="prm-mo" placeholder="Ej: 2500000" oninput="calcPrima()"></div>
+    <div class="fg"><label for="prm-mo">Monto recibido (COP)</label><input type="number" id="prm-mo" placeholder="Ej: 2500000" data-action-input="calcPrima"></div>
     <div class="fg"><label for="prm-fo">¿A qué cuenta llegó el dinero?</label><select id="prm-fo"></select></div>
     <div id="prm-res"></div>
     <button class="btn bp bfw" data-action="guardarPrima">Registrar Ingreso →</button>

@@ -12,7 +12,7 @@ import { updSaldo, updateBadge, renderSmart, renderAll, totalCuentas } from '../
 import { go, toggleMas, closeMas, setPer, setResumenTab, toggleSidebar, toggleDayPicker, selectDay, setDayPicker, updCustomFundButton, toggleFormGasto, toggleFijoInline, toggleFijosPanel, calcDist, onMetCh, selM, guardarQ, resetTodo, resetQuincena, toggleTheme, applyTheme, getPreferredTheme, initTheme, initClickOutside, toggleDashCard, switchSecTab } from './shell.js';
 
 // ─── CALCULADORAS ─────────────────────────────────────────────────────────────
-import { toggleCalc, guardarPrima } from '../calculadoras.js';
+import { toggleCalc, guardarPrima, calcPrima } from '../calculadoras.js';
 
 // ─── INGRESOS (gastos + dashboard + resumen + historial) ─────────────────────
 import { agregarGasto, delGasto, abrirEditarGasto, guardarEditarGasto, limpiarGastos, setFiltroGasto, renderGastos, prev4k, actualizarSemaforo, calcularImpactoHormiga, updateDash, calcScore, renderDashCuentas, calcularResumen, generarConsejo, mostrarResumenQuincena, renderHistorial, delHistorial, cerrarQ } from '../dominio/ingresos.js';
@@ -68,6 +68,7 @@ registerAction('toggleFormGasto', ()         => toggleFormGasto());
 registerAction('toggleFijoInline',()         => toggleFijoInline());
 registerAction('toggleDayPicker', ({ id })   => toggleDayPicker(id));
 registerAction('selectDay',       ({ id, day }) => selectDay(id, +day));
+registerAction('calcDist',        ()         => calcDist());
 // utils (openM / closeM vienen de utils.js)
 registerAction('openM',              ({ id })   => openM(id));
 registerAction('closeM',             ({ id })   => closeM(id));
@@ -77,6 +78,7 @@ registerAction('switchSecTab',       ({ section, tab }, el) => switchSecTab(sect
 // ─── ACCIONES DE CALCULADORAS ─────────────────────────────────────────────────
 registerAction('toggleCalc',   ({ id }) => toggleCalc(id));
 registerAction('guardarPrima', ()       => guardarPrima());
+registerAction('calcPrima',    ()       => calcPrima());
 
 // ─── ACCIONES INLINE (funciones locales, sin window.*) ───────────────────────
 function _toggleDesgloseHero() {
