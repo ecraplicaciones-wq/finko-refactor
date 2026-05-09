@@ -1,95 +1,114 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **Última revisión:** 2026‑05‑07. Documento alineado con la nueva colección de planos en raíz (`README.md`, `AUDIT.md`, `ARCHITECTURE.md`, `REORG_HTML.md`, `REORG_CSS.md`, `REORG_JS.md`, `DESIGN_SYSTEM.md`, `FINANCIAL_LOGIC_CO.md`, `ROADMAP.md`).
+
+This file provides guidance to Claude Code (claude.ai/code), Cursor, Copilot y otros asistentes IA al trabajar con este repositorio.
+
+**Antes de tocar código, leé en este orden:**
+
+1. `README.md` (3 min) — qué hace la app y cómo se corre.
+2. `ARCHITECTURE.md` (10 min) — capas, flujo de datos, reglas innegociables.
+3. `AUDIT.md` (10 min) — estado real, deuda técnica, métricas baseline.
+4. `ROADMAP.md` (5 min) — fases ordenadas y dependencias.
+5. El `REORG_*.md` o `DESIGN_SYSTEM.md` o `FINANCIAL_LOGIC_CO.md` específico de la fase activa.
 
 ## Project Overview
 
-**Finko Pro** is an offline-first PWA for personal finance management targeted at Colombian users. It is written in **vanilla JavaScript ES6 modules with no framework, no build step, and no external runtime dependencies**. The app runs directly in the browser; LocalStorage is the only persistence layer.
+**Finko Pro** es una PWA offline‑first para gestión financiera personal en Colombia. Vanilla JavaScript ES6 modules, **sin framework, sin build step, sin dependencias en runtime**. La app corre directamente en el navegador; `localStorage` (clave `fco_v4`, schema v5) es la única capa de persistencia.
 
-## Commands
+## Comandos
 
 ```bash
-# Run all tests once
+# Tests (Vitest + happy-dom)
 npm test
-
-# Run tests in watch mode
 npm run test:watch
-
-# Generate coverage report
 npm run coverage
 
-# Serve the app locally (no build required)
+# Servir la app localmente
 python -m http.server 8080
 ```
 
-Tests live in `modules/tests/` and are configured in `modules/vitest.config.js` (environment: happy-dom, global utils enabled, setup file: `tests/setup.js`).
+Tests viven en `tests/unit/`. Configuración en `modules/vitest.config.js`. Setup en `tests/setup.js`.
 
-## Architecture
+## Arquitectura (resumen — detalle en `ARCHITECTURE.md`)
 
-### State Management
+### Estado
 
-All app state lives in a single mutable object `S` exported from `modules/state.js`. There is no reactivity layer — every mutation to `S` must be followed manually by a `save()` call (debounced 200 ms write to `localStorage` key `fco_v4`) and then re-render of the affected section.
+Singleton mutable `S` exportado por `modules/core/state.js`. Sin reactivity. Toda mutación de `S` debe ir seguida manualmente por `save()` (debounced 200 ms) y un `renderX()` o `updSaldo()`.
 
 ```
-mutation to S → save() → renderX() / updSaldo()
+mutación de S → save() → renderX() / updSaldo()
 ```
 
-`storage.js` owns persistence: `loadData()` loads state on startup and applies up to 5 idempotent schema migrations. The storage key is `fco_v4`, current schema version is 5.
+`modules/core/storage.js` posee la persistencia y aplica 5 migraciones idempotentes en `loadData()`.
 
-### Entry Point & Bootstrap
+### Entry point
 
-`index.html` is the app shell (all HTML structure lives here, including modals and forms). ES6 modules are preloaded via `<link rel="modulepreload">`. `modules/events.js` is the bootstrap orchestrator — it imports all domain modules and exposes ~140 functions to `window.*` so that `onclick=""` inline handlers in the HTML can call them.
+`index.html` es el shell (toda la estructura HTML, modales y formularios). Los módulos ES6 se precarguan con `<link rel="modulepreload">`. `modules/ui/events.js` es el bootstrap: importa todos los dominios y registra acciones para el sistema delegado `data-action`.
 
-### Navigation
+**Métricas baseline (2026‑05‑07):**
 
-Hash-based routing (`#dash`, `#gast`, `#compromisos`, etc.). `sections.js` handles `go(section)` calls, updates the active sidebar item, and lazy-loads `calculadoras.js` on first visit to that section.
+- 0 `onclick=""` (✅ migración completa).
+- 156 `data-action=""`.
+- 208 atributos ARIA.
+- 341 `style="..."` inline (target v5: < 60).
+- 74 asignaciones `window.X = …` en `events.js`; 210 en todo `modules/` (target v5: ≤ 16 y < 30).
 
-### Rendering
+### Navegación
 
-No virtual DOM. Each domain module owns its own rendering via `innerHTML` string concatenation. `render.js` provides:
-- `renderSmart(fn, key)` — skips re-render if section is not currently visible
-- `updSaldo()` — recalculates and updates all balance displays
-- `updateBadge()` — debt count badge in the navbar
+Hash routing (`#dash`, `#gast`, `#compromisos`, …). `modules/ui/shell.js` maneja `go(section)`, actualiza la sidebar activa y lazy‑loadea `modules/calculadoras.js` en la primera visita.
 
-### Module Responsibilities
+### Render
 
-| Module | Responsibility |
+Sin virtual DOM. Cada dominio genera su HTML con `innerHTML`. `modules/infra/render.js` provee:
+
+- `renderSmart(fn, key)` — evita re‑render si la sección no es visible.
+- `updSaldo()` — recalcula saldo total y actualiza los displays.
+- `updateBadge()` — contador de deudas en navbar.
+- `renderAll()` — orquestador.
+
+### Módulos por capa
+
+| Capa | Archivos |
 |---|---|
-| `state.js` | Singleton `S`, `resetAppState()` |
-| `storage.js` | `save()`, `loadData()`, migrations |
-| `constants.js` | Colombian constants: SMMLV 2026, UVT, usury rate, bank catalog, category emojis |
-| `utils.js` | `f()` (currency format), `hoy()` (today's date), DOM helpers, modal dialogs, `he()` (HTML escape) |
-| `render.js` | `renderSmart()`, `updSaldo()`, badge updates |
-| `sections.js` | Hash routing, swipe handling, lazy-load for calculators |
-| `events.js` | Bootstrap, global `window.*` bindings, service worker registration |
-| `gastos.js` | Expense CRUD, budget semaphore (`actualizarSemaforo()`), "hormiga" impact calculator |
-| `deudas.js` | Debt CRUD, avalanche/snowball payoff strategies |
-| `ahorrado.js` | Savings pockets (bolsillos), "plato libre" free balance |
-| `agenda.js` | Calendar UI, scheduled payments |
-| `calculadoras.js` | Lazy-loaded: CDT, credit, compound interest, rule of 72 |
-| `exports.js` | JSON/CSV/HTML backup and reporting |
+| `modules/core/` | `state.js`, `storage.js`, `constants.js` |
+| `modules/infra/` | `utils.js`, `render.js`, `a11y.js` |
+| `modules/ui/` | `events.js` (bootstrap), `shell.js` (navegación, tema), `actions.js` (delegador `data-action`) |
+| `modules/dominio/` | `ingresos.js`, `compromisos.js`, `tesoreria.js`, `metas.js`, `analisis.js`, `exports.js`, `personales.js` |
+| `modules/calculadoras.js` | Lazy: CDT, crédito, interés compuesto, regla 72, prima |
+
+> **v5 Plan:** los 4 dominios > 1.500 LOC (`analisis`, `compromisos`, `ingresos`, `tesoreria`) se particionan en sub‑carpetas. Detalle en `REORG_JS.md`.
 
 ### PWA / Service Worker
 
-`service-worker.js` implements a cache-first strategy. It precaches all JS modules, CSS, icons, and the manifest. Changes to cached assets require bumping the cache version constant in the service worker.
+`service-worker.js` implementa cache‑first. Precachea todos los JS, CSS, íconos y manifest. **Bumpear la constante `CACHE_NAME` cada vez que cambien assets** o el SW servirá la versión vieja.
 
-## Known Bugs (Pre-Refactor)
+## Reglas innegociables (ADN del proyecto)
 
-**Bug A — Duplicate `save()` in `storage.js`:** Two function declarations exist (lines ~200 and ~232). This causes a `SyntaxError` on module load, breaking the app entirely. The old synchronous version (lines ~195–224) must be deleted; only the debounced version should remain.
+1. **Vanilla JS sin build step.** Nada de TypeScript, bundlers, frameworks.
+2. **Offline‑first.** El SW garantiza que la app funcione sin red.
+3. **Sin servidor.** No hay backend, cuentas ni sync. Privacidad absoluta.
+4. **Singleton `S` mutable.** No agregar reactivity.
+5. **`save()` debounced.** No hacer escrituras inmediatas a `localStorage`.
+6. **Migraciones idempotentes.** Cada bump de schema sube datos sin romper backward‑compat.
+7. **`data-action` delegado.** En HTML estático, **0 `onclick`**. Dinámico: en migración a `data-action`.
+8. **Lenguaje del usuario.** "Tu plata" antes que "Saldo disponible".
+9. **Constantes legales vivas.** Tasa de usura trimestral; revisión obligatoria. Detalle en `FINANCIAL_LOGIC_CO.md`.
 
-**Bug B — Zombie calculator references in `events.js` (lines ~206–217):** References 11 functions (`cCDT`, `cCre`, etc.) that are never imported in `events.js`. These are correctly lazy-loaded in `sections.js`. These lines cause `ReferenceError` at runtime and must be deleted.
+Tocar cualquiera de estas reglas exige discusión explícita con el dueño del repo.
 
-## Refactoring Roadmap (v5 Audit)
+## Estado actual y siguiente paso
 
-The current 28-module flat structure is being reorganized into a domain-driven layout:
+- Versión vigente: v4.x estable (1.311 tests verdes).
+- Siguiente hito: v5.0 — reorganización + UX moderna + lógica financiera avanzada.
+- Plan completo: `ROADMAP.md`.
+- Tag baseline: `v4.x-baseline` (capturado el 2026‑05‑07).
+- Métricas baseline en: `docs/baseline/`.
 
-```
-modules/
-├── core/       (state, constants, storage)
-├── infra/      (utils, render, a11y)
-├── ui/         (sections, events/bootstrap)
-├── dominio/    (tesoreria, compromisos, ingresos, metas, analisis)
-└── calculadoras.js  (lazy-loaded)
-```
+## Convenciones
 
-The migration from inline `onclick=""` handlers to `data-action=""` delegated events is planned for Phase 2, which will eliminate the need to expose functions on `window.*`.
+- **Naming:** dominios en español neutro (`ingresos`, `compromisos`, …); infra/ui en inglés (`state`, `storage`, `events`, `actions`).
+- **Imports:** siempre con extensión `.js`; rutas relativas con `../`; sin path mapping.
+- **Commits:** `tipo(área): descripción corta`. Tipos: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`.
+- **Tests:** verdes obligatorios antes de commitear.
+- **Para agentes IA:** preguntar antes de hacer cambios destructivos (eliminar archivos, force push, reescribir historial).

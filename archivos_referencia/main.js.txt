@@ -1,0 +1,535 @@
+/**
+ * Finko Pro - Main Orchestrator
+ * El único punto de entrada de la aplicación.
+ */
+
+import { S, loadData, save, inyectarConstantes, verificarVigenciaConstantes } from './state.js';
+import { ExpenseService, AccountService, DebtService, PersonalLoanService, FinanceCalc } from './finance.service.js';
+import { FixedExpenseService, AgendaService, GoalService, AnalysisService } from './planner.service.js';
+import { renderAll, go, initTheme, applyTheme, renderCDT, renderCredito, openM, closeM, toggleTheme, renderGastos, renderDashboard, renderCuentas, renderMetas, renderDeudas, renderAgenda, initCloseSidebarOnClickOutside } from './ui.manager.js';
+
+// =============================================================================
+// 1. SISTEMA DE ACCIONES GLOBALES
+// =============================================================================
+const ACTIONS = {
+  // Navegación y UI
+  'go': ({ sec }) => go(sec),
+  'openM': ({ id }) => openM(id),
+  'closeM': ({ id }) => closeM(id),
+'toggleTheme': () => {
+    toggleTheme();
+    closeMas();
+  },
+  'registrarAbonoFondo': () => {
+    const montoInput = document.getElementById('fe-monto-abono')?.value.replace(/[.\,]/g, '') || '';
+    const cuentaId = document.getElementById('fe-fo')?.value;
+    const montoNum = Number(montoInput) || 0;
+    
+    if (!S.fondoEmergencia) S.fondoEmergencia = { meta: 0, actual: 0 };
+    
+    if (montoNum > 0) {
+      S.fondoEmergencia.actual += montoNum;
+      
+      if (cuentaId) {
+        const cuenta = S.cuentas.find(c => String(c.id) === String(cuentaId));
+        if (cuenta) {
+          cuenta.saldo = (cuenta.saldo || 0) - montoNum;
+        }
+      }
+    }
+    
+    save();
+    closeM('m-fondo-emergencia');
+    document.getElementById('fe-monto-abono').value = '';
+    renderAll();
+  },
+  'guardarMetaFondo': () => {
+    const metaInput = document.getElementById('fe-nueva-meta')?.value.replace(/[.\,]/g, '') || '';
+    const nuevaMeta = Number(metaInput) || 0;
+    
+    if (!S.fondoEmergencia) S.fondoEmergencia = { meta: 0, actual: 0 };
+    if (nuevaMeta > 0) {
+      S.fondoEmergencia.meta = nuevaMeta;
+      save();
+    }
+    
+    closeM('m-fondo-meta');
+    document.getElementById('fe-nueva-meta').value = '';
+    renderAll();
+  },
+  'toggleThemeAndClose': () => {
+    toggleTheme();
+    closeMas();
+  },
+'toggleSidebar': () => {
+    const sidebar = document.getElementById('sidebar');
+    const arrow = document.getElementById('sb-icon');
+    if (sidebar) {
+      const isExpanded = sidebar.classList.toggle('expanded');
+      if (arrow) arrow.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+  },
+  'toggleDesgloseHero': () => {
+    const body = document.getElementById('desglose-hero-body');
+    const arrow = document.getElementById('desglose-hero-arrow');
+    const isVisible = body.style.display === 'block';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
+  'toggleBolsillosHero': () => {
+    const body = document.getElementById('bolsillos-hero-body');
+    const arrow = document.getElementById('bolsillos-hero-arrow');
+    const isVisible = body.style.display === 'block';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
+  'toggleDashCard': ({ key }) => {
+    const body = document.getElementById(`dash-${key}-body`);
+    const arrow = document.getElementById(`dash-${key}-arrow`);
+    const btn = document.querySelector(`[data-arg-key="${key}"]`);
+    if (!body) return;
+    
+    // Toggle clase open
+    body.classList.toggle('open');
+    const isOpen = body.classList.contains('open');
+    
+    // Cambiar flecha
+    const newTransform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    if (arrow) arrow.style.transform = newTransform;
+    if (btn) btn.setAttribute('aria-expanded', isOpen);
+    
+    console.log('toggleDashCard:', key, 'isOpen:', isOpen, 'transform:', newTransform);
+  },
+  'toggleMas': () => {
+    const panel = document.getElementById('mas-panel');
+    const ov = document.getElementById('mas-overlay');
+    const isOpen = panel.classList.toggle('open');
+    if (ov) ov.style.display = isOpen ? 'block' : 'none';
+  },
+  'closeMas': () => {
+    document.getElementById('mas-panel')?.classList.remove('open');
+    document.getElementById('mas-overlay')?.style.setProperty('display', 'none');
+  },
+  'toggleDesgloseHero': () => {
+    const body = document.getElementById('desglose-hero-body');
+    const arrow = document.getElementById('desglose-hero-arrow');
+    const isVisible = body.style.display === 'block';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
+  'toggleBolsillosHero': () => {
+    const body = document.getElementById('bolsillos-hero-body');
+    const arrow = document.getElementById('bolsillos-hero-arrow');
+    const isVisible = body.style.display === 'block';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
+  'editEfectivoDash': () => {
+    // Usar prompt por ahora, luego mejoramos a un modal
+    const efectivoActual = S.saldos?.efectivo || 0;
+    const nuevoMonto = prompt('Edita el monto de efectivo en mano:', efectivoActual);
+    console.log('Nuevo monto:', nuevoMonto, 'Efectivo actual:', efectivoActual);
+    if (nuevoMonto !== null && nuevoMonto !== '') {
+      const montoNum = Number(nuevoMonto.replace(/[^0-9.-]/g, ''));
+      console.log('Monto numérico:', montoNum);
+      if (!isNaN(montoNum)) {
+        if (!S.saldos) S.saldos = { efectivo: 0, banco: 0 };
+        S.saldos.efectivo = montoNum;
+        save();
+        console.log('Guardado. S.saldos:', S.saldos);
+        renderAll();
+      }
+    }
+  },
+  
+  // Gastos
+  'agregarGasto': (args) => ExpenseService.agregar(args),
+  
+  // Gastos rápidos
+  'agregarGastoRapido': () => {
+    const desc = document.getElementById('qg-de')?.value;
+    const monto = +document.getElementById('qg-mo')?.value || 0;
+    const forma = document.getElementById('qg-fo')?.value || 'efectivo';
+    const cat = document.getElementById('qg-ca')?.value || 'otro';
+    if (!desc || monto <= 0) return;
+    S.gastos.push({
+      id: Date.now(),
+      desc,
+      montoTotal: monto,
+      monto,
+      tipo: 'necesidad',
+      fecha: new Date().toISOString().split('T')[0],
+      fijo: false,
+      cat,
+      forma,
+      orig: 'quick'
+    });
+    save();
+    closeM('m-quick-gasto');
+    document.getElementById('qg-de').value = '';
+    document.getElementById('qg-mo').value = '';
+    renderAll();
+  },
+  
+  // Ingresos rápidos
+  'agregarIngresoRapido': () => {
+    const desc = document.getElementById('qi-de')?.value;
+    const monto = +document.getElementById('qi-mo')?.value || 0;
+    const tipo = document.getElementById('qi-ti')?.value || 'ingreso';
+    if (!desc || monto <= 0) return;
+    S.gastos.push({
+      id: Date.now(),
+      desc,
+      montoTotal: monto,
+      monto,
+      tipo: tipo === 'devolucion' ? 'devolucion' : tipo === 'prestamo' ? 'prestamo' : 'ingreso',
+      fecha: new Date().toISOString().split('T')[0],
+      fijo: false,
+      cat: 'otro'
+    });
+    save();
+    closeM('m-quick-ingreso');
+    document.getElementById('qi-de').value = '';
+    document.getElementById('qi-mo').value = '';
+    renderAll();
+  },
+  'delGasto': ({ id }) => ExpenseService.eliminar(id),
+  'editarGasto': (args) => ExpenseService.editar(args.id, args),
+  'limpiarGastos': () => ExpenseService.limpiarPeriodo(),
+  'aplicar4k': () => ExpenseService.aplicar4x1000(new Date().toISOString().slice(0, 7)),
+  'setFiltroGasto': ({ tipo }) => {
+    S.gastoFiltro = tipo;
+    renderGastos();
+  },
+  'toggleFijoInline': () => {
+    const body = document.getElementById('form-fijo-body');
+    const arrow = document.getElementById('form-fijo-arrow');
+    const isVisible = body.style.display === 'block';
+    body.style.display = isVisible ? 'none' : 'block';
+    if (arrow) arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+  },
+  'guardarFijo': (args) => FixedExpenseService.agregar(args),
+  
+  // Cuentas
+  'agregarCuenta': (args) => {
+    const banco = document.getElementById('cu-banco')?.value;
+    const nombre = document.getElementById('cu-alias')?.value;
+    const saldo = document.getElementById('cu-saldo')?.value;
+    console.log('Agregando cuenta:', { banco, nombre, saldo });
+    AccountService.agregarCuenta({ banco, nombre, saldo });
+    closeM('m-cuenta');
+    renderAll();
+  },
+  'eliminarCuenta': ({ id }) => AccountService.eliminarCuenta(id),
+'editCuenta': ({ id }) => {
+    const numId = Number(id);
+    const cuenta = S.cuentas.find(c => c.id === numId || c.id == id);
+    if (!cuenta) return;
+    
+    // Poblar modal de edición
+    document.getElementById('edit-cu-banco').value = cuenta.banco || 'otro';
+    document.getElementById('edit-cu-tipo').value = cuenta.tipo || 'digital';
+    document.getElementById('edit-cu-saldo').value = cuenta.saldo || 0;
+    
+    // Guardar ID para usar después
+    window._cuentaEditandoId = cuenta.id;
+    
+    openM('m-editar-cuenta');
+  },
+  'guardarEditCuenta': () => {
+    const id = window._cuentaEditandoId;
+    if (!id) return;
+    const cuenta = S.cuentas.find(c => c.id === id);
+    if (!cuenta) return;
+    
+    // Limpiar: quitar puntos y comas
+    const saldoStr = document.getElementById('edit-cu-saldo').value.replace(/[.\,]/g, '');
+    cuenta.banco = document.getElementById('edit-cu-banco').value;
+    cuenta.tipo = document.getElementById('edit-cu-tipo').value;
+    cuenta.saldo = Number(saldoStr) || 0;
+    
+    save();
+    closeM('m-editar-cuenta');
+    renderAll();
+  },
+  'fillMonto': ({ monto }) => {
+    document.getElementById('edit-cu-saldo').value = monto;
+  },
+  'deleteCuenta': ({ id }) => {
+    const numId = Number(id);
+    if (confirm('¿Eliminar esta cuenta?')) {
+      console.log('Eliminando cuenta id:', numId);
+      S.cuentas = S.cuentas.filter(c => c.id !== numId && c.id != id);
+      save();
+      renderAll();
+    }
+  },
+  'agregarBolsillo': (args) => AccountService.agregarBolsillo(args),
+  'abonarBolsillo': ({ id, monto }) => AccountService.abonarBolsillo(id, monto),
+  
+  // Herramientas
+  'calcCDT': () => renderCDT(),
+  'calcCre': () => renderCredito(),
+  
+  // Deudas
+  'agregarDeuda': (args) => DebtService.agregarDeuda(args),
+  'pagarDeuda': ({ id, monto }) => DebtService.pagarCuota(id, monto),
+  
+  // Metas
+  'agregarMeta': (args) => GoalService.agregarMeta(args),
+  'abonarMeta': ({ id, monto }) => GoalService.abonarMeta(id, monto),
+  'openNuevoObjetivo': () => openM('m-objetivo'),
+  'closeM': ({ id }) => closeM(id),
+  'guardarCuenta': () => window.guardarCuenta(),
+  
+  // Fijos
+  'agregarFijo': (args) => FixedExpenseService.agregar(args),
+  'pagarFijo': ({ id }) => FixedExpenseService.marcarComoPagado(id),
+  
+  // Planner / Quincena
+  'setPer': ({ per }) => {
+    S.periodoActual = per;
+    renderAll();
+  },
+  'selM': ({ mod }) => {
+    S.metodoPresupuesto = mod;
+    renderAll();
+  },
+  'guardarQ': (args) => {
+    // Logic to save budget
+    console.log('Saving budget...', args);
+  },
+};
+
+
+// =============================================================================
+// 2. INICIALIZACIÓN DEL SISTEMA
+// =============================================================================
+async function bootstrap() {
+  try {
+    console.log('[Finko] Iniciando sistema...');
+    
+    // 1. Datos y Constantes
+    loadData();
+    inyectarConstantes();
+    verificarVigenciaConstantes();
+    
+    // 2. UI & Tema
+    initTheme();
+    initCloseSidebarOnClickOutside();
+    
+    // 3. Exponer funciones globales para compatibilidad con HTML Pro (onclick)
+    window.go = go;
+    window.openM = openM;
+    window.closeM = closeM;
+window.toggleTheme = toggleTheme;
+    window.toggleMas = () => {
+      const panel = document.getElementById('mas-panel');
+      const ov = document.getElementById('mas-overlay');
+      const isOpen = panel.classList.toggle('open');
+      if (ov) ov.style.display = isOpen ? 'block' : 'none';
+    };
+    window.closeMas = () => {
+      document.getElementById('mas-panel')?.classList.remove('open');
+      document.getElementById('mas-overlay')?.style.setProperty('display', 'none');
+    };
+
+    // --- Mapeo de Lógica de Negocio (Servicios) ---
+    window.guardarGasto = (args) => {
+      const data = {
+        desc: document.getElementById('g-de').value,
+        monto: +document.getElementById('g-mo').value,
+        fecha: document.getElementById('g-fe').value,
+        tipo: document.getElementById('g-ti').value,
+        cat: document.getElementById('g-ca').value,
+        fondo: document.getElementById('g-fo').value,
+        es4k: document.getElementById('g-4k').checked
+      };
+      ExpenseService.agregar(data);
+      renderAll();
+      closeM('m-nuevo-gasto');
+    };
+
+    window.limpiarGastos = () => {
+      if (confirm('¿Estás seguro de limpiar los gastos de este período?')) {
+        ExpenseService.limpiarPeriodo();
+        renderAll();
+      }
+    };
+
+    window.guardarCuenta = () => {
+      const data = {
+        banco: document.getElementById('cu-banco').value,
+        nombre: document.getElementById('cu-alias').value,
+        saldo: +document.getElementById('cu-saldo').value
+      };
+      AccountService.agregarCuenta(data);
+      renderAll();
+      closeM('m-cuenta');
+    };
+
+    window.guardarFijo = () => {
+      const data = {
+        nombre: document.getElementById('gf-no').value,
+        monto: +document.getElementById('gf-mn').value,
+        periodo: document.getElementById('gf-pe').value,
+        tipo: document.getElementById('gf-ti').value,
+        cat: document.getElementById('gf-ca').value,
+        dia: document.getElementById('gf-di').value,
+        fondo: document.getElementById('gf-fo').value,
+        es4k: document.getElementById('gf-4k').checked
+      };
+      FixedExpenseService.agregar(data);
+      renderAll();
+      // Close inline form
+      document.getElementById('form-fijo-body').style.display = 'none';
+    };
+
+    window.guardarDeuda = () => {
+      const data = {
+        tipo: document.getElementById('dn-ti').value,
+        nombre: document.getElementById('dn-no').value,
+        total: +document.getElementById('dn-to').value,
+        cuota: +document.getElementById('dn-cu').value,
+        periodo: document.getElementById('dn-pe').value,
+        tasa: +document.getElementById('dn-ta').value,
+        dia: document.getElementById('dn-dia').value
+      };
+      DebtService.agregarDeuda(data);
+      renderAll();
+      closeM('m-deu');
+    };
+
+    window.confPagarCuota = () => {
+      const id = document.getElementById('pgc-id').value;
+      const monto = FinanceCalc.getCuotaDeuda(id); // simplified
+      DebtService.pagarCuota(id, monto);
+      renderAll();
+      closeM('m-pgc');
+    };
+
+    window.guardarObjetivo = () => {
+      const data = {
+        tipo: document.getElementById('obj-tipo').value,
+        nombre: document.getElementById('obj-no').value,
+        meta: +document.getElementById('obj-ahorro').value,
+        fecha: document.getElementById('obj-fe').value,
+        icono: document.getElementById('obj-ic').value,
+        presupuesto: +document.getElementById('obj-pres').value || 0
+      };
+      GoalService.agregarMeta(data);
+      renderAll();
+      closeM('m-objetivo');
+    };
+
+    // Calculadoras (Tools)
+    window.cCDT = () => renderCDT();
+    window.cCre = () => renderCredito();
+    window.cInf = () => {
+       // Implementation in tools.service.js needed if not there
+       console.log('Calc Inflación');
+    };
+    window.cR72 = () => {
+       console.log('Calc Regla 72');
+    };
+
+    // --- Delegación de Eventos Global
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      
+      const actionName = target.getAttribute('data-action');
+      const action = ACTIONS[actionName];
+      
+      if (action) {
+        // Extraer argumentos de data-arg-*
+        const args = {};
+        Array.from(target.attributes).forEach(attr => {
+          if (attr.name.startsWith('data-arg-')) {
+            const key = attr.name.replace('data-arg-', '');
+            args[key] = attr.value;
+          }
+        });
+        
+        action(args);
+        renderAll();
+      }
+    });
+
+    // 4. Arranque Inicial
+    go('dash');
+    console.log('[Finko] Sistema listo.');
+    
+    // Onboarding - mostrar solo la primera vez
+    if (!localStorage.getItem('finko_onboarded')) {
+      setTimeout(() => {
+        document.getElementById('m-onboarding').style.display = 'flex';
+      }, 500);
+    }
+    
+  } catch (err) {
+    console.error('[Finko] Error crítico en bootstrap:', err);
+  }
+}
+
+// Funciones globales para Onboarding
+window.nextOnboardingStep = function(step) {
+  // Guardar datos del paso actual
+  if (step === 2) {
+    const efectivo = +document.getElementById('onb-efectivo').value || 0;
+    const banco = +document.getElementById('onb-banco').value || 0;
+    if (efectivo + banco > 0) {
+      S.saldos = S.saldos || {};
+      S.saldos.efectivo = efectivo;
+    }
+  }
+  if (step === 3) {
+    const ingreso = +document.getElementById('onb-ingreso').value || 0;
+    if (ingreso > 0) {
+      S.ingreso = ingreso;
+    }
+  }
+  
+  // Cambiar paso
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`onboarding-step-${i}`).style.display = i === step ? 'block' : 'none';
+  }
+  
+  // Actualizar indicadores
+  document.querySelectorAll('.onboarding-step').forEach((el, idx) => {
+    el.classList.remove('active', 'completed');
+    if (idx + 1 < step) el.classList.add('completed');
+    if (idx + 1 === step) el.classList.add('active');
+  });
+  
+  // Si es paso 3, generar resultado
+  if (step === 3) {
+    const ingreso = S.ingreso || 0;
+    const efectivo = S.saldos?.efectivo || 0;
+    const banco = 0;
+    const total = efectivo + banco;
+    
+    document.getElementById('onboarding-resultado').innerHTML = 
+      `Tienes <strong>${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(total)}</strong><br><span style="font-size:14px;color:var(--t3)">Ingreso: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(ingreso)}/mes</span>`;
+    
+    // Acciones recomendadas
+    const acciones = [];
+    if (!S.cuentas?.length) acciones.push('✅ Crea tu primera cuenta bancaria');
+    if (!S.fondoEmergencia?.meta) acciones.push('✅ Crea tu fondo de emergencia (3-6 meses de gastos)');
+    if (!S.objetivos?.length) acciones.push('✅ Crea una meta de ahorro');
+    if (!S.gastosFijos?.length) acciones.push('✅ Registra tus gastos fijos');
+    if (acciones.length === 0) acciones.push('✅ ¡Ya tienes todo configurado!');
+    
+    document.getElementById('onboarding-acciones').innerHTML = acciones.map(a => `<li>${a}</li>`).join('');
+  }
+};
+
+window.finishOnboarding = function() {
+  save();
+  document.getElementById('m-onboarding').style.display = 'none';
+  localStorage.setItem('finko_onboarded', '1');
+  renderAll();
+};
+
+// Lanzar la aplicación
+bootstrap();

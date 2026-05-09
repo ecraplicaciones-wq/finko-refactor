@@ -1,0 +1,90 @@
+/**
+ * Finko Pro - Tools Service
+ * Responsabilidades: Fórmulas matemáticas financieras puras.
+ * Sin dependencias del DOM ni del Estado.
+ */
+
+import { RETEFUENTE_CDT, SMMLV_2026, SALUD_INDEPEND, PENSION_INDEPEND } from './state.js';
+
+export const FinanceTools = {
+  /**
+   * CDT — Certificado de Depósito a Término.
+   * Capitalización compuesta por días: C × ((1 + tasaEA)^(días/365) − 1).
+   */
+  calcCDT(capital, tasaEA, dias, retencion = false) {
+    if (!capital || !tasaEA || !dias) return null;
+    const rendimientoBruto = capital * (Math.pow(1 + tasaEA, dias / 365) - 1);
+    const rendimientoNeto  = retencion ? rendimientoBruto * (1 - RETEFUENTE_CDT) : rendimientoBruto;
+    const tem = Math.pow(1 + tasaEA, 1 / 12) - 1;
+    const rendimientoMensualBruto = capital * tem;
+    const rendimientoMensual = retencion
+      ? rendimientoMensualBruto * (1 - RETEFUENTE_CDT)
+      : rendimientoMensualBruto;
+    return { rendimientoBruto, rendimientoNeto, rendimientoMensual };
+  },
+
+  /**
+   * Crédito en sistema francés (cuota fija). M = P × [i(1+i)^n] / [(1+i)^n − 1].
+   */
+  calcCredito(monto, tasaMensualPct, n) {
+    if (!monto || !n) return null;
+    const i  = tasaMensualPct / 100;
+    const cuota = i === 0
+      ? monto / n
+      : (monto * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+    const totalPagado  = cuota * n;
+    const totalInteres = totalPagado - monto;
+    const taEA = tasaMensualPct > 0 ? (Math.pow(1 + i, 12) - 1) * 100 : 0;
+    return { cuota, totalPagado, totalInteres, taEA };
+  },
+
+  /**
+   * Interés compuesto con aportes periódicos (anualidad).
+   * VF = C(1+tm)^n + A × [(1+tm)^n − 1] / tm
+   */
+  calcInteresCompuesto(capital, aporte, tasaEA, meses) {
+    const tm = Math.pow(1 + tasaEA, 1 / 12) - 1;
+    const valorFinal = tm > 0
+      ? capital * Math.pow(1 + tm, meses) + aporte * (Math.pow(1 + tm, meses) - 1) / tm
+      : capital + aporte * meses;
+    const totalAportado = capital + aporte * meses;
+    const ganancia      = valorFinal - totalAportado;
+    return { valorFinal, totalAportado, ganancia };
+  },
+
+  /**
+   * Rentabilidad real ajustada por inflación — fórmula de Fisher.
+   * r_real = (1 + r_nominal) / (1 + inflación) − 1
+   */
+  calcRentabilidadReal(capital, tasaPct, inflacionPct) {
+    const realPct = (((1 + tasaPct / 100) / (1 + inflacionPct / 100)) - 1) * 100;
+    const gananciaNominal  = capital * (tasaPct / 100);
+    const gananciaReal     = capital * (realPct / 100);
+    const perdidaInflacion = gananciaNominal - gananciaReal;
+    return { realPct, gananciaNominal, gananciaReal, perdidaInflacion };
+  },
+
+  /**
+   * Regla del 72 — años para duplicar capital a una tasa anual dada.
+   */
+  calcRegla72(tasaPct) {
+    if (tasaPct <= 0) return null;
+    const aprox  = 72 / tasaPct;
+    const exacto = Math.log(2) / Math.log(1 + tasaPct / 100);
+    return { aprox, exacto };
+  },
+
+  /**
+   * PILA para independientes — cotización a seguridad social.
+   * IBC = max(ingreso × 40%, 1 SMMLV).
+   */
+  calcPILA(ingreso, arl = 0.00522) {
+    if (ingreso <= 0) return null;
+    const ibc      = Math.max(ingreso * 0.40, SMMLV_2026);
+    const salud    = ibc * SALUD_INDEPEND;
+    const pension  = ibc * PENSION_INDEPEND;
+    const arlMonto = ibc * arl;
+    const total    = salud + pension + arlMonto;
+    return { ibc, salud, pension, arlMonto, total };
+  }
+};

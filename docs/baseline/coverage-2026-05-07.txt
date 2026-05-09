@@ -1,0 +1,50 @@
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/unit/state.test.js [2m([22m[2m7 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/migrations.test.js [2m([22m[2m18 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/calculadoras.test.js [2m([22m[2m35 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/exports.test.js [2m([22m[2m20 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/personales.test.js [2m([22m[2m29 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/storage.test.js [2m([22m[2m207 tests[22m[2m)[22m[90m 84[2mms[22m[39m
+ [32m✓[39m tests/unit/metas.test.js [2m([22m[2m105 tests[22m[2m)[22m[90m 46[2mms[22m[39m
+ [32m✓[39m tests/unit/compromisos.test.js [2m([22m[2m129 tests[22m[2m)[22m[90m 58[2mms[22m[39m
+ [32m✓[39m tests/unit/tesoreria.test.js [2m([22m[2m171 tests[22m[2m)[22m[90m 83[2mms[22m[39m
+ [32m✓[39m tests/unit/ingresos.test.js [2m([22m[2m159 tests[22m[2m)[22m[90m 72[2mms[22m[39m
+ [32m✓[39m tests/unit/analisis.test.js [2m([22m[2m410 tests[22m[2m)[22m[90m 173[2mms[22m[39m
+ [32m✓[39m tests/unit/utils.test.js [2m([22m[2m21 tests[22m[2m)[22m[90m 285[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m      Tests [22m [1m[32m1311 passed[39m[22m[90m (1311)[39m
+[2m   Start at [22m 15:02:14
+[2m   Duration [22m 1.56s[2m (transform 1.36s, setup 0ms, collect 3.90s, tests 869ms, environment 4ms, prepare 2.61s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   40.55 |    90.57 |   33.54 |   40.55 |                   
+ ...volhard-e52485 |       0 |        0 |       0 |       0 |                   
+  ...ice-worker.js |       0 |        0 |       0 |       0 | 1-496             
+ ...e52485/modules |   32.99 |      100 |   36.84 |   32.99 |                   
+  calculadoras.js  |   32.99 |      100 |   36.84 |   32.99 | ...28-539,542-590 
+ ...5/modules/core |   54.44 |    93.98 |   35.55 |   54.44 |                   
+  constants.js     |   88.76 |      100 |   35.71 |   88.76 | 31-35,38-42       
+  state.js         |   92.85 |       75 |   66.66 |   92.85 | 7-8,12            
+  storage.js       |    49.8 |    94.25 |   32.14 |    49.8 | ...1001,1003-1004 
+ ...odules/dominio |   46.04 |     90.5 |   34.24 |   46.04 |                   
+  analisis.js      |   64.05 |    88.75 |   52.08 |   64.05 | ...2829,2835-2849 
+  compromisos.js   |   35.26 |    89.56 |   20.83 |   35.26 | ...1924,1972-1992 
+  exports.js       |   21.83 |    93.75 |   22.22 |   21.83 | ...06-408,422-426 
+  ingresos.js      |   32.47 |    93.63 |   34.37 |   32.47 | ...1569,1604-1623 
+  metas.js         |   49.94 |       90 |   37.03 |   49.94 | ...34-939,967-979 
+  personales.js    |   48.34 |    85.36 |   35.71 |   48.34 | ...63-373,391-396 
+  tesoreria.js     |   44.61 |    94.91 |   29.26 |   44.61 | ...1540,1571-1602 
+ .../modules/infra |   43.31 |    78.78 |      25 |   43.31 |                   
+  a11y.js          |   44.44 |      100 |       0 |   44.44 | ...64,75-82,85-99 
+  render.js        |    27.2 |        0 |       0 |    27.2 | ...10-111,120-125 
+  utils.js         |   50.18 |    81.25 |   38.88 |   50.18 | ...19-225,275-277 
+ ...485/modules/ui |     1.9 |       20 |      25 |     1.9 |                   
+  actions.js       |   46.93 |    33.33 |      50 |   46.93 | 21-44,48-49       
+  events.js        |       0 |        0 |       0 |       0 | 1-364             
+  shell.js         |       0 |        0 |       0 |       0 | 1-797             
+-------------------|---------|----------|---------|---------|-------------------

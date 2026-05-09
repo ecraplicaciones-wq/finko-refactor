@@ -1,0 +1,500 @@
+/**
+ * Finko Pro - UI Manager
+ * Responsabilidades: Renderizado, Gestión de DOM, Modales, Temas y Accesibilidad.
+ */
+
+import { S, EventBus } from './state.js';
+import { FinanceCalc } from './finance.service.js';
+import { FinanceTools } from './tools.service.js';
+import { actualizarScoreUI, calcularPrediccion, getProximosPagos } from './planner.service.js';
+import { TASA_USURA_EA, RETEFUENTE_CDT } from './state.js';
+
+// =============================================================================
+// 1. UTILIDADES DE FORMATO Y DOM
+// =============================================================================
+
+export const f = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+export const he = (txt) => {
+  const div = document.createElement('div');
+  div.textContent = txt;
+  return div.innerHTML;
+};
+
+const ICONOS_BANCO = {
+  nequi: '📱',
+  daviplata: '💳',
+  nu: '💜',
+  lulo: '🍋',
+  bancolombia: '🌻',
+  davivienda: '🏠',
+  bogota: '🏛️',
+  avvillas: '🏡',
+  cajasocial: '🤲',
+  bbva: '🌊',
+  colpatria: '🏢',
+  popular: '🌿',
+  occidente: '🌅',
+  confiar: '🛡️',
+  jfk: '✈️',
+  cotrafa: '⚙️',
+  otro: '🏦'
+};
+
+export const getIconoBanco = (banco) => {
+  const b = (banco || '').toString().toLowerCase().trim();
+  return ICONOS_BANCO[b] || '🏦';
+};
+
+export const hoy = () => new Date().toISOString().split('T')[0];
+export const mesStr = () => new Date().toISOString().slice(0, 7);
+export const setEl = (id, val) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (typeof val === 'object' && val.style) {
+    Object.assign(el.style, val.style);
+  } else {
+    el.textContent = val;
+  }
+};
+export const setHtml = (id, html) => {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+};
+export const sr = (msg) => {
+  const el = document.getElementById('sr-announcer') || createAnnouncer();
+  el.textContent = msg;
+};
+
+function createAnnouncer() {
+  const el = document.createElement('div');
+  el.id = 'sr-announcer';
+  Object.assign(el.style, { position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' });
+  el.setAttribute('aria-live', 'polite');
+  document.body.appendChild(el);
+  return el;
+}
+
+export function openM(id) {
+  document.querySelectorAll('.modal-ov').forEach(m => m.classList.remove('open'));
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+  }
+  
+  // Poblar modales de fondo de emergencia
+  if (id === 'm-fondo-emergencia' || id === 'm-fondo-meta') {
+    const fondo = S.fondoEmergencia || { meta: 0, actual: 0 };
+    const sel = document.getElementById('fe-fo');
+    const tienesEl = document.getElementById('fe-tienes');
+    const metaEl = document.getElementById('fe-tu-meta');
+    const metaActualEl = document.getElementById('fe-meta-actual');
+    
+    // Info
+    if (tienesEl) tienesEl.textContent = f(fondo.actual);
+    if (metaEl) metaEl.textContent = fondo.meta > 0 ? f(fondo.meta) : 'Sin meta';
+    if (metaActualEl) metaActualEl.textContent = f(fondo.meta);
+    
+    // Select de cuentas
+    if (sel && S.cuentas) {
+      const opts = S.cuentas.map(c => {
+        const bn = c.banco?.toLowerCase() || '';
+        return `<option value="${c.id}">${ICONOS_BANCO[bn] || '🏦'} ${bn.charAt(0).toUpperCase() + bn.slice(1)} (${f(c.saldo || 0)})</option>`;
+      });
+      sel.innerHTML = opts.join('') || '<option>Ninguna</option>';
+    }
+  }
+}
+
+export function closeM(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+export async function showAlert(msg, title = 'Aviso') {
+  return new Promise(res => {
+    const m = document.getElementById('m-alert');
+    setEl('alert-msg', msg);
+    setEl('alert-title', title);
+    openM('m-alert');
+    const btn = document.getElementById('alert-ok');
+    const handler = () => {
+      closeM('m-alert');
+      btn.removeEventListener('click', handler);
+      res(true);
+    };
+    btn.addEventListener('click', handler);
+  });
+}
+
+export async function showConfirm(msg, title = 'Confirmar') {
+  return new Promise(res => {
+    const m = document.getElementById('m-confirm');
+    setEl('conf-msg', msg);
+    setEl('conf-title', title);
+    openM('m-confirm');
+    const ok = document.getElementById('conf-ok');
+    const cn = document.getElementById('conf-cn');
+    const hOk = () => { closeM('m-confirm'); ok.removeEventListener('click', hOk); cn.removeEventListener('click', hCn); res(true); };
+    const hCn = () => { closeM('m-confirm'); ok.removeEventListener('click', hOk); cn.removeEventListener('click', hCn); res(false); };
+    ok.addEventListener('click', hOk);
+    cn.addEventListener('click', hCn);
+  });
+}
+
+// =============================================================================
+// 2. RENDERS PRINCIPALES
+// =============================================================================
+
+export function renderAll() {
+  renderDashboard();
+  renderGastos();
+  renderCuentas();
+  renderMetas();
+  renderDeudas();
+  renderAgenda();
+}
+
+export function renderDashboard() {
+  const r = FinanceCalc.getResumenMes(mesStr());
+  setEl('d-tot', f(FinanceCalc.getSaldoTotal()));
+  setEl('d-ing', f(r.ingreso));
+  setEl('d-gas', f(r.tG));
+  setEl('d-fijos', f(0));
+  setEl('d-disp', f(r.balance));
+  setEl('d-aho', f(r.tA));
+  
+  // Porcentaje gastado del ingreso
+  const pct = r.ingreso > 0 ? Math.round((r.tG / r.ingreso) * 100) : 0;
+  setEl('d-pgc', `${pct}%`);
+  
+  // Efectivo y banco principal
+  const efectivo = S.saldos?.efectivo || 0;
+  const totalCuentas = (S.cuentas || []).reduce((sum, c) => sum + (c.saldo || 0), 0);
+  setEl('d-ef', f(efectivo));
+  setEl('d-bk', f(totalCuentas));
+  
+  // Fondo de Emergencia
+  renderFondoEmergenciaDash();
+  
+  // Score de salud financiera
+  actualizarScoreUI();
+  
+  // Predicción fin de mes
+  calcularPrediccion();
+
+  // Próximos eventos (Agenda)
+  renderProximos();
+}
+
+export function renderFondoEmergenciaDash() {
+  const el = document.getElementById('card-fondo-emergencia');
+  if (!el) return;
+  
+  const fondo = S.fondoEmergencia || { meta: 0, actual: 0 };
+  
+  if (fondo.meta === 0) {
+    el.innerHTML = `
+      <div class="empty-state" style="background:rgba(0,220,130,.06);border:2px dashed rgba(0,220,130,.3);border-radius:12px;">
+        <span class="empty-icon">🛡️</span>
+        <div style="font-weight:600;font-size:15px;margin-bottom:8px;color:var(--t1);">¡Protégete ante imprevistos!</div>
+        <div class="tm" style="margin-bottom:16px;">Crea tu fondo de emergencia para dormir tranquilo.</div>
+        <button class="btn bp" data-action="openM" data-arg-id="m-fondo-meta" style="width:100%;">⚙️ Configurar mi meta</button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Render normal si tiene meta
+  el.innerHTML = `
+    <div class="fb mb">
+      <div class="ct">🛡️ Fondo de Emergencia</div>
+      <button class="btn bbl bsm" data-action="openM" data-arg-id="m-fondo-emergencia">+ Abonar</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span class="tm">Progreso actual:</span>
+      <span class="mono" style="font-weight:800;color:var(--a1);">${f(fondo.actual)} / ${f(fondo.meta)}</span>
+    </div>
+    <div style="height:8px;background:var(--s3);border-radius:999px;overflow:hidden;">
+      <div style="height:100%;background:var(--a1);width:${Math.min(100, (fondo.actual/fondo.meta)*100)}%;transition:width .6s;"></div>
+    </div>
+  `;
+}
+
+
+export function renderProximos() {
+  const el = document.getElementById('d-prox');
+  if (!el) return;
+  
+  const proximos = getProximosPagos(14); // Próximos 14 días
+  
+  if (proximos.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state" style="background:rgba(255,200,0,.06);border:2px dashed rgba(255,200,0,.3);border-radius:12px;margin-top:8px;">
+        <span class="empty-icon">📅</span>
+        <div style="font-weight:600;font-size:15px;margin-bottom:8px;color:var(--t1);">¿Tienes pagos recurrentes?</div>
+        <div class="tm" style="margin-bottom:16px;">Luz, agua, internet, gimnasio...</div>
+        <button class="btn byw" data-action="go" data-arg-sec="agenda">➕ Agendar primer gasto</button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Renderizar los 3 primeros eventos
+  el.innerHTML = proximos.slice(0, 3).map(p => `
+    <div class="card mb" style="padding:12px;border-left:4px solid var(--a4);background:var(--s1);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:16px;">📅</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${p.compromiso.nombre}</div>
+          <div class="tm" style="font-size:11px;">${p.fecha.toLocaleDateString()}</div>
+        </div>
+      </div>
+      <div style="font-family:var(--fm);font-weight:700;font-size:13px;color:var(--a4);">${f(p.compromiso.monto)}</div>
+    </div>
+  `).join('');
+}
+
+
+export function renderGastos() {
+  const el = document.getElementById('g-lst');
+  if (!el) return;
+  const mes = mesStr();
+  const filtered = S.gastos.filter(g => g.fecha.startsWith(mes));
+  
+  if (!filtered.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;">Sin gastos este mes</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(g => `
+    <article class="gast-card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--b1);background:var(--s1);">
+      <span style="font-size:20px;">${g.cat === 'alimentacion' ? '🍽️' : g.cat === 'transporte' ? '🚌' : g.cat === 'vivienda' ? '🏠' : g.cat === 'entretenimiento' ? '🎬' : g.cat === 'salud' ? '🏥' : g.cat === 'ropa' ? '👕' : '📦'}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${he(g.desc)}</div>
+        <div class="tm">${g.fecha}</div>
+      </div>
+      <div style="font-family:var(--fm);font-weight:700;font-size:15px;">${f(g.monto || g.montoTotal)}</div>
+    </article>
+  `).join('');
+}
+
+export function renderCuentas() {
+  const el = document.getElementById('cta-lst');
+  if (!el) return;
+  
+  if (!S.cuentas || S.cuentas.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state" style="background:rgba(59,158,255,.06);border:2px dashed rgba(59,158,255,.3);border-radius:12px;margin-top:16px;">
+        <span class="empty-icon">🏦</span>
+        <div style="font-weight:600;font-size:15px;margin-bottom:8px;color:var(--t1);">No tienes cuentas registradas</div>
+        <div class="tm" style="margin-bottom:16px;">Empieza agregando tu cuenta bancaria o caja de ahorros</div>
+        <button class="btn bp" data-action="openM" data-arg-id="m-cuenta">➕ Agregar mi primera cuenta</button>
+      </div>
+    `;
+    return;
+  }
+
+  el.innerHTML = S.cuentas.map(c => `
+    <article style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--b1);background:var(--s1);">
+      <div style="width:44px;height:44px;border-radius:12px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:22px;">${c.icono}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;">${he(c.nombre)}</div>
+        <div style="font-size:11px;color:var(--t3);">${c.banco}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--fm);font-size:18px;font-weight:800;">${f(c.saldo)}</div>
+      </div>
+    </article>
+  `).join('');
+}
+
+export function renderMetas() {
+  const el = document.getElementById('meta-lst');
+  if (!el) return;
+  el.innerHTML = S.metas.map(m => `
+    <article style="padding:16px;border-bottom:1px solid var(--b1);background:var(--s1);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-weight:700;">${he(m.nombre)}</div>
+        <div style="font-family:var(--fm);font-weight:800;">${f(m.actual)} / ${f(m.meta)}</div>
+      </div>
+    </article>
+  `).join('');
+}
+
+export function renderDeudas() {
+  const el = document.getElementById('deu-lst');
+  if (!el) return;
+  el.innerHTML = S.deudas.map(d => `
+    <article style="padding:16px;border-bottom:1px solid var(--b1);background:var(--s1);">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="font-weight:700;">${he(d.nombre)}</div>
+        <div style="font-family:var(--fm);font-weight:800;">${f(d.total - d.pagado)}</div>
+      </div>
+    </article>
+  `).join('');
+}
+
+export function renderAgenda() {
+  const el = document.getElementById('cal-g');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);">Calendario en construcción...</div>';
+}
+
+// =============================================================================
+// 4. HERRAMIENTAS Y CALCULADORAS
+// =============================================================================
+
+export function renderCDT() {
+  const c   = +document.getElementById('cc-cap')?.value || 0;
+  const t   = (+document.getElementById('cc-tas')?.value || 0) / 100;
+  const d   = +document.getElementById('cc-dia')?.value || 0;
+  const per = document.getElementById('cc-per')?.value;
+  const ck  = document.getElementById('cc-ret')?.checked;
+
+  const r = FinanceTools.calcCDT(c, t, d, ck);
+  if (!r) {
+    setHtml('cdt-res', c === 0 && t === 0 && d === 0 ? '' :
+      `<div style="margin-top:10px; padding:12px; background:var(--s2); border-radius:8px;
+           font-size:12px; color:var(--t3); text-align:center;">
+        Completá capital, tasa anual y plazo en días para ver el resultado.
+      </div>`);
+    return;
+  }
+
+  if (per === '30') {
+    setHtml('cdt-res', `
+      <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
+        <div style="font-size:12px; color:var(--t3); margin-bottom:4px;">Recibirás en tu cuenta cada mes:</div>
+        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(r.rendimientoMensual)}</div>
+        <div style="font-size:12px; color:var(--t2); margin-top:10px; border-top:1px solid var(--b1); padding-top:10px;">Ganancia sumada al final del plazo: <strong>${f(r.rendimientoNeto)}</strong></div>
+      </div>`);
+  } else {
+    setHtml('cdt-res', `
+      <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
+        <div style="font-size:12px; color:var(--t3); margin-bottom:4px;">Ganancia neta total al final del plazo:</div>
+        <div style="font-size:24px; color:var(--a1); font-family:var(--fm); font-weight:700;">${f(r.rendimientoNeto)}</div>
+      </div>`);
+  }
+}
+
+export function renderCredito() {
+  const p  = +document.getElementById('cr-mo')?.value || 0;
+  const tm = Number(document.getElementById('cr-ta')?.value) || 0;
+  const n  = +document.getElementById('cr-n')?.value || 0;
+  const r = FinanceTools.calcCredito(p, tm, n);
+  if (!r) { setHtml('cre-res', ''); return; }
+  const { cuota, totalPagado, totalInteres, taEA } = r;
+
+  const sobreUsura = taEA > TASA_USURA_EA;
+  const alertaUsura = sobreUsura
+    ? `<div style="margin-top:10px; padding:12px; background:rgba(255,68,68,.08);
+        border:1px solid rgba(255,68,68,.3); border-radius:8px;
+        font-size:11px; color:var(--dan); line-height:1.6;">
+        ⚖️ <strong>¡Ojo! Esta tasa es ilegal en Colombia.</strong>
+        El ${tm}% mensual equivale al <strong>${taEA.toFixed(1)}% E.A.</strong>,
+        que supera el tope de usura vigente (${TASA_USURA_EA}% E.A.).
+       </div>`
+    : '';
+
+  setHtml('cre-res', `
+    <div style="margin-top:14px; padding:16px; background:var(--s2); border-radius:8px; border:1px solid var(--b2);">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+        <div><div style="font-size:11px; color:var(--t3);">Cuota Mensual</div><div style="font-family:var(--fm); font-size:18px; font-weight:700; color:var(--t1);">${f(cuota)}</div></div>
+        <div><div style="font-size:11px; color:var(--t3);">Tasa E.A.</div><div style="font-family:var(--fm); font-size:18px; font-weight:700; color:var(--t1);">${taEA.toFixed(2)}%</div></div>
+      </div>
+      <div style="border-top:1px solid var(--b1); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:12px; color:var(--t3);">Total a pagar:</div>
+        <div style="font-family:var(--fm); font-size:20px; font-weight:800; color:var(--t1);">${f(totalPagado)}</div>
+      </div>
+      ${alertaUsura}
+    </div>
+  `);
+}
+
+// =============================================================================
+// 3. NAVEGACIÓN Y SHELL
+// =============================================================================
+// 3. NAVEGACIÓN Y SHELL
+// =============================================================================
+
+export function go(sec) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  
+  // Buscamos la sección con el prefijo 'sec-' para coincidir con el HTML
+  const targetSec = document.getElementById(`sec-${sec}`);
+  if (targetSec) {
+    targetSec.classList.add('active');
+  }
+  
+  // Actualizar botones de navegación - el HTML usa data-section
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.nb[data-section="${sec}"]`)?.classList.add('active');
+  
+  renderAll();
+}
+
+// Cerrar sidebar al hacer click en el contenido principal
+export function initCloseSidebarOnClickOutside() {
+  const main = document.getElementById('main');
+  const sidebar = document.getElementById('sidebar');
+  
+  if (main && sidebar) {
+    main.addEventListener('click', () => {
+      if (sidebar.classList.contains('expanded')) {
+        sidebar.classList.remove('expanded');
+        const arrow = document.getElementById('sb-icon');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+}
+
+export function toggleTheme() {
+  const body = document.body;
+  const isDark = body.classList.contains('dark-theme');
+  
+  if (isDark) {
+    body.classList.remove('dark-theme');
+    body.classList.add('light-theme');
+    localStorage.setItem('finko_theme', 'light');
+    // Update icons to sun
+    document.querySelectorAll('#btn-theme-bar, #btn-theme, .mas-tema-btn').forEach(el => {
+      if (el && el.innerHTML.includes('🌙')) el.innerHTML = el.innerHTML.replace('🌙', '☀️');
+    });
+  } else {
+    body.classList.remove('light-theme');
+    body.classList.add('dark-theme');
+    localStorage.setItem('finko_theme', 'dark');
+    // Update icons to moon
+    document.querySelectorAll('#btn-theme-bar, #btn-theme, .mas-tema-btn').forEach(el => {
+      if (el && el.innerHTML.includes('☀️')) el.innerHTML = el.innerHTML.replace('☀️', '🌙');
+    });
+  }
+}
+
+export function applyTheme() {
+  const theme = localStorage.getItem('finko_theme') || 'light';
+  if (theme === 'dark') {
+    document.body.classList.add('dark-theme');
+    document.body.classList.remove('light-theme');
+    // Set moon icon
+    document.querySelectorAll('#btn-theme-bar, #btn-theme, .mas-tema-btn').forEach(el => {
+      if (el && el.innerHTML.includes('☀️')) el.innerHTML = el.innerHTML.replace('☀️', '🌙');
+    });
+  } else {
+    document.body.classList.add('light-theme');
+    document.body.classList.remove('dark-theme');
+    // Set sun icon
+    document.querySelectorAll('#btn-theme-bar, #btn-theme, .mas-tema-btn').forEach(el => {
+      if (el && el.innerHTML.includes('🌙')) el.innerHTML = el.innerHTML.replace('🌙', '☀️');
+    });
+  }
+}
+
+export function initTheme() {
+  applyTheme();
+}

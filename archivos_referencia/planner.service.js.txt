@@ -1,0 +1,316 @@
+/**
+ * Finko Pro - Planner Service
+ * Responsabilidades: Metas, Compromisos, Análisis de Tendencias y Salud Financiera.
+ */
+
+import { S, save, LOGROS } from './state.js';
+
+const f = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+
+/**
+ * Calcula la próxima fecha de pago de un compromiso según su frecuencia
+ */
+export function proximoPago(c) {
+  if (!c || !c.fechaInicio) return new Date();
+  
+  const inicio = new Date(c.fechaInicio);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  
+  let prox = new Date(inicio);
+  const freq = c.frecuencia || 'mensual';
+  
+  while (prox < hoy) {
+    if (freq === 'semanal') prox.setDate(prox.getDate() + 7);
+    else if (freq === 'quincenal') prox.setDate(prox.getDate() + 15);
+    else prox.setMonth(prox.getMonth() + 1);
+  }
+  
+  return prox;
+}
+
+// =============================================================================
+// 1. GESTIÓN DE METAS Y OBJETIVOS (GoalService)
+// =============================================================================
+
+export function agregarObjetivo(obj) {
+  const nuevos = [...(S.objetivos || []), { ...obj, id: Date.now(), estado: 'activa', creado: new Date().toISOString() }];
+  S.objetivos = nuevos;
+  save();
+  return nuevos;
+}
+
+export function eliminarObjetivo(id) {
+  S.objetivos = S.objetivos.filter(o => o.id !== id);
+  save();
+  return S.objetivos;
+}
+
+export function getObjetivo(id) {
+  return S.objetivos?.find(x => x.id === id);
+}
+
+export function progressObjetivo(id) {
+  const obj = getObjetivo(id);
+  if (!obj) return 0;
+  return Math.min(100, Math.round((obj.aportado || 0) / obj.meta * 100));
+}
+
+// =============================================================================
+// 2. GESTIÓN DE COMPROMISOS (CommitmentService)
+// =============================================================================
+
+export function agregarCompromiso(c) {
+  const nuevos = [...(S.gastosFijos || []), { ...c, id: crypto.randomUUID(), activo: true, created: new Date().toISOString() }];
+  S.gastosFijos = nuevos;
+  save();
+  return nuevos;
+}
+
+export function eliminarCompromiso(id) {
+  S.gastosFijos = S.gastosFijos.filter(x => x.id !== id);
+  save();
+  return S.gastosFijos;
+}
+
+export function getCompromiso(id) {
+  return S.gastosFijos?.find(x => x.id === id);
+}
+
+export function getCompromisosActivos() {
+  return (S.gastosFijos || []).filter(c => c.activo !== false);
+}
+
+export function getProximosPagos(dias = 7) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const limite = new Date(hoy);
+  limite.setDate(limite.getDate() + dias);
+
+  return getCompromisosActivos().filter(c => {
+    const prox = proximoPago(c);
+    return prox >= hoy && prox <= limite;
+  }).map(c => ({
+    compromiso: c,
+    fecha: proximoPago(c)
+  }));
+}
+
+export function getCompromisosVencidos() {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return getCompromisosActivos().filter(c => {
+    const prox = proximoPago(c);
+    return prox < hoy;
+  });
+}
+
+// =============================================================================
+// 3. ANÁLISIS DE TENDENCIAS (TrendService)
+// =============================================================================
+
+export function getTendencias(meses = 3) {
+  const m = [];
+  const hoy = new Date();
+
+  for (let i = 0; i < meses; i++) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const ms = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    m.push(ms);
+  }
+
+  return m.reverse().map(mes => {
+    const r = getResumenMes(mes);
+    const balance = r.ingreso - r.tG;
+    return {
+      mes,
+      ingreso: r.ingreso,
+      gasto: r.tG,
+      balance,
+      tendencia: balance > 0 ? 'ahorro' : balance < 0 ? 'déficit' : 'equilibrio'
+    };
+  });
+}
+
+// =============================================================================
+// 4. SALUD FINANCIERA (FinancialHealth)
+// =============================================================================
+
+export function calcularGastosFijosMes() {
+  return (S.gastosFijos || []).reduce((sum, cf) => sum + (cf.monto || 0), 0);
+}
+
+export function actualizarScoreUI() {
+  const ahora = new Date();
+  const ingreso = S.ingreso || 0;
+  const mesActual = new Date().toISOString().slice(0, 7);
+  
+  const gastosMes = (S.gastos || []).filter(g => g.fecha.startsWith(mesActual));
+  const gastoTotalMes = gastosMes.reduce((sum, g) => sum + (g.monto || 0), 0);
+  
+  const mesesFondo = (S.fondoEmergencia?.actual || 0);
+  const gastosFijos = calcularGastosFijosMes();
+  const mesesCubiertos = gastosFijos > 0 ? mesesFondo / gastosFijos : 0;
+  
+  const scoreAtrasos = 25;
+  const tieneAtrasos = (S.gastosFijos || []).some(cf => cf.pagado === false);
+  const scoreAtrasosCalc = !tieneAtrasos ? 25 : 0;
+  
+  const tasaAhorro = ingreso > 0 ? ((ingreso - gastoTotalMes) / ingreso * 100) : 0;
+  const scoreAhorroCalc = tasaAhorro >= 20 ? 25 : tasaAhorro >= 10 ? 15 : tasaAhorro >= 5 ? 5 : 0;
+  
+  const scoreFondoCalc = mesesCubiertos >= 6 ? 15 : mesesCubiertos >= 3 ? 10 : mesesCubiertos >= 1 ? 5 : 0;
+  
+  const deudas = S.deudas || [];
+  const cuotaTotal = deudas.filter(d => d.estado === 'activa').reduce((sum, d) => sum + (d.cuota || 0), 0);
+  const scoreDeudasCalc = ingreso > 0 && cuotaTotal / ingreso < 0.4 ? 15 : 0;
+  
+  const tieneBackup = localStorage.getItem('finko_backup');
+  const scoreBackupCalc = tieneBackup ? 10 : 0;
+  
+  const gastosHormiga = gastosMes.filter(g => g.cat === 'hormiga').reduce((sum, g) => sum + (g.monto || 0), 0);
+  const pctHormiga = gastoTotalMes > 0 ? gastosHormiga / gastoTotalMes * 100 : 0;
+  const scoreHormigaCalc = pctHormiga < 5 ? 5 : 0;
+  
+  const totalScore = scoreAtrasosCalc + scoreAhorroCalc + scoreFondoCalc + scoreDeudasCalc + scoreBackupCalc + scoreHormigaCalc;
+  
+  const etiqueta = totalScore >= 90 ? 'excelente' : totalScore >= 70 ? 'buena' : totalScore >= 40 ? 'mejorable' : 'critica';
+  
+  const scoreNum = document.getElementById('score-num');
+  const scoreLabel = document.getElementById('score-label');
+  const scoreArco = document.getElementById('score-arco');
+  const scoreTipText = document.getElementById('score-tip-text');
+  
+  if (scoreNum) {
+    scoreNum.textContent = totalScore;
+    scoreNum.style.color = totalScore >= 70 ? 'var(--a1)' : totalScore >= 40 ? 'var(--a2)' : 'var(--dan)';
+  }
+  if (scoreLabel) {
+    scoreLabel.textContent = etiqueta === 'excelente' ? 'Excelente ✨' : etiqueta === 'buena' ? 'Buena' : etiqueta === 'mejorable' ? 'Mejorable 💪' : 'Crítica ⚠️';
+  }
+  if (scoreArco) {
+    const dash = totalScore * 3.14;
+    scoreArco.setAttribute('stroke-dasharray', `${dash} 314`);
+  }
+  
+  const tips = [
+    '💡 Registra tus gastos fijos para mejorar tu score',
+    '💡 El fondo de emergencia ideal es 3-6 meses de gastos',
+    '💡 Añade una cuenta bancaria para trackear mejor',
+    '💡 Registra tus metas de ahorro',
+    '💡 Haz backup de tus datos regularmente'
+  ];
+  if (scoreTipText) {
+    scoreTipText.textContent = tips[Math.floor(ahora.getTime() / 86400000) % tips.length];
+  }
+}
+
+export function calcularPrediccion() {
+  const ingreso = S.ingreso || 0;
+  const gastoFijo = calcularGastosFijosMes();
+  const mesActual = new Date().toISOString().slice(0, 7);
+  const gastosMes = (S.gastos || []).filter(g => g.fecha.startsWith(mesActual));
+  const gastoVariable = gastosMes.reduce((sum, g) => sum + (g.monto || 0), 0);
+  
+  const efectivo = S.saldos?.efectivo || 0;
+  const banco = S.cuentas?.reduce((sum, c) => sum + (c.saldo || 0), 0) || 0;
+  const disponible = efectivo + banco;
+  
+  const final30 = disponible + ingreso - gastoFijo - gastoVariable;
+  const final60 = final30 - (gastoVariable / 2);
+  const final90 = final30 - gastoVariable;
+  
+  const predEl = document.getElementById('prediccion-texto');
+  if (predEl) {
+    predEl.innerHTML = `<span aria-hidden="true">📅</span> <span>${final30 >= 0 ? '✅' : '⚠️'} Fin de mes: ${f(final30)}</span>`;
+  }
+}
+
+export function calcularSaludFinanciera(hoyISO) {
+  return actualizarScoreUI();
+}
+
+// =============================================================================
+// 5. LOGROS (Achievements)
+// =============================================================================
+
+export function verificarLogros() {
+  const nuevos = [];
+  const desbloqueados = S.logros?.desbloqueados || [];
+  const cuentas = S.cuentas || [];
+  const gastos = S.gastos || [];
+  const objetivos = S.objetivos || [];
+  const fondoEmergencia = S.fondoEmergencia || { meta: 0, actual: 0 };
+  const deudas = S.deudas || [];
+  const inversiones = S.inversiones || [];
+
+  if (cuentas.length > 0 && !desbloqueados.includes('cuenta-primera')) {
+    nuevos.push('cuenta-primera');
+  }
+  if (gastos.length > 0 && !desbloqueados.includes('gasto-primer')) {
+    nuevos.push('gasto-primer');
+  }
+  if (objetivos.length > 0 && !desbloqueados.includes('meta-primera')) {
+    nuevos.push('meta-primera');
+  }
+  for (const obj of objetivos) {
+    if (obj.aportado >= obj.meta && !desbloqueados.includes('meta-cumplida')) {
+      nuevos.push('meta-cumplida');
+      break;
+    }
+  }
+  const mesesFondo = fondoEmergencia.meta > 0 ? fondoEmergencia.actual / calcularGastosFijosMes() : 0;
+  if (mesesFondo >= 1 && !desbloqueados.includes('fondo-1mes')) nuevos.push('fondo-1mes');
+  if (mesesFondo >= 3 && !desbloqueados.includes('fondo-3meses')) nuevos.push('fondo-3meses');
+  if (mesesFondo >= 6 && !desbloqueados.includes('fondo-6meses')) nuevos.push('fondo-6meses');
+  const deudasPagadas = deudas.filter(d => d.saldo === 0);
+  if (deudasPagadas.length > 0 && !desbloqueados.includes('deuda-pagada')) nuevos.push('deuda-pagada');
+  if (deudas.length === 0 && !desbloqueados.includes('sin-deudas')) nuevos.push('sin-deudas');
+  if (inversiones.length > 0 && !desbloqueados.includes('inversion-primera')) nuevos.push('inversion-primera');
+
+  if (nuevos.length > 0) {
+    S.logros.desbloqueados = [...desbloqueados, ...nuevos];
+    save();
+    notificarLogros(nuevos);
+  }
+  return nuevos;
+}
+
+function notificarLogros(logrosIds) {
+  const lista = LOGROS.filter(l => logrosIds.includes(l.id));
+  if (lista.length > 0) {
+    window.mostrarNotificacionLogro?.(lista);
+  }
+}
+
+// =============================================================================
+// Aliases para compatibilidad con main.js
+// =============================================================================
+export const GoalService = {
+  agregarObjetivo,
+  eliminarObjetivo,
+  getObjetivo,
+  progressObjetivo
+};
+
+export const AgendaService = {
+  agregarCompromiso,
+  eliminarCompromiso,
+  getCompromiso,
+  getCompromisosActivos,
+  getProximosPagos,
+  getCompromisosVencidos
+};
+
+export const FixedExpenseService = {
+  agregarCompromiso,
+  eliminarCompromiso,
+  getCompromiso
+};
+
+export const AnalysisService = {
+  getTendencias,
+  calcularGastosFijosMes,
+  calcularSaludFinanciera,
+  verificarLogros
+};

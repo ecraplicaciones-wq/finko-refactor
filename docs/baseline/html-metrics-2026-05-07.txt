@@ -1,0 +1,24 @@
+=== index.html metrics — baseline 2026-05-07 ===
+Total LOC:                    1942
+Inline styles (style="..."):  341
+data-action="..." attrs:      156
+onclick="..." attrs:          0   (✅ migración completa)
+ARIA attributes (aria-*):     191
+
+=== style.css ===
+Total LOC:                    1241
+
+=== service-worker.js ===
+Total LOC:                    495
+
+Targets v5.0:
+- Inline styles → < 60
+- onclick=""    → 0 (mantener)
+- data-action   → ≥ 156 (mantener / aumentar al migrar HTML dinámico)
+- ARIA          → ≥ 182 (mantener / aumentar)
+
+Nota: AUDIT.md y otros docs nuevos reportan 182 ARIA attrs (auditoría preliminar).
+Conteo real con `grep -c 'aria-'` = 191. Diferencia probable: distintos métodos
+de conteo (atributos vs líneas con al menos un aria-). Ambos números son
+indicativos del mismo orden de magnitud. Para precisión post-refactor, fijar
+el método de conteo (recomendado: `grep -oE 'aria-[a-z]+' | wc -l`).

@@ -1,0 +1,141 @@
+=== Finko Pro v4.x — Baseline LOC y métricas técnicas ===
+Captured: 2026-05-07
+Branch:   claude/awesome-volhard-e52485
+Tag:      v4.x-baseline
+
+────────────────────────────────────────────────────────────────
+modules/ JS — total: 13.300 LOC en 17 archivos (sin vitest.config)
+────────────────────────────────────────────────────────────────
+
+   2849  modules/dominio/analisis.js          ⚠️ partir
+   1992  modules/dominio/compromisos.js       ⚠️ partir
+   1623  modules/dominio/ingresos.js          ⚠️ partir
+   1602  modules/dominio/tesoreria.js         ⚠️ partir
+   1003  modules/core/storage.js
+    979  modules/dominio/metas.js
+    797  modules/ui/shell.js
+    593  modules/calculadoras.js
+    425  modules/dominio/exports.js
+    396  modules/dominio/personales.js
+    363  modules/ui/events.js
+    276  modules/infra/utils.js
+    124  modules/infra/render.js
+     99  modules/infra/a11y.js
+     88  modules/core/constants.js
+     50  modules/ui/actions.js
+     41  modules/core/state.js
+
+Mediana:           425 LOC
+Promedio:          780 LOC
+Archivos > 1.500:  4  (analisis, compromisos, ingresos, tesoreria)
+Archivos > 800:    7
+Target v5.0:       mediana < 500, ningún archivo > 800 excepto deudas.js
+
+────────────────────────────────────────────────────────────────
+HTML / CSS / SW
+────────────────────────────────────────────────────────────────
+
+  1942  index.html
+  1241  style.css
+   495  service-worker.js
+─────
+  3678  total raíz
+
+Métricas index.html:
+  - style="..."       inline styles:     341  (target v5: < 60)
+  - data-action=""    handlers delegados: 156  (target: ≥ 156)
+  - onclick="..."     handlers inline:    0    (target: 0 ✅ ya cumplido)
+  - aria-*            atributos:          208  (conteo preciso con grep -oE)
+
+────────────────────────────────────────────────────────────────
+window.* exposiciones reales (no estimación)
+────────────────────────────────────────────────────────────────
+
+  modules/ui/events.js  asignaciones window.X = ...:  74
+  modules/* (todo)      asignaciones window.X = ...:  210
+  Lecturas window.X?.() en events.js:                 3
+
+  Target v5.0: ≤ 16 en events.js, < 30 en total modules/.
+
+  Nota: la estimación previa de "~50" en AUDIT/ARCHITECTURE/ROADMAP
+  subestimaba el número real. Corregir en los docs nuevos.
+
+────────────────────────────────────────────────────────────────
+Tests (Vitest, happy-dom)
+────────────────────────────────────────────────────────────────
+
+  Total tests: 1.311  ✅ TODOS VERDES
+  Test files:  12
+  Duración:    ~1.1 s
+
+  Por archivo:
+     410  analisis.test.js
+     207  storage.test.js
+     171  tesoreria.test.js
+     159  ingresos.test.js
+     129  compromisos.test.js
+     105  metas.test.js
+      35  calculadoras.test.js
+      29  personales.test.js
+      21  utils.test.js
+      20  exports.test.js
+      18  migrations.test.js
+       7  state.test.js
+
+────────────────────────────────────────────────────────────────
+Cobertura (npm run coverage)  — ver coverage-2026-05-07.txt
+────────────────────────────────────────────────────────────────
+
+  Statement coverage por dominio (general):
+    constants.js     88.76%
+    state.js         92.85%
+    storage.js       49.80%
+    analisis.js      64.05%
+    compromisos.js   35.26%
+    ingresos.js      32.47%
+    tesoreria.js     44.61%
+    metas.js         49.94%
+    personales.js    48.34%
+    exports.js       21.83%
+    calculadoras.js  32.99%
+    a11y.js          44.44%
+    render.js        27.20%
+    utils.js         50.18%
+    actions.js       46.93%
+    events.js        0.00%  (DOM-heavy, no testeado)
+    shell.js         0.00%  (DOM-heavy, no testeado)
+
+  Branch coverage en funciones puras testeadas: 85-95% promedio.
+
+  Métrica útil para v5: branch coverage de funciones financieras
+  críticas (ordenarDeudas, calcularDiasMora, calcularCuotaSugerida,
+  calcularSaludFinanciera, etc.) ≥ 90%.
+
+────────────────────────────────────────────────────────────────
+Pendientes manuales de baseline (NO se pueden capturar headless)
+────────────────────────────────────────────────────────────────
+
+  Lighthouse:  abrir http://localhost:8080 con Chrome DevTools →
+               Lighthouse tab → Mobile + Accessibility + Performance →
+               Save HTML report en docs/baseline/lighthouse-2026-05-07.html
+               Estimación previa: ~85 a11y, ~85 perf.
+
+  axe-core:    requiere servidor activo. Comando:
+               `npx @axe-core/cli http://localhost:8080 \
+                  > docs/baseline/axe-2026-05-07.txt`
+               Necesario tener `python -m http.server 8080` corriendo.
+
+  → Capturar antes de iniciar Fase 2 (reorg HTML).
+
+────────────────────────────────────────────────────────────────
+Documentación nueva (Fase 1)
+────────────────────────────────────────────────────────────────
+
+  Raíz tiene la nueva colección de 9 .md profesionales:
+    README, AUDIT, ARCHITECTURE, REORG_HTML, REORG_CSS, REORG_JS,
+    DESIGN_SYSTEM, FINANCIAL_LOGIC_CO, ROADMAP
+
+  Más CLAUDE.md (instrucciones IA, conservado).
+  Más CHANGELOG.md y CONTRIBUTING.md (creados en Fase 1).
+
+  Total final esperado: 12 archivos .md en raíz.

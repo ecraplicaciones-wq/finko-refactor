@@ -1,0 +1,49 @@
+/**
+ * Finko Pro - Educación Financiera
+ * Strings educativos centralizados para tooltips y modales
+ */
+
+export const EDUCACION = {
+  fondoEmergencia: {
+    titulo: '🛡️ ¿Qué es un fondo de emergencia?',
+    descripcion: 'Es plata que apartas SOLO para imprevistos: pérdida de empleo, gastos médicos urgentes, reparaciones del carro, etc.',
+    ejemplo: 'Si tus gastos mensuales son $2,000,000, tu fondo ideal es entre $6,000,000 (3 meses) y $12,000,000 (6 meses).',
+    fuentes: 'Dave Ramsey, Ramit Sethi'
+  },
+  
+  gastosHormiga: {
+    titulo: '🐜 ¿Qué son los gastos hormiga?',
+    descripcion: 'Son esos gastos pequeños que haces sin pensar: un tinto, un snack, la app de streaming que no usas, el café diario.',
+    ejemplo: '$10,000/día × 30 días = $300,000/mes que podrían estar en tu bolsillo.',
+    fuentes: 'José María López - HabitBull'
+  },
+  
+  metodo5030: {
+    titulo: '📊 Método 50/30/20',
+    descripcion: 'La regla más famosa de finanzas personales: 50% a necesidades, 30% a deseos, 20% a ahorro.',
+    ejemplo: 'Si ganas $2,000,000: $1,000,000 (necesidades) + $600,000 (deseos) + $400,000 (ahorro)',
+    fuentes: 'Elizabeth Warren - All Your Worth'
+  },
+  
+  cuatroXMil: {
+    titulo: '⚖️ ¿Qué es el 4×1000?',
+    descripcion: 'Es un impuesto colombiano: $4 por cada $1,000 que mueves en tu cuenta.',
+    ejemplo: 'Si mueves $50,000,000 al mes, pagarás $200,000.',
+    tip: 'Puedes marcar una cuenta como EXENTA hasta 350 UVT/mes (~$18M).',
+    fuentes: 'DIAN Colombia'
+  },
+  
+  tasaUsura: {
+    titulo: '📈 ¿Qué es la tasa de usura?',
+    descripcion: 'Es el TOPE máximo que los bancos pueden cobrar en Colombia. Todo lo demás es ILEGAL.',
+    ejemplo: 'Si te ofrecen un crédito al 30% E.A. y la usura está en 24%, puedes denunciar.',
+    fuentes: 'Superfinanciera de Colombia'
+  },
+  
+  bolsillo: {
+    titulo: '🪣 ¿Qué son los bolsillos?',
+    descripcion: 'Es apartar plata para metas específicas: vacaciones, laptop nueva, regalo de cumpleaños. Así no la mezclas con tus gastos diarios.',
+    ejemplo: 'Crear un bolsillo "Vacaciones Cartagena" y aportar $200,000/mes hasta llegar a $3,000,000.',
+    fuentes: 'Dave Ramsey - Envelope Method'
+  }
+};

@@ -1,0 +1,408 @@
+/**
+ * Finko Pro - Core State & Persistence
+ * Consolidación de: state.js, storage.js y constants.js
+ */
+
+// =============================================================================
+// 1. CONSTANTES FINANCIERAS (COLOMBIA)
+// =============================================================================
+export const SMMLV_2026        = 1_750_905;
+export const UVT_2026          = 52_374;
+export const TOPE_DIAN_UVT     = 1_400;
+export const TOPE_DIAN         = TOPE_DIAN_UVT * UVT_2026;
+export const TASA_USURA_EA     = 24.36;
+export const GMF_TASA          = 0.004;
+export const GMF_EXENTO_UVT    = 350;
+export const GMF_EXENTO_MONTO  = GMF_EXENTO_UVT * UVT_2026;
+export const SALUD_INDEPEND    = 0.125;
+export const PENSION_INDEPEND  = 0.16;
+export const RETEFUENTE_CDT    = 0.04;
+export const RETEFUENTE_AHORRO = 0.07;
+
+export const CONST_MAP = {
+  'RETEFUENTE_CDT_PCT':    (RETEFUENTE_CDT * 100).toFixed(0) + '%',
+  'RETEFUENTE_AHORRO_PCT': (RETEFUENTE_AHORRO * 100).toFixed(0) + '%',
+  'GMF_EXENTO_MONTO':      '$' + Math.round(GMF_EXENTO_MONTO).toLocaleString('es-CO'),
+  'GMF_EXENTO_UVT':        GMF_EXENTO_UVT + ' UVT',
+  'TASA_USURA_EA':         TASA_USURA_EA + '% E.A.',
+  'TOPE_DIAN':             '$' + Math.round(TOPE_DIAN).toLocaleString('es-CO'),
+  'SMMLV_2026':            '$' + Math.round(SMMLV_2026).toLocaleString('es-CO'),
+  'UVT_2026':              '$' + Math.round(UVT_2026).toLocaleString('es-CO'),
+};
+
+export const CATS = {
+  alimentacion: '🍽️ Alimentación', transporte: '🚌 Transporte',
+  vivienda: '🏠 Vivienda',        servicios: '💡 Servicios',
+  salud: '🏥 Salud',              entretenimiento: '🎬 Entretenimiento',
+  ropa: '👕 Ropa',                tecnologia: '💻 Tecnología',
+  educacion: '📚 Educación',      mascotas: '🐾 Mascotas',
+  hormiga: '🐜 Hormiga',          deudas: '💳 Deudas',
+  ahorro: '💰 Ahorro',            otro: '📦 Otro'
+};
+
+export const PCATS = {
+  comida: '🍽️ Comida', hotel: '🏨 Hotel', transporte: '🚌 Transporte',
+  fiesta: '🎉 Fiesta', compras: '🛍️ Compras', entradas: '🎟️ Entradas', otro: '📦 Otro'
+};
+
+export const CCOLORS = {
+  alimentacion: '#00dc82', transporte: '#3b9eff', vivienda: '#b44eff',
+  servicios: '#ffd60a',   salud: '#ff6b35',       entretenimiento: '#ff4eb8',
+  ropa: '#00e5cc',        tecnologia: '#4eb8ff',  educacion: '#9b59b6',
+  mascotas: '#e67e22',    hormiga: '#ff9944',     deudas: '#ff4444',
+  ahorro: '#00dc82',       otro: '#666'
+};
+
+export const NAVS = ['dash', 'gast', 'agenda', 'deudas', 'meDeben', 'alcancias', 'inve', 'stat', 'quin'];
+
+export const LOGROS = [
+  { id: 'cuenta-primera', titulo: 'Primera Cuenta', desc: 'Registraste tu primera cuenta bancaria', icono: '🏦', },
+  { id: 'gasto-primer', titulo: 'Primer Gasto', desc: 'Registraste tu primer gasto', icono: '💸', },
+  { id: 'meta-primera', titulo: 'Meta Creada', desc: 'Creaste tu primera meta de ahorro', icono: '🎯', },
+  { id: 'meta-cumplida', titulo: '¡Misión Cumplida!', desc: 'Alcanzaste una meta de ahorro', icono: '🏆', },
+  { id: 'fondo-1mes', titulo: 'Un Mes Seguro', desc: 'Tienes 1 mes de gastos en tu fondo de emergencia', icono: '🛡️', },
+  { id: 'fondo-3meses', titulo: 'Trimestre Protegido', desc: 'Tienes 3 meses de gastos en tu fondo de emergencia', icono: '🛡️', },
+  { id: 'fondo-6meses', titulo: 'Semestre Seguro', desc: 'Tienes 6 meses de gastos en tu fondo de emergencia', icono: '🛡️', },
+  { id: 'semana-racha', titulo: 'Semana de Racha', desc: '7 días registrando gastos', icono: '🔥', },
+  { id: 'mes-racha', titulo: 'Mes de Racha', desc: '30 días registrando gastos', icono: '🔥', },
+  { id: 'deuda-pagada', titulo: 'Deuda Eliminada', desc: 'Pagaste una deuda completamente', icono: '💳', },
+  { id: 'sin-deudas', titulo: 'Libre de Deudas', desc: 'Pagaste todas tus deudas', icono: '🎉', },
+  { id: 'inversion-primera', titulo: 'Invierte Crece', desc: 'Hiciste tu primera inversión', icono: '📈', },
+  { id: 'balance-positivo', titulo: 'En Verde', desc: 'Terminaste un mes con ahorros positivos', icono: '💚', },
+];
+
+export const BANCOS_CO = [
+  { id: 'nequi',       nombre: 'Nequi',               icono: '📱', color: '#b44eff' },
+  { id: 'daviplata',   nombre: 'Daviplata',            icono: '💳', color: '#ff4444' },
+  { id: 'nu',          nombre: 'Nubank',               icono: '💜', color: '#820ad1' },
+  { id: 'lulo',        nombre: 'Lulo Bank',            icono: '🍋', color: '#ccff00' },
+  { id: 'bancolombia', nombre: 'Bancolombia',          icono: '🌻', color: '#ffd60a' },
+  { id: 'davivienda',  nombre: 'Davivienda',           icono: '🏠', color: '#ff4444' },
+  { id: 'bogota',      nombre: 'Banco de Bogotá',      icono: '🏛️', color: '#002855' },
+  { id: 'avvillas',    nombre: 'AV Villas',            icono: '🏡', color: '#00478F' },
+  { id: 'cajasocial',  nombre: 'Caja Social',          icono: '🤲', color: '#003B7A' },
+  { id: 'bbva',        nombre: 'BBVA',                 icono: '🌊', color: '#072146' },
+  { id: 'colpatria',   nombre: 'Colpatria',            icono: '🏢', color: '#df0024' },
+  { id: 'popular',     nombre: 'Banco Popular',        icono: '🌿', color: '#00A859' },
+  { id: 'occidente',   nombre: 'Banco de Occidente',   icono: '🌅', color: '#0062A5' },
+  { id: 'confiar',     nombre: 'Confiar Coop.',        icono: '🛡️', color: '#e30421' },
+  { id: 'jfk',         nombre: 'JFK Cooperativa',      icono: '✈️', color: '#f39200' },
+  { id: 'cotrafa',     nombre: 'Cotrafa',              icono: '⚙️', color: '#0061a9' },
+  { id: 'otro',        nombre: 'Otro banco',           icono: '🏦', color: '#888888' }
+];
+
+// =============================================================================
+// 2. ESTADO REACTIVO (S + EventBus)
+// =============================================================================
+const targetState = {};
+
+const stateHandler = {
+  get(target, property, receiver) {
+    const value = Reflect.get(target, property, receiver);
+    if (typeof value === 'object' && value !== null) return new Proxy(value, stateHandler);
+    return value;
+  },
+  set(target, property, value, receiver) {
+    const oldValue = target[property];
+    const result = Reflect.set(target, property, value, receiver);
+    if (oldValue === value) return result;
+    if (property !== 'length') {
+      queueMicrotask(() => {
+        if (typeof EventBus !== 'undefined' && EventBus.emit) {
+          EventBus.emit('state:changed', { property, value });
+        }
+      });
+    }
+    return result;
+  },
+  deleteProperty(target, property) {
+    const result = Reflect.deleteProperty(target, property);
+    queueMicrotask(() => {
+      if (typeof EventBus !== 'undefined' && EventBus.emit) {
+        EventBus.emit('state:changed', { property, action: 'delete' });
+      }
+    });
+    return result;
+  }
+};
+
+export const S = new Proxy(targetState, stateHandler);
+
+export const EventBus = {
+  on(event, callback) {
+    if (typeof document === 'undefined') return;
+    document.addEventListener(event, (e) => callback(e.detail));
+  },
+  emit(event, data) {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new CustomEvent(event, { detail: data }));
+  }
+};
+
+export function resetAppState() {
+  Object.keys(S).forEach(k => delete S[k]);
+  Object.assign(S, {
+    tipoPeriodo:     'q1',
+    quincena:        1,
+    ingreso:         0,
+    metodo:          '50-30-20',
+    saldos:          { efectivo: 0, banco: 0 },
+    cuentas:         [],
+    gastos:          [],
+    objetivos:       [],
+    deudas:          [],
+    modoDeuda:       'avalancha',
+    historial:       [],
+    gastosFijos:     [],
+    agenda:          [],
+    pagosAgendados:  [],
+    inversiones:     [],
+    fondoEmergencia: { objetivoMeses: 6, actual: 0 },
+    bolsillos:       [],
+    meDeben:         [],
+    lastBackupAt:    null,
+    logros:          { desbloqueados: [], vistos: [], rachas: {} }
+  });
+
+  EventBus.emit('state:reset', S);
+}
+
+// =============================================================================
+// 3. PERSISTENCIA Y ALMACENAMIENTO (STORAGE)
+// =============================================================================
+export const STORAGE_KEY    = 'fco_v4';
+export const CURRENT_VERSION = 7;
+const LIMITE_BYTES     = 5 * 1024 * 1024;
+const UMBRAL_AVISO     = 0.75;
+const UMBRAL_CRITICO   = 0.90;
+const MAX_HISTORIAL    = 24;
+export const SNAPSHOT_KEYS       = ['fco_v4_snap_a', 'fco_v4_snap_b', 'fco_v4_snap_c'];
+export const SNAPSHOT_CURSOR_KEY = 'fco_v4_snap_cursor';
+export const UNDO_KEY    = 'fco_v4_undo';
+export const UNDO_TTL_MS = 10 * 60 * 1000;
+
+let _saveTimer = null;
+let _savePendiente = false;
+
+function _migrar(data, fromVersion) {
+  let v = fromVersion || 0;
+  const d = data;
+  if (v < 2) {
+    if (!Array.isArray(d.gastosFijos))    d.gastosFijos    = [];
+    if (!Array.isArray(d.pagosAgendados)) d.pagosAgendados = [];
+    v = 2;
+  }
+  if (v < 3) {
+    if (!Array.isArray(d.inversiones))  d.inversiones = [];
+    if (!d.fondoEmergencia || typeof d.fondoEmergencia !== 'object') {
+      d.fondoEmergencia = { objetivoMeses: 6, actual: 0 };
+    }
+    if (Array.isArray(d.deudas)) {
+      d.deudas.forEach(deu => {
+        if (typeof deu.pagado !== 'number') deu.pagado = 0;
+        if (typeof deu.cuota  !== 'number') deu.cuota  = 0;
+        if (typeof deu.total  !== 'number') deu.total  = 0;
+      });
+    }
+    v = 3;
+  }
+  if (v < 4) {
+    if (!Array.isArray(d.bolsillos)) d.bolsillos = [];
+    if (!d.logros || typeof d.logros !== 'object') {
+      d.logros = { desbloqueados: [], vistos: [], rachas: {} };
+    }
+    if (Array.isArray(d.gastos)) {
+      d.gastos.forEach(g => {
+        if (typeof g.hormiga    !== 'boolean') g.hormiga    = g.tipo === 'hormiga';
+        if (typeof g.cuatroXMil !== 'boolean') g.cuatroXMil = false;
+        if (g.deudaId === undefined)           g.deudaId    = null;
+      });
+    }
+    v = 4;
+  }
+  if (v < 5) {
+    if (Array.isArray(d.cuentas) && d.cuentas.length > 0 && d.saldos) {
+      const totalCtas = d.cuentas.reduce((s, c) => s + (c.saldo || 0), 0);
+      if (Math.abs((d.saldos.banco || 0) - totalCtas) < 1) {
+        d.saldos.banco = 0;
+      }
+    }
+    v = 5;
+  }
+  if (v < 6) {
+    if (!Array.isArray(d.meDeben)) d.meDeben = [];
+    v = 6;
+  }
+  if (v < 7) {
+    if (typeof d.lastBackupAt === 'undefined') d.lastBackupAt = null;
+    v = 7;
+  }
+  d._version = CURRENT_VERSION;
+  return d;
+}
+
+export function medirUso() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) || '';
+    const bytes = raw.length * 2;
+    const pct = bytes / LIMITE_BYTES;
+    const label = bytes > 1024 * 100 ? `${(bytes / (1024 * 1024)).toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
+    const estado = pct >= UMBRAL_CRITICO ? 'critico' : pct >= UMBRAL_AVISO ? 'aviso' : 'ok';
+    return { bytes, pct: Math.min(pct, 1), label, estado };
+  } catch { return { bytes: 0, pct: 0, label: '?', estado: 'ok' }; }
+}
+
+export function archivarHistorialAntiguo() {
+  if (!Array.isArray(S.historial) || S.historial.length <= MAX_HISTORIAL) return 0;
+  const antes = S.historial.length;
+  // Compactación simplificada para el nuevo core
+  if (S.historial.length > MAX_HISTORIAL) {
+    S.historial = S.historial.slice(0, MAX_HISTORIAL);
+  }
+  return antes - S.historial.length;
+}
+
+export function verificarEspacio() {
+  const uso = medirUso();
+  if (uso.estado === 'critico') archivarHistorialAntiguo();
+  return uso.estado;
+}
+
+export function save() {
+  _savePendiente = true;
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(_flushSave, 200);
+}
+
+function _flushSave() {
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+  if (!_savePendiente) return;
+  _savePendiente = false;
+  try {
+    verificarEspacio();
+    S._version = CURRENT_VERSION;
+    const json = JSON.stringify(S);
+    localStorage.setItem(STORAGE_KEY, json);
+    _writeSnapshot(json);
+  } catch (e) {
+    console.error('[Finko] Save error:', e);
+  }
+}
+
+function _writeSnapshot(json) {
+  try {
+    const cursor = _readSnapCursor();
+    const key = SNAPSHOT_KEYS[cursor];
+    localStorage.setItem(key, json);
+    localStorage.setItem(key + '_at', String(Date.now()));
+    localStorage.setItem(SNAPSHOT_CURSOR_KEY, String((cursor + 1) % SNAPSHOT_KEYS.length));
+  } catch {}
+}
+
+function _readSnapCursor() {
+  try {
+    const v = +localStorage.getItem(SNAPSHOT_CURSOR_KEY);
+    return Number.isInteger(v) && v >= 0 && v < SNAPSHOT_KEYS.length ? v : 0;
+  } catch { return 0; }
+}
+
+export function loadData() {
+  let parsed = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) parsed = JSON.parse(raw);
+  } catch (e) { console.warn('[Finko] Primary JSON corrupt'); }
+
+  if (!parsed) {
+    // Intentar snapshots
+    const candidates = SNAPSHOT_KEYS.map(k => {
+      try { return { json: localStorage.getItem(k), ts: +localStorage.getItem(k + '_at') || 0 }; } catch { return null; }
+    });
+    const best = seleccionarMejorSnapshot(candidates);
+    if (best) parsed = best.parsed;
+  }
+
+  if (!parsed) { resetAppState(); return; }
+
+  try {
+    const migrado = _migrar(parsed, parsed._version ?? 0);
+    resetAppState();
+    Object.assign(S, migrado);
+    // Guardias básicas
+    if (!Array.isArray(S.cuentas)) S.cuentas = [];
+    if (!Array.isArray(S.gastos)) S.gastos = [];
+    if (!Array.isArray(S.objetivos)) S.objetivos = [];
+    if (!Array.isArray(S.deudas)) S.deudas = [];
+    if (!Array.isArray(S.historial)) S.historial = [];
+    if (!Array.isArray(S.gastosFijos)) S.gastosFijos = [];
+    if (!Array.isArray(S.pagosAgendados)) S.pagosAgendados = [];
+    if (!Array.isArray(S.inversiones)) S.inversiones = [];
+    if (!Array.isArray(S.bolsillos)) S.bolsillos = [];
+    if (!Array.isArray(S.meDeben)) S.meDeben = [];
+  } catch (e) {
+    console.error('[Finko] Load error:', e);
+    resetAppState();
+  }
+}
+
+export function seleccionarMejorSnapshot(candidates) {
+  if (!Array.isArray(candidates)) return null;
+  let mejor = null;
+  for (const c of candidates) {
+    if (!c || !c.json) continue;
+    try {
+      const parsed = JSON.parse(c.json);
+      if (parsed && typeof parsed === 'object' && (Array.isArray(parsed.gastos) || Array.isArray(parsed.cuentas))) {
+        if (!mejor || c.ts > mejor.ts) mejor = { json: c.json, parsed, ts: c.ts };
+      }
+    } catch {}
+  }
+  return mejor;
+}
+
+export function guardarUndoSnapshot(label) {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    const snap = { json: JSON.stringify(S), label, ts: Date.now() };
+    localStorage.setItem(UNDO_KEY, JSON.stringify(snap));
+    return true;
+  } catch { return false; }
+}
+
+export function restaurarUndo() {
+  try {
+    const raw = localStorage.getItem(UNDO_KEY);
+    if (!raw) return null;
+    const snap = JSON.parse(raw);
+    const parsed = JSON.parse(snap.json);
+    resetAppState();
+    Object.assign(S, parsed);
+    localStorage.removeItem(UNDO_KEY);
+    _savePendiente = true;
+    _flushSave();
+    return snap;
+  } catch { return null; }
+}
+
+export function inyectarConstantes() {
+  document.querySelectorAll('[data-const]').forEach(el => {
+    const key = el.getAttribute('data-const');
+    if (CONST_MAP[key] !== undefined) el.textContent = CONST_MAP[key];
+  });
+}
+
+export function verificarVigenciaConstantes() {
+  const VENCEN_EN = '2026-12-31';
+  const dias = Math.ceil((new Date(VENCEN_EN) - new Date()) / 86400000);
+  if (dias <= 60) console.warn(`⚠️ Finko Pro: Constantes vencen en ${dias} días.`);
+}
+
+// Flush final al cerrar
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') _flushSave();
+  });
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => _flushSave());
+}

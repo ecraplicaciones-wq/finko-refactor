@@ -1,0 +1,371 @@
+/**
+ * Finko Pro - Finance Service
+ * Responsabilidades: Gestión de Gastos, Cuentas, Bolsillos, Deudas y Préstamos.
+ * Este servicio es "Pure Logic": No toca el DOM, solo el Estado (S) y la Persistencia (save).
+ */
+
+import { S, save, GMF_TASA, SMMLV_2026 } from './state.js';
+
+// =============================================================================
+// 0. UTILIDADES DE SALDO (Capa de Datos)
+// =============================================================================
+
+export function descontarFondo(fondoId, monto) {
+  if (!fondoId) return;
+  const b = S.bolsillos.find(x => x.id == fondoId);
+  if (b) {
+    b.monto -= monto;
+    save();
+  }
+}
+
+export function reintegrarFondo(fondoId, monto) {
+  if (!fondoId) return;
+  const b = S.bolsillos.find(x => x.id == fondoId);
+  if (b) {
+    b.monto += monto;
+    save();
+  }
+}
+
+// =============================================================================
+// 1. GESTIÓN DE GASTOS (LÓGICA PRO)
+// =============================================================================
+
+export const ExpenseService = {
+  agregar(data) {
+    const gasto = {
+      id: Date.now(),
+      desc: data.desc || 'Sin descripción',
+      monto: Number(data.monto) || 0,
+      montoTotal: data.fx ? Math.round(Number(data.monto) * (1 + GMF_TASA)) : Number(data.monto),
+      cat: data.cat || 'otro',
+      tipo: data.tipo || 'necesidad',
+      fondo: data.fondo || '',
+      hormiga: data.tipo === 'hormiga' || !!data.hormiga,
+      cuatroXMil: !!data.fx,
+      fecha: data.fecha || new Date().toISOString().split('T')[0],
+      metaId: data.metaId || '',
+      autoFijo: !!data.autoFijo
+    };
+
+    S.gastos.unshift(gasto);
+    if (gasto.tipo !== 'ahorro') descontarFondo(gasto.fondo, gasto.montoTotal);
+    save();
+    return gasto;
+  },
+
+  eliminar(id) {
+    const g = S.gastos.find(x => x.id === id);
+    if (g && g.tipo !== 'ahorro') reintegrarFondo(g.fondo, g.montoTotal || g.monto);
+    S.gastos = S.gastos.filter(x => x.id !== id);
+    save();
+  },
+
+  editar(id, data) {
+    const g = S.gastos.find(x => x.id === id);
+    if (!g) return null;
+    
+    if (g.tipo !== 'ahorro') reintegrarFondo(g.fondo, g.montoTotal || g.monto);
+    
+    const nuevoMonto = Number(data.monto) || g.monto;
+    g.desc = data.desc || g.desc;
+    g.monto = nuevoMonto;
+    g.montoTotal = data.fx ? Math.round(nuevoMonto * (1 + GMF_TASA)) : nuevoMonto;
+    g.cat = data.cat || g.cat;
+    g.tipo = data.tipo || g.tipo;
+    g.fondo = data.fondo || g.fondo;
+    g.hormiga = g.tipo === 'hormiga' || !!data.hormiga;
+    
+    if (g.tipo !== 'ahorro') descontarFondo(g.fondo, g.montoTotal);
+    
+    save();
+    return g;
+  },
+
+  limpiarPeriodo() {
+    S.gastos.filter(g => g.tipo !== 'ahorro').forEach(g => reintegrarFondo(g.fondo, g.montoTotal || g.monto));
+    S.gastos = [];
+    save();
+  },
+
+  // --- Análisis Pro ---
+  
+  calcularTopHormigas(mesISO = null, limit = 3) {
+    const gastos = S.gastos || [];
+    const mapa = new Map();
+    for (const g of gastos) {
+      if (!(g?.tipo === 'hormiga' || g?.hormiga === true)) continue;
+      if (mesISO && !String(g.fecha || '').startsWith(mesISO)) continue;
+      const desc = (g.desc || '').trim() || 'Sin descripción';
+      const key = desc.toLowerCase();
+      const monto = g.montoTotal || g.monto || 0;
+      if (!mapa.has(key)) mapa.set(key, { concepto: desc, total: 0, count: 0 });
+      const entry = mapa.get(key);
+      entry.total += monto;
+      entry.count += 1;
+    }
+    return Array.from(mapa.values()).sort((a, b) => b.total - a.total).slice(0, limit);
+  },
+
+  detectarDuplicado(candidato) {
+    const gastos = S.gastos || [];
+    const ahora = Date.now();
+    const ventanaMs = 5 * 60_000;
+    const monto = Number(candidato.monto);
+    const desc = String(candidato.desc || '').trim().toLowerCase();
+    const cat = candidato.cat;
+
+    for (const g of gastos) {
+      const dt = ahora - g.id;
+      if (dt < 0 || dt > ventanaMs) continue;
+      if (g.cat !== cat || Number(g.monto) !== monto) continue;
+      if (String(g.desc || '').trim().toLowerCase() !== desc) continue;
+      return { duplicado: g, segundos: Math.round(dt / 1000) };
+    }
+    return null;
+  },
+
+  detectarAtipico(candidato) {
+    const gastos = S.gastos || [];
+    const monto = Number(candidato.monto);
+    const cat = candidato.cat;
+    const diasVentana = 30;
+    const factor = 4;
+    const minMuestras = 3;
+    const ahora = Date.now();
+
+    const desdeMs = ahora - diasVentana * 86_400_000;
+    let suma = 0, n = 0;
+    for (const g of gastos) {
+      if (g.cat !== cat) continue;
+      const m = Number(g.monto);
+      if (!Number.isFinite(m) || m <= 0) continue;
+      const ts = g.fecha ? new Date(g.fecha).getTime() : g.id;
+      if (ts > ahora || ts < desdeMs) continue;
+      suma += m; n += 1;
+    }
+    if (n < minMuestras) return null;
+    const promedio = suma / n;
+    if (monto < promedio * factor) return null;
+    return { promedio, factor: monto / promedio, muestras: n };
+  }
+};
+
+// =============================================================================
+// 2. GESTIÓN DE CUENTAS Y BOLSILLOS
+// =============================================================================
+
+export const AccountService = {
+  agregarCuenta(data) {
+    const datos = data || {
+      banco: document.getElementById('cu-banco')?.value,
+      nombre: document.getElementById('cu-alias')?.value,
+      saldo: document.getElementById('cu-saldo')?.value,
+      tipo: document.getElementById('cu-tipo')?.value
+    };
+    const cta = {
+      id: Date.now(),
+      nombre: datos.nombre,
+      saldo: Number(datos.saldo) || 0,
+      banco: datos.banco || 'otro',
+      tipo: datos.tipo || 'ahorro',
+      icono: '🏦',
+      bloqueada: false
+    };
+    S.cuentas.push(cta);
+    save();
+    return cta;
+  },
+
+  eliminarCuenta(id) {
+    S.cuentas = S.cuentas.filter(c => c.id !== id);
+    save();
+  },
+
+  actualizarCuenta(id, data) {
+    const c = S.cuentas.find(x => x.id === id);
+    if (!c) return null;
+    Object.assign(c, data);
+    save();
+    return c;
+  },
+
+  agregarBolsillo(data) {
+    const bol = {
+      id: Date.now(),
+      nombre: data.nombre,
+      monto: Number(data.monto) || 0,
+      tipo: data.tipo || 'otro',
+      meta: Number(data.meta) || (Number(data.monto) || 0) * 10,
+      fondo: data.fondo || ''
+    };
+    S.bolsillos.push(bol);
+    save();
+    return bol;
+  },
+
+  abonarBolsillo(id, monto) {
+    const b = S.bolsillos.find(x => x.id === id);
+    if (!b) return null;
+    b.monto += Number(monto) || 0;
+    save();
+    return b;
+  },
+
+  retirarBolsillo(id, monto) {
+    const b = S.bolsillos.find(x => x.id === id);
+    if (!b || b.monto < monto) return null;
+    b.monto -= Number(monto) || 0;
+    save();
+    return b;
+  }
+};
+
+// =============================================================================
+// 3. GESTIÓN DE DEUDAS Y PRÉSTAMOS
+// =============================================================================
+
+export const DebtService = {
+  agregarDeuda(data) {
+    const deu = {
+      id: Date.now(),
+      nombre: data.nombre,
+      total: Number(data.total) || 0,
+      pagado: 0,
+      cuota: Number(data.cuota) || 0,
+      frecuencia: data.frecuencia || 'mensual',
+      cat: data.cat || 'otro',
+      estado: 'activo'
+    };
+    S.deudas.push(deu);
+    save();
+    return deu;
+  },
+
+  pagarCuota(id, monto) {
+    const d = S.deudas.find(x => x.id === id);
+    if (!d) return null;
+    d.pagado += Number(monto) || 0;
+    if (d.pagado >= d.total) d.estado = 'pagado';
+    save();
+    return d;
+  },
+
+  eliminarDeuda(id) {
+    S.deudas = S.deudas.filter(d => d.id !== id);
+    save();
+  }
+};
+
+export const PersonalLoanService = {
+  agregarRecibido(data) {
+    const p = {
+      id: Date.now(),
+      nombre: data.nombre,
+      monto: Number(data.monto) || 0,
+      fecha: data.fecha || new Date().toISOString().split('T')[0],
+      estado: 'activo',
+      esRecibido: true
+    };
+    S.prestamosRecibidos.push(p);
+    save();
+    return p;
+  },
+
+  agregarOtorgado(data) {
+    const p = {
+      id: Date.now(),
+      nombre: data.nombre,
+      monto: Number(data.monto) || 0,
+      fecha: data.fecha || new Date().toISOString().split('T')[0],
+      estado: 'activo',
+      esRecibido: false
+    };
+    S.prestamosOtorgados.push(p);
+    save();
+    return p;
+  },
+
+  abonarPrestamo(id, monto, tipo) {
+    const lista = tipo === 'recibido' ? S.prestamosRecibidos : S.prestamosOtorgados;
+    const p = lista.find(x => x.id === id);
+    if (!p) return null;
+    p.monto -= Number(monto) || 0;
+    if (p.monto <= 0) p.estado = 'pagado';
+    save();
+    return p;
+  }
+};
+
+// =============================================================================
+// 4. MOTOR DE RESUMEN Y ANÁLISIS (Súper Potencia)
+// =============================================================================
+
+export const FinanceCalc = {
+  getSaldoTotal() {
+    const efectivo = S.saldos?.efectivo || 0;
+    const cuentas = (S.cuentas || []).reduce((s, c) => s + (Number(c.saldo) || 0), 0);
+    return efectivo + cuentas;
+  },
+
+  getResumenMes(mesISO) {
+    const gastos = S.gastos || [];
+    const ingreso = S.ingreso || 0;
+
+    let tG = 0, tA = 0, tH = 0, tN = 0, tD = 0;
+    const catMap = {};
+
+    gastos.forEach(g => {
+      const m = g.montoTotal || g.monto || 0;
+      if (g.tipo === 'ahorro') tA += m; else tG += m;
+      if (g.tipo === 'hormiga' || g.hormiga) tH += m;
+      if (g.tipo === 'necesidad') tN += m; else if (g.tipo === 'deseo') tD += m;
+      if (g.tipo !== 'ahorro') catMap[g.cat] = (catMap[g.cat] || 0) + m;
+    });
+
+    const balance = ingreso - tG;
+    const pctGasto = ingreso > 0 ? (tG / ingreso) * 100 : 0;
+    const pctAhorro = ingreso > 0 ? (tA / ingreso) * 100 : 0;
+    const pctHormiga = ingreso > 0 ? (tH / ingreso) * 100 : 0;
+    const pctNeces = ingreso > 0 ? (tN / ingreso) * 100 : 0;
+    const pctDeseo = ingreso > 0 ? (tD / ingreso) * 100 : 0;
+
+    const topCats = Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([cat, monto]) => ({ cat, monto, pct: tG > 0 ? (monto / tG) * 100 : 0 }));
+
+    return {
+      ingreso, tG, tA, tH, tN, tD,
+      balance,
+      pctGasto, pctAhorro, pctHormiga, pctNeces, pctDeseo,
+      topCats
+    };
+  },
+
+  generarConsejo(r) {
+    if (r.ingreso === 0 || r.tG === 0) return { icon: '📋', texto: 'Registra tus gastos para obtener análisis.' };
+    if (r.tA === 0) return { icon: '⚠️', texto: '¡No olvides pagarte a ti mismo primero! Ahorra aunque sea el 5%.' };
+    if (r.pctHormiga > 15) return { icon: '🐜', texto: `Tus gastos hormiga son el ${r.pctHormiga.toFixed(1)}% de tu ingreso. ¡Cuidado!` };
+    if (r.pctGasto > 90) return { icon: '🚨', texto: 'Estás al límite de tu presupuesto. ¡Revisa tus gastos!' };
+    return { icon: '✅', texto: 'Vas por buen camino. Sigue así.' };
+  },
+
+  getFinancialScore() {
+    const ing = S.ingreso || 0;
+    const tA = S.gastos.filter(g => g.tipo === 'ahorro').reduce((s, g) => s + g.monto, 0);
+    const cPer = S.deudas.reduce((s, d) => s + d.cuota, 0);
+    const fondoPct = S.fondoEmergencia ? (S.fondoEmergencia.actual / (S.fondoEmergencia.objetivoMeses * 1000000)) * 100 : 0;
+
+    const ptsAhorro = ing > 0 ? Math.min((tA / ing / 0.2) * 40, 40) : 0;
+    const ptsDeuda = ing > 0 ? (cPer / ing > 0.3 ? 0 : 30) : 0;
+    const ptsFondo = Math.min((fondoPct / 100) * 30, 30);
+    
+    const total = Math.round(ptsAhorro + ptsDeuda + ptsFondo);
+    return {
+      total,
+      nivel: total >= 80 ? 'excelente' : total >= 60 ? 'aceptable' : total >= 40 ? 'malo' : 'critico'
+    };
+  }
+};

@@ -1,0 +1,4 @@
+  1942 index.html
+  1241 style.css
+   495 service-worker.js
+  3678 total
